@@ -245,8 +245,6 @@ register_coco_instances("bdd100k_night_train_depth",
 '/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_night_png.json', # TODO: change the surfix to png
 '/root/autodl-tmp/Datasets/Depth/train__night_dawn_dusk')
 
-
-
 register_coco_instances("sim_day_train",
 {},
 'datasets/shift/train_day.json', 

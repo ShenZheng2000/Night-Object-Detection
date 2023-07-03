@@ -496,29 +496,10 @@ class TwoPCTrainer(DefaultTrainer):
 
         # Add NightAug images into supervised batch
         if self.cfg.NIGHTAUG:
-            # print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
             label_data_aug = self.night_aug.aug([x.copy() for x in label_data], 
                                                 motion_blur=self.cfg.MOTION_BLUR,
-                                                motion_blur_rand=self.cfg.MOTION_BLUR_RAND,
-                                                light_render=self.cfg.LIGHT_RENDER,
-                                                light_high=self.cfg.LIGHT_HIGH,
-                                                key_point = self.cfg.KEY_POINT)
+                                                motion_blur_rand=self.cfg.MOTION_BLUR_RAND)
             label_data.extend(label_data_aug)
-
-            # NOTE: original seems to be BGR instead of RGB
-            # for i in range(5):
-            #     aug_image = label_data_aug[i]['image']
-            #     # print(aug_image.min(), aug_image.max())
-            #     aug_image = (aug_image - aug_image.min()) / (aug_image.max() - aug_image.min())
-                
-            #     # Switch from BGR to RGB
-            #     aug_image = torch.flip(aug_image, [0])
-                
-            #     os.makedirs('aug_image', exist_ok=True)
-            #     save_image(aug_image, f'aug_image/aug_{i}.png')
-
-            # import sys
-            # sys.exit(1)
 
         
         # NOTE: add masking for src images
@@ -538,6 +519,7 @@ class TwoPCTrainer(DefaultTrainer):
                 # # Save the images
                 # save_image(src_image, f'tmp_src/src_{i}.png')
                 # save_image(mask_image, f'tmp_src/mask_{i}.png')
+
     
         # burn-in stage (supervised training with labeled data)
         if self.iter < self.cfg.SEMISUPNET.BURN_UP_STEP:
@@ -1032,22 +1014,22 @@ class BaselineTrainer(DefaultTrainer):
                 self.storage.put_scalars(**metrics_dict)
 
 
-# def save_tensors_as_images(tensors):
-#     for i, tensor in enumerate(tensors):
-#         # Ensure the tensor is in CPU
-#         tensor = tensor.cpu()
+def save_tensors_as_images(tensors):
+    for i, tensor in enumerate(tensors):
+        # Ensure the tensor is in CPU
+        tensor = tensor.cpu()
 
-#         # Normalize the tensor to [0, 1] range
-#         tensor = tensor / 255.0
+        # Normalize the tensor to [0, 1] range
+        tensor = tensor / 255.0
         
-#         save_image(tensor, f'image_{i}.png')
+        save_image(tensor, f'image_{i}.png')
 
 
-# def adjust_threshold(depth, default_threshold=0.9, depth_scale=255.0, min_threshold=0.7):
-#     # Normalize the depth to [0, 1]
-#     normalized_depth = depth / depth_scale
+def adjust_threshold(depth, default_threshold=0.9, depth_scale=255.0, min_threshold=0.7):
+    # Normalize the depth to [0, 1]
+    normalized_depth = depth / depth_scale
 
-#     # Adjust the threshold to be lower for larger depth
-#     adjusted_threshold = default_threshold - (default_threshold - min_threshold) * normalized_depth
+    # Adjust the threshold to be lower for larger depth
+    adjusted_threshold = default_threshold - (default_threshold - min_threshold) * normalized_depth
 
-#     return adjusted_threshold
+    return adjusted_threshold

@@ -100,6 +100,17 @@ class DatasetMapperTwoCropSeparate(DatasetMapper):
                 min_box_size=self.proposal_min_box_size,
             )
 
+        # print("=============Before=================>")
+        # print("dataset_dict IS", dataset_dict)
+        # print("transforms IS", transforms)
+
+        # NOTE: 7/2/2023: add transforms to dataset_dict
+        dataset_dict['transform'] = transforms
+
+        # print("==============After================>")
+        # print("dataset_dict IS", dataset_dict)
+        # print("transforms IS", transforms)
+
         if not self.is_train:
             dataset_dict.pop("annotations", None)
             dataset_dict.pop("sem_seg_file_name", None)

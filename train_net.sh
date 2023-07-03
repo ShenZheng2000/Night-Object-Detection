@@ -205,12 +205,20 @@
 #       > mask_blur_6_23.out 2>&1 &
 
 
-################## Motion Blur Random (REDO) ##################
+# ################## Motion Blur Random (REDO) ##################
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_mask_blur_rand.yaml \
+#       MODEL.WEIGHTS outputs/mask_blur_rand_6_25/model_0049999.pth \
+#       OUTPUT_DIR outputs/mask_blur_rand_6_25 \
+#       > mask_blur_rand_6_25.out 2>&1 &
+
+# ################## Light Rendering (white, s=100) ##################
 nohup \
 python train_net.py \
-      --resume \
       --num-gpus 3 \
-      --config configs/bdd100k_mask_blur_rand.yaml \
-      MODEL.WEIGHTS outputs/mask_blur_rand_6_25/model_0049999.pth \
-      OUTPUT_DIR outputs/mask_blur_rand_6_25 \
-      > mask_blur_rand_6_25.out 2>&1 &
+      --config configs/bdd100k_light_white_100.yaml \
+      OUTPUT_DIR outputs/light_white_100_7_1 \
+      > light_white_100_7_1.out 2>&1 &

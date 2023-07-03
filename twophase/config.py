@@ -73,3 +73,8 @@ def add_teacher_config(cfg):
     # NOTE: add motion blur
     _C.MOTION_BLUR = False
     _C.MOTION_BLUR_RAND = False
+
+    # NOTE: add light rendering and keypoint
+    _C.LIGHT_RENDER = False
+    _C.LIGHT_HIGH = 100
+    _C.KEY_POINT = None
