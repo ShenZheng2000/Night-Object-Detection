@@ -172,7 +172,7 @@
 #       > mask_src_debug_6_18.out 2>&1 &
 
 
-# ################## Mask (Sparse) ##################
+# ################## Mask (Sparse) TODO ##################
 # nohup \
 # python train_net.py \
 #       --resume \
@@ -215,10 +215,33 @@
 #       OUTPUT_DIR outputs/mask_blur_rand_6_25 \
 #       > mask_blur_rand_6_25.out 2>&1 &
 
+
+# # ################## Light Rendering (white, s=100) ##################
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_light_white_100.yaml \
+#       OUTPUT_DIR outputs/light_white_100_7_1 \
+#       > light_white_100_7_1.out 2>&1 &
+
+
 # ################## Light Rendering (white, s=100) ##################
+# # NOTE: stop mid, resume from model_0029999.pth
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_light_white_100.yaml \
+#       MODEL.WEIGHTS outputs/light_white_100_7_1/model_0094999.pth.pth \
+#       OUTPUT_DIR outputs/light_white_100_7_1 \
+#       > light_white_100_7_1.out 2>&1 &
+
+
+# # ################## Path Blur (s=15,constant) ##################
+# TODO: change configs and use 3 gpu for training
 nohup \
 python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_light_white_100.yaml \
-      OUTPUT_DIR outputs/light_white_100_7_1 \
-      > light_white_100_7_1.out 2>&1 &
+      --num-gpus 1 \
+      --config configs/bdd100k_path_blur_cons.yaml \
+      OUTPUT_DIR outputs/path_blur_cons_7_5 \
+      > path_blur_cons_7_5.out 2>&1 &

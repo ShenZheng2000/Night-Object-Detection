@@ -4,6 +4,11 @@ from numpy import random as R
 import torch.nn.functional as F
 from PIL import Image
 import os
+import json
+import math
+from PIL import Image, ImageFilter
+import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
 
 
 def motion_blur(image, size, direction):
@@ -86,6 +91,107 @@ def motion_blur_adjustable(image, size=15, direction=0):
     return blurred
 
 
+
+
+# NOTE: currently not working (7/3/2023)
+# def make_path_blur():
+#     # Create a directory to save blurred images
+#     os.makedirs('images_path_blur', exist_ok=True)
+
+#     vp_json = '/root/autodl-tmp/Datasets/VP/train_day.json'
+#     gt_json = '/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_day.json'
+#     img_dir = '/root/autodl-tmp/Datasets/bdd100k/images/100k/train'
+
+#     BLUR_SIZE = 360 # TODO: tune this later
+
+#     # Load the COCO JSON file
+#     with open(gt_json) as f:
+#         data = json.load(f)
+
+#     # Load the Vanishing Point JSON file
+#     with open(vp_json) as f:
+#         vp_data = json.load(f)
+
+#     # Convert vp_data to only contain basenames for keys for easier lookup
+#     vp_data = {os.path.basename(k): v for k, v in vp_data.items()}
+
+#     # Convert list of images to dictionary for easy lookup
+#     images_dict = {image['id']: image for image in data['images']}
+
+#     to_tensor = transforms.ToTensor()
+#     to_pil = transforms.ToPILImage()
+
+#     image_count = 0 # counter for processed images
+
+#     # Iterate over each image
+#     for image in data['images']:
+
+#         # Get the filename and remove the directory to get the basename
+#         filename = os.path.basename(image['file_name'])
+
+#         # NOTE: hardcode to specify filename for debug
+#         if filename != '001bad4e-2fa8f3b6.jpg':
+#             continue
+
+#         # Get the vanishing point for this image
+#         vp = vp_data.get(filename)
+
+#         # Get the annotations for this image
+#         annotations = [ann for ann in data['annotations'] if ann['image_id'] == image['id']]
+
+#         # Load the image
+#         img = Image.open(os.path.join(img_dir, filename))
+
+#         img_tensor = to_tensor(img)
+
+#         print(f"============filename={filename}============>")
+
+#         # Iterate over each annotation for current image
+#         for annotation in annotations:
+
+#             # Calculate the area using the bounding box
+#             bbox = annotation['bbox']
+#             x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
+#             area = w * h  # width * height
+
+#             # Calculate the center of the bounding box
+#             center = (x + w/2, y + h/2)
+
+#             # Calculate the reweighted blur size
+#             image_area = image['width'] * image['height']
+#             blur_size = BLUR_SIZE * math.sqrt(area / image_area)
+
+#             # Calculate the blur direction
+#             dx, dy = vp[0] - center[0], vp[1] - center[1]
+#             blur_direction = math.degrees(math.atan2(dy, dx))  # angle in degrees
+
+#             # Apply the motion blur
+#             # TODO: you cannot use one object's status to decide the blur for all objects in image
+#             bit = motion_blur_adjustable(img_tensor, size=int(blur_size), direction=blur_direction)
+
+#             # NOTE: hor motion blur for debug 
+#             bit_hor = motion_blur_adjustable(img_tensor, size=15, direction=0)
+
+#             # NOTE: rand motion blur for debug
+#             rand_hor = motion_blur_adjustable(img_tensor, size=15, direction=R.random() * 360)
+
+#             # Save the original and blurred images
+#             img.save(f'images_path_blur/original_{filename}')
+#             to_pil(bit).save(f'images_path_blur/blurred_{filename}')
+#             to_pil(bit_hor).save(f'images_path_blur/blurred_hor_{filename}')
+#             to_pil(rand_hor).save(f'images_path_blur/blurred_rand_{filename}')
+
+#             print(f"blur_size={blur_size:.3f} blur_direction={blur_direction:.3f}")
+
+#             # break # only process one annotation per image for demo
+
+#         image_count += 1
+#         if image_count >= 1: # limit to 1 image pairs
+#             break
+
+
+
+
 # NOTE: NO USE for now
 # def debug_motion_blur():
 
@@ -133,3 +239,8 @@ def motion_blur_adjustable(image, size=15, direction=0):
 #     input_image.save('aug_images/input_image.jpg')
 #     output_image_motion_blur.save('aug_images/output_image_motion_blur.jpg')
 #     output_image_motion_blur_rand.save('aug_images/output_image_motion_blur_rand.jpg')
+
+
+
+if __name__ == '__main__':
+    pass

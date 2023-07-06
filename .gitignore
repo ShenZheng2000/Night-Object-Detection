@@ -1,4 +1,6 @@
 /LICENSE
 *.out
+*.png
+*.jpg
 /outputs/
 /README.md

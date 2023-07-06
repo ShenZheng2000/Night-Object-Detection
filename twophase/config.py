@@ -78,3 +78,8 @@ def add_teacher_config(cfg):
     _C.LIGHT_RENDER = False
     _C.LIGHT_HIGH = 100
     _C.KEY_POINT = None
+
+    # NOTE: add path motion blur
+    _C.VANISHING_POINT = None
+    _C.PATH_BLUR_CONS = False
+    _C.PATH_BLUR_VAR = False
