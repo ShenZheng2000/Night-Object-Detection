@@ -2,7 +2,7 @@
 *.out
 *.png
 *.jpg
-*/*.png
-*/*.jpg
+**/*.png
+**/*.jpg
 /outputs/
 /README.md
