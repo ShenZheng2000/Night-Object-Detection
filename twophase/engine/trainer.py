@@ -172,9 +172,12 @@ class TwoPCTrainer(DefaultTrainer):
             return self._last_eval_results
 
     def before_train_json(self):
-        with open(self.cfg.VANISHING_POINT, 'r') as f:
-            self.vanishing_point = json.load(f)
-        self.vanishing_point = {os.path.basename(k): v for k, v in self.vanishing_point.items()}
+        if self.cfg.VANISHING_POINT is not None:
+            with open(self.cfg.VANISHING_POINT, 'r') as f:
+                self.vanishing_point = json.load(f)
+            self.vanishing_point = {os.path.basename(k): v for k, v in self.vanishing_point.items()}
+        else:
+            self.vanishing_point = None
 
     def train_loop(self, start_iter: int, max_iter: int):
         logger = logging.getLogger(__name__)

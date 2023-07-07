@@ -58,6 +58,9 @@ class NightAug:
         # print(f"Before img min {img.min()} {img.max()}") # 0, 255
         # print("img shape", img.shape) # C, H, W
 
+        if vanishing_point is None:
+            return img
+
         vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
 
         img_height, img_width = img.shape[1:]
