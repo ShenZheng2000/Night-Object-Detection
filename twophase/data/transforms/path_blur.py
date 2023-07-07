@@ -22,7 +22,7 @@ import math
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, LineString, Point
 from torchvision.transforms.functional import to_pil_image
 from PIL import Image, ImageDraw
 import torchvision.transforms.functional as TF
@@ -30,8 +30,6 @@ import kornia
 from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
 import time
 
-# TODO: visualization not correct (RGB and BGB issues)
-# TODO: sometimes vp out of bound
 
 def make_path_blur(img, vanishing_point, change_size=False, size=15):
 
@@ -62,153 +60,224 @@ def make_path_blur(img, vanishing_point, change_size=False, size=15):
     return combined_tensor.unsqueeze(0)
 
 
-def draw_arrow(image, start, end, color, thickness):
-    """
-    Draw an arrow on the image from start point to end point.
-
-    Parameters:
-    image (PIL.Image.Image): The image to draw on.
-    start (tuple): The starting point of the arrow (x, y).
-    end (tuple): The ending point of the arrow (x, y).
-    color (tuple): The color of the arrow (R, G, B).
-    thickness (int): The thickness of the arrow.
-
-    Returns:
-    None
-    """
-    draw = ImageDraw.Draw(image)
-    xy = ((start[0], start[1]), (end[0], end[1]))  # Convert start and end points into a tuple of tuples
-    draw.line(xy, fill=color, width=thickness)
-    arrow_size = thickness * 3
-    angle = 30  # Angle of arrowhead
-
-    # Compute the angle between the line and the x-axis
-    dx = end[0] - start[0]
-    dy = end[1] - start[1]
-    line_angle = math.atan2(dy, dx)
-
-    # Compute the coordinates of the arrowhead
-    angle_rad = math.radians(angle)
-    arrowhead1 = (end[0] - arrow_size * math.cos(line_angle + angle_rad),
-                  end[1] - arrow_size * math.sin(line_angle + angle_rad))
-    arrowhead2 = (end[0] - arrow_size * math.cos(line_angle - angle_rad),
-                  end[1] - arrow_size * math.sin(line_angle - angle_rad))
-
-    # Draw the arrowhead
-    draw.line((end, arrowhead1), fill=color, width=thickness)
-    draw.line((end, arrowhead2), fill=color, width=thickness)
-
-    del draw
-
-
-def debug_segment_image():
-    # Example usage
-    image_path = "/root/autodl-tmp/Datasets/bdd100k/images/100k/train/0081da60-5fa22cc6.jpg"
-    json_file_path = "/root/autodl-tmp/Datasets/VP/train_day.json"
-
-    # Read the vanishing points from the JSON file
-    with open(json_file_path, 'r') as file:
-        vanishing_points = json.load(file)
-
-    vanishing_points = {os.path.basename(k): v for k, v in vanishing_points.items()}
-
-    # Get the vanishing point for the current image
-    image_basename = os.path.basename(image_path)
-    vanishing_point = vanishing_points[image_basename]
-
-    # Load the RGB image from the file
-    img = Image.open(image_path).convert('RGB')
-
-    # Convert the RGB image to a torch tensor
-    img_tensor = torch.tensor(np.array(img)).permute(2, 0, 1)
-
-    # Call the segment_image() function
-    segmented = segment_image(img_tensor, vanishing_point)
-
-    # Save the segmented triangles
-    for key, triangle in segmented.items():
-        triangle_image = triangle["image"]
-        triangle_image.save(f'segmented_{key}_triangle.png')
-
-        # Visualize the blur direction
-        blur_direction = triangle["blur_direction"]
-        if blur_direction is not None:
-            draw_arrow(triangle_image, vanishing_point,
-                    (int(vanishing_point[0] + 100 * math.cos(math.radians(blur_direction))),
-                        int(vanishing_point[1] + 100 * math.sin(math.radians(blur_direction)))),
-                    color=(255, 0, 0), thickness=10)
-            triangle_image.save(f'segmented_{key}_triangle_with_blur_direction.png')
-
 
 def segment_image(img: torch.Tensor, pt: list) -> dict:
     """
-    Segment an image into triangles based on a point and the four corners.
+    Segment an image into regions based on a point and the four corners.
 
     Parameters:
     img (torch.Tensor): The image tensor.
     pt (list): The point coordinates [x, y].
 
     Returns:
-    dict: The segmented image triangles.
+    dict: The segmented image regions.
     """
-    # Validate point
-    # print("vp is", pt)
-    # print("img.device is", img.device)
-    
+
+    # print("pt is", pt)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
     # squeeze to 3d if needed
     if len(img.shape) == 4:
         img = img.squeeze(0)
-    
-    # print("img shape", img.shape)
 
     pt_w = pt[0]
     pt_h = pt[1]
 
     img_c, img_h, img_w = img.shape
 
-    if not (0 <= pt_w <= img_w and 0 <= pt_h <= img_h):
-        raise ValueError(f'Point must be within the image boundaries. \
-                         Received point ({pt_w}, {pt_h}) for image size ({img_w}, {img_h}).')
-
     # Convert the torch tensor to a PIL Image
     img_np = img.permute(1, 2, 0).cpu().numpy()
     img_pil = Image.fromarray(img_np)
 
-    # Get image size
-    img_width, img_height = img_pil.size
-
     # Define corner points
-    corners = [(0, 0), (img_width, 0), (img_width, img_height), (0, img_height)]
+    corners = [(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]
+    side_top = [(0, 0), (img_w, 0)]
+    side_right = [(img_w, 0), (img_w, img_h)]
+    side_bottom = [(img_w, img_h), (0, img_h)]
+    side_left = [(0, img_h), (0, 0)]
 
-    # Create triangles
-    triangles = [Polygon([pt, corners[i], corners[(i+1)%4]]) for i in range(4)]
+    # Define image border lines
+    borders = [LineString(side_top),  # Top
+               LineString(side_right),  # Right
+               LineString(side_bottom),  # Bottom
+               LineString(side_left)]  # Left
+
+    # Create lines from point to corners and find intersections with image borders
+    intersections = []
+    for corner in corners:
+        line = LineString([pt, corner])
+        for border in borders:
+            intersection = line.intersection(border)
+            if not intersection.is_empty and intersection not in intersections:
+                intersections.append(intersection)
+
+    # Convert intersection Points to tuples and calculate their distances to the vanishing point
+    intersections = [(intersection.x, intersection.y) for intersection in intersections]
+
+    # Define the polygons based on the sorted intersection points
+    polygons = [None, None, None, None]  # Placeholder for top, right, bottom, left polygons
+
+    if pt_w > 0 and pt_w < img_w and pt_h > 0 and pt_h < img_h:  # point is in-bound
+        for i in range(4):
+            polygons[i] = Polygon([pt, intersections[i], intersections[(i+1)%4]])
+    else:  # point is out-of-bound
+        # Sort intersections by their distances to the vanishing point
+        distances = [np.linalg.norm(np.array(pt) - np.array(intersection)) for intersection in intersections]
+        sorted_intersections = [inter for _, inter in sorted(zip(distances, intersections))]
+
+        trap = [sorted_intersections[0], sorted_intersections[1], sorted_intersections[-1], sorted_intersections[-2]]
+        tri_1 = [sorted_intersections[1], sorted_intersections[-1], sorted_intersections[3]]
+        tri_2 = [sorted_intersections[0], sorted_intersections[-2], sorted_intersections[2]]
+
+        possible_polygons = [Polygon(trap), Polygon(tri_1), Polygon(tri_2)]
+
+        # Assign polygons to the right position in the list (top, right, bottom, left)
+        for poly in possible_polygons:
+            # print("===========poly is", poly)
+            for i, side in enumerate([side_top, side_right, side_bottom, side_left]):
+                # print(f"Point(side[0]) = {Point(side[0])} Point(side[1]) = {Point(side[1])}", )
+                if point_in_polygon(poly, Point(side[0])) and point_in_polygon(poly, Point(side[1])):
+                    polygons[i] = poly
+                    break
+
+    # for i in range(len(polygons)):
+        # print(f"polygons[{i}] is", polygons[i])
 
     # Segment image
     segmented = {}
-    for i, triangle in enumerate(triangles):
+    for i, polygon in enumerate(polygons):
+        if polygon is None:  # Skip if polygon is missing
+            continue
+
         mask = Image.new('L', img_pil.size, 0)
-        ImageDraw.Draw(mask).polygon(list(map(tuple, triangle.exterior.coords)), outline=1, fill=1)
+        ImageDraw.Draw(mask).polygon(list(map(tuple, polygon.exterior.coords)), outline=1, fill=1)
         mask = np.array(mask)
         segmented_image = np.array(img_pil) * np.dstack([mask]*3)
 
         # Compute left and right border middle
-        lbm = [0, img_height / 2]
-        rbm = [img_width, img_height / 2]
+        lbm = [0, img_h / 2]
+        rbm = [img_w, img_h / 2]
 
         # Compute motion blur direction
-        if i == 0 or i == 2:  # Top and bottom triangles have no motion blur
+        if i == 0 or i == 2:  # Top and bottom polygons have no motion blur
             blur_direction = None
-        elif i == 1:  # Right triangle
+        elif i == 1:  # Right polygon
             blur_direction = math.degrees(math.atan2(rbm[1] - pt[1], rbm[0] - pt[0]))
-            # print(f"Right = {blur_direction}")
-        elif i == 3:  # Left triangle
+        elif i == 3:  # Left polygon
             blur_direction = math.degrees(math.atan2(lbm[1] - pt[1], lbm[0] - pt[0]))
-            # print(f"Left = {blur_direction}")
 
         segmented_image_pil = Image.fromarray(segmented_image)
         segmented[i] = {"image": segmented_image_pil, "blur_direction": blur_direction}
 
     return segmented
+
+
+
+def point_in_polygon(poly, point):
+    """Check if a point is in a polygon including the boundary."""
+    for coord in list(poly.exterior.coords):
+        if Point(coord).equals(point):
+            return True
+    return point.within(poly)
+
+
+# def segment_image(img: torch.Tensor, pt: list) -> dict:
+#     """
+#     Segment an image into regions based on a point and the four corners.
+
+#     Parameters:
+#     img (torch.Tensor): The image tensor.
+#     pt (list): The point coordinates [x, y].
+
+#     Returns:
+#     dict: The segmented image regions.
+#     """
+
+#     print("pt is", pt)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+
+#     # squeeze to 3d if needed
+#     if len(img.shape) == 4:
+#         img = img.squeeze(0)
+
+#     pt_w = pt[0]
+#     pt_h = pt[1]
+
+#     img_c, img_h, img_w = img.shape
+
+#     # Convert the torch tensor to a PIL Image
+#     img_np = img.permute(1, 2, 0).cpu().numpy()
+#     img_pil = Image.fromarray(img_np)
+
+#     # Define corner points
+#     corners = [(0, 0), (img_w, 0), (img_w, img_h), (0, img_h)]
+
+#     # Define image border lines
+#     borders = [LineString([(0, 0), (img_w, 0)]),  # Top
+#                LineString([(img_w, 0), (img_w, img_h)]),  # Right
+#                LineString([(img_w, img_h), (0, img_h)]),  # Bottom
+#                LineString([(0, img_h), (0, 0)])]  # Left
+
+#     # Create lines from point to corners and find intersections with image borders
+#     intersections = []
+#     for corner in corners:
+#         line = LineString([pt, corner])
+#         for border in borders:
+#             intersection = line.intersection(border)
+#             if not intersection.is_empty and intersection not in intersections:
+#                 intersections.append(intersection)
+
+#     # Convert intersection Points to tuples and calculate their distances to the vanishing point
+#     intersections = [(intersection.x, intersection.y) for intersection in intersections]
+
+#     # Define the polygons based on the sorted intersection points
+#     polygons = []
+    
+#     if pt_w > 0 and pt_w < img_w and pt_h > 0 and pt_h < img_h:  # point is in-bound
+#         for i in range(4):
+#             polygons.append(Polygon([pt, intersections[i], intersections[(i+1)%4]]))
+#     else:  # point is out-of-bound
+
+#         # Sort intersections by their distances to the vanishing point
+#         distances = [np.linalg.norm(np.array(pt) - np.array(intersection)) for intersection in intersections]
+#         sorted_intersections = [inter for _, inter in sorted(zip(distances, intersections))]
+
+#         trap = [sorted_intersections[0], sorted_intersections[1], sorted_intersections[-1], sorted_intersections[-2]]
+#         tri_1 = [sorted_intersections[1], sorted_intersections[-1], sorted_intersections[3]]
+#         tri_2 = [sorted_intersections[0], sorted_intersections[-2], sorted_intersections[2]]
+
+#         # Define trapezoid
+#         polygons.append(Polygon(trap))
+        
+#         # Define remaining triangles
+#         polygons.append(Polygon(tri_1))
+#         polygons.append(Polygon(tri_2))
+
+#     for i in range(len(polygons)):
+#         print(f"polygons[{i}] is", polygons[i])
+
+#     # Segment image
+#     segmented = {}
+#     for i, polygon in enumerate(polygons):
+#         mask = Image.new('L', img_pil.size, 0)
+#         ImageDraw.Draw(mask).polygon(list(map(tuple, polygon.exterior.coords)), outline=1, fill=1)
+#         mask = np.array(mask)
+#         segmented_image = np.array(img_pil) * np.dstack([mask]*3)
+
+#         # Compute left and right border middle
+#         lbm = [0, img_h / 2]
+#         rbm = [img_w, img_h / 2]
+
+#         # Compute motion blur direction
+#         if i == 0 or i == 2:  # Top and bottom polygons have no motion blur
+#             blur_direction = None
+#         elif i == 1:  # Right polygon
+#             blur_direction = math.degrees(math.atan2(rbm[1] - pt[1], rbm[0] - pt[0]))
+#         elif i == 3:  # Left polygon
+#             blur_direction = math.degrees(math.atan2(lbm[1] - pt[1], lbm[0] - pt[0]))
+
+#         segmented_image_pil = Image.fromarray(segmented_image)
+#         segmented[i] = {"image": segmented_image_pil, "blur_direction": blur_direction}
+
+#     return segmented
 
 
 def motion_blur(image, size, angle):
@@ -295,50 +364,6 @@ def apply_blur_and_combine(segmented, size, device):
     return combined_tensor
 
 
-# NOTE: old function => slow
-# def apply_blur_and_combine(segmented, size, device):
-#     """
-#     Applies a motion blur to the segments of an image and then combines them.
-
-#     Parameters:
-#     segmented (dict): A dictionary containing the segmented images and blur directions.
-#     size (int): The size of the motion blur kernel.
-#     device (torch.device): The device (CPU or CUDA device) where to operate on.
-
-#     Returns:
-#     torch.Tensor: The combined image tensor.
-#     """
-#     # Apply motion blur to the segmented image
-#     blurred_segments = {}
-#     for i, segment in segmented.items():
-
-#         img_pil = segment["image"]
-#         img_tensor = TF.to_tensor(img_pil).to(device)  # Convert the PIL Image to torch tensor and move to device
-
-#         if segment["blur_direction"] is not None:
-#             blurred_img_tensor = motion_blur(img_tensor, size, segment["blur_direction"])
-#             blurred_img_pil = TF.to_pil_image(blurred_img_tensor.squeeze(0).cpu())  # Move the tensor to cpu for PIL conversion
-#             blurred_segments[i] = {
-#                 "image": blurred_img_pil,
-#                 "blur_direction": segment["blur_direction"]
-#             }
-#         else:
-#             blurred_segments[i] = segment
-
-#     # Initialize an empty tensor for combining the segments
-#     combined_tensor = torch.zeros_like(TF.to_tensor(blurred_segments[0]['image']).to(device))  # Moved to device
-
-#     # Combine the segments onto the tensor
-#     for segment in blurred_segments.values():
-#         img_tensor = TF.to_tensor(segment["image"]).to(device)  # Moved to device
-#         combined_tensor += img_tensor
-
-#     # Clamp the values of the combined tensor within [0, 1]
-#     combined_tensor = combined_tensor.clamp(0, 1)
-    
-#     return combined_tensor
-
-
 def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=False):
 
     # Get flip and new_width information
@@ -367,7 +392,9 @@ def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=
 
 def debug_path_blur():
     # Example usage
-    image_path = "/root/autodl-tmp/Datasets/bdd100k/images/100k/train/0081da60-5fa22cc6.jpg"
+    # image_path = "/root/autodl-tmp/Datasets/bdd100k/images/100k/train/0081da60-5fa22cc6.jpg"
+    # image_path = "/root/autodl-tmp/Datasets/bdd100k/images/100k/train/4285eaaa-5c506f11.jpg"
+    image_path = "/root/autodl-tmp/Datasets/bdd100k/images/100k/train/5eebd0b4-b90b8950.jpg"
     json_file_path = "/root/autodl-tmp/Datasets/VP/train_day.json"
 
     # Load the RGB image from the file
@@ -394,5 +421,16 @@ def debug_path_blur():
     combined_image.save("combined_image.jpg")
 
 
+def is_out_of_bounds(pt, img_width, img_height):
+    if (pt[0] < 0 and pt[1] < 0) or \
+        (pt[0] > img_width and pt[1] < 0) or \
+            (pt[0] < 0 and pt[1] > img_height) or \
+                (pt[0] > img_width and pt[1] > img_height):
+        return True
+    return False
+
+
 if __name__ == '__main__':
+    # pt = [-615.628451105227, -615.628451105227]
+    # print(is_out_of_bounds(pt, 720, 1280))
     debug_path_blur()

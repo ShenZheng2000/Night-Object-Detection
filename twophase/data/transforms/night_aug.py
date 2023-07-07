@@ -11,7 +11,7 @@ from detectron2.structures import Boxes
 from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
 import json
 from .blur import motion_blur_adjustable
-from .path_blur import make_path_blur, get_vanising_points
+from .path_blur import make_path_blur, get_vanising_points, is_out_of_bounds
 from .light import get_keypoints, generate_light
 import time
 
@@ -63,11 +63,8 @@ class NightAug:
         img_height, img_width = img.shape[1:]
 
         # Skip path blur if any element of vanishing_point is negative
-        # TODO: rebuild your model later to handle edge cases
-        if any(pt < 0 for pt in vanishing_point) \
-                or vanishing_point[0] > img_width \
-                    or vanishing_point[1] > img_height:
-            print("Warning: Vanishing point outside of image. Skipping path blur.")
+        if is_out_of_bounds(vanishing_point, img_width, img_height):
+            print("Warning: Vanishing point both coords outside. Skipping path blur.")
         else:
             if path_blur_cons:
                 img = make_path_blur(img, vanishing_point, change_size=False)
