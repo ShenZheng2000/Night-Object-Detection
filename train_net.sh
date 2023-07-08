@@ -238,10 +238,27 @@
 
 
 # # ################## Path Blur (s=15,constant) ##################
-# TODO: change configs and use 3 gpu for training
+# # TODO: change configs and use 3 gpu for training
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_path_blur_cons.yaml \
+#       OUTPUT_DIR outputs/path_blur_cons_7_5 \
+#       > path_blur_cons_7_5.out 2>&1 &
+
+
+# TODO later
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_path_blur_cons_prob05_nopc.yaml \
+#       OUTPUT_DIR outputs/path_blur_cons_7_8_v1 \
+#       > path_blur_cons_7_8_v1.out 2>&1 &
+
+# DOING
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_path_blur_cons.yaml \
-      OUTPUT_DIR outputs/path_blur_cons_7_5 \
-      > path_blur_cons_7_5.out 2>&1 &
+      --config configs/bdd100k_path_blur_cons_prob05_yespc.yaml \
+      OUTPUT_DIR outputs/path_blur_cons_7_8_v2 \
+      > path_blur_cons_7_8_v2.out 2>&1 &

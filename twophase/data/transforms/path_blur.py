@@ -40,18 +40,18 @@ def make_path_blur(img, vanishing_point, change_size=False, size=15):
         # Call the segment_image() function
         # print(f"img {img.shape} vanishing_point {vanishing_point}")
 
-        start_time = time.time()
+        # start_time = time.time()
 
         segmented = segment_image(img, vanishing_point)
 
-        end_time_1 = time.time()
-        print(f"spent time1 = {end_time_1 - start_time}")
+        # end_time_1 = time.time()
+        # print(f"spent time1 = {end_time_1 - start_time}")
 
         # Apply motion blur to the segmented image
         combined_tensor = apply_blur_and_combine(segmented, size, device)
 
-        end_time_2 = time.time()
-        print(f"spent time2 = {end_time_2 - end_time_1}")
+        # end_time_2 = time.time()
+        # print(f"spent time2 = {end_time_2 - end_time_1}")
 
     elif change_size == True:
         # TODO: write code later
