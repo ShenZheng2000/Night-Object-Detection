@@ -514,7 +514,8 @@ class TwoPCTrainer(DefaultTrainer):
                                                 key_point = self.cfg.KEY_POINT,
                                                 vanishing_point= self.vanishing_point,
                                                 path_blur_cons=self.cfg.PATH_BLUR_CONS, 
-                                                path_blur_var=self.cfg.PATH_BLUR_VAR
+                                                path_blur_var=self.cfg.PATH_BLUR_VAR,
+                                                two_pc_aug=self.cfg.TWO_PC_AUG,
                                                 )
             label_data.extend(label_data_aug)
 

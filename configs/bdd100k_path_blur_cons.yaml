@@ -55,3 +55,4 @@ CONSISTENCY: True
 
 VANISHING_POINT: "/root/autodl-tmp/Datasets/VP/train_day.json"
 PATH_BLUR_CONS: True
+TWO_PC_AUG: False

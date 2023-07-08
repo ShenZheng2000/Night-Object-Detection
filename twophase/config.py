@@ -83,3 +83,6 @@ def add_teacher_config(cfg):
     _C.VANISHING_POINT = None
     _C.PATH_BLUR_CONS = False
     _C.PATH_BLUR_VAR = False
+    
+    # NOTE: check if using 2pcnet's augmentation (default is True)
+    _C.TWO_PC_AUG = True

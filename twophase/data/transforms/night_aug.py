@@ -102,7 +102,8 @@ class NightAug:
                 key_point=None,
                 vanishing_point=None, 
                 path_blur_cons=False,
-                path_blur_var=False):
+                path_blur_var=False,
+                two_pc_aug=True):
         for sample in x:
 
             # print("sample is", sample)
@@ -128,59 +129,60 @@ class NightAug:
             ins = sample['instances']
             g_b_flag = True
 
-            # TODO: comment this for debug only
-            # # Guassian Blur
-            # if R.random()>0.5:
-            #     img = self.gaussian(img)
-            
-            # cln_img_zero = img.detach().clone()
+            if two_pc_aug:
 
-            # # Gamma
-            # if R.random()>0.5:
-            #     cln_img = img.detach().clone()
-            #     val = 1/(R.random()*0.8+0.2)
-            #     img = T.functional.adjust_gamma(img,val)
-            #     img= self.mask_img(img,cln_img)
-            #     g_b_flag = False
-            
-            # # Brightness
-            # if R.random()>0.5 or g_b_flag:
-            #     cln_img = img.detach().clone()
-            #     val = R.random()*0.8+0.2
-            #     img = T.functional.adjust_brightness(img,val)
-            #     img= self.mask_img(img,cln_img)
+                # Guassian Blur
+                if R.random()>0.5:
+                    img = self.gaussian(img)
+                
+                cln_img_zero = img.detach().clone()
 
-            # # Contrast
-            # if R.random()>0.5:
-            #     cln_img = img.detach().clone()
-            #     val = R.random()*0.8+0.2
-            #     img = T.functional.adjust_contrast(img,val)
-            #     img= self.mask_img(img,cln_img)
-            # img= self.mask_img(img,cln_img_zero)
+                # Gamma
+                if R.random()>0.5:
+                    cln_img = img.detach().clone()
+                    val = 1/(R.random()*0.8+0.2)
+                    img = T.functional.adjust_gamma(img,val)
+                    img= self.mask_img(img,cln_img)
+                    g_b_flag = False
+                
+                # Brightness
+                if R.random()>0.5 or g_b_flag:
+                    cln_img = img.detach().clone()
+                    val = R.random()*0.8+0.2
+                    img = T.functional.adjust_brightness(img,val)
+                    img= self.mask_img(img,cln_img)
 
-            # prob = 0.5
-            # while R.random()>prob:
-            #     img=self.gaussian_heatmap(img)
-            #     prob+=0.1
+                # Contrast
+                if R.random()>0.5:
+                    cln_img = img.detach().clone()
+                    val = R.random()*0.8+0.2
+                    img = T.functional.adjust_contrast(img,val)
+                    img= self.mask_img(img,cln_img)
+                img= self.mask_img(img,cln_img_zero)
 
-            # #Noise
-            # if R.random()>0.5:
-            #     n = torch.clamp(torch.normal(0,R.randint(50),img.shape),min=0).cuda()
-            #     img = n + img
-            #     img = torch.clamp(img,max = 255).type(torch.uint8)
+                prob = 0.5
+                while R.random()>prob:
+                    img=self.gaussian_heatmap(img)
+                    prob+=0.1
 
-            # # Apply motion blur
-            # # if True:
-            # if R.random()>0.5:
-            #     img = self.apply_motion_blur(img, motion_blur=motion_blur, motion_blur_rand=motion_blur_rand)
+                #Noise
+                if R.random()>0.5:
+                    n = torch.clamp(torch.normal(0,R.randint(50),img.shape),min=0).cuda()
+                    img = n + img
+                    img = torch.clamp(img,max = 255).type(torch.uint8)
 
-            # # Light Rendering
-            # # if True:
-            # if R.random()>0.5:
-            #     # start_time = time.time()
-            #     img = self.apply_light_render(img, ins, file_name, key_point, light_render, light_high, flip)
-            #     # end_time = time.time()
-            #     # print(f"apply_light_render elapsed {end_time - start_time}:.3f")
+            # Apply motion blur
+            # if True:
+            if R.random()>0.5:
+                img = self.apply_motion_blur(img, motion_blur=motion_blur, motion_blur_rand=motion_blur_rand)
+
+            # Light Rendering
+            # if True:
+            if R.random()>0.5:
+                # start_time = time.time()
+                img = self.apply_light_render(img, ins, file_name, key_point, light_render, light_high, flip)
+                # end_time = time.time()
+                # print(f"apply_light_render elapsed {end_time - start_time}:.3f")
 
             # save_image(img / 255.0, 'before_blur.png')
 
