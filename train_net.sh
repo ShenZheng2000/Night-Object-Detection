@@ -241,7 +241,7 @@
 # TODO: change configs and use 3 gpu for training
 nohup \
 python train_net.py \
-      --num-gpus 1 \
+      --num-gpus 3 \
       --config configs/bdd100k_path_blur_cons.yaml \
       OUTPUT_DIR outputs/path_blur_cons_7_5 \
       > path_blur_cons_7_5.out 2>&1 &
