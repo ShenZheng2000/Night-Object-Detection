@@ -262,3 +262,5 @@ python train_net.py \
       --config configs/bdd100k_path_blur_cons_prob05_yespc.yaml \
       OUTPUT_DIR outputs/path_blur_cons_7_8_v2 \
       > path_blur_cons_7_8_v2.out 2>&1 &
+
+# TODO: reflection rendering experiments
