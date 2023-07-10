@@ -263,10 +263,19 @@
 #       OUTPUT_DIR outputs/path_blur_cons_7_8_v2 \
 #       > path_blur_cons_7_8_v2.out 2>&1 &
 
-# TODO: reflection rendering experiments
+# # TODO: reflection rendering experiments
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_reflect_white_100.yaml \
+#       OUTPUT_DIR outputs/reflect_white_100_7_9_v1 \
+#       > reflect_white_100_7_9_v1.out 2>&1 &
+
+
+# TODO: masking on source AND target
 nohup \
 python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_reflect_white_100.yaml \
-      OUTPUT_DIR outputs/reflect_white_100_7_9_v1 \
-      > reflect_white_100_7_9_v1.out 2>&1 &
+      --num-gpus 1 \
+      --config configs/bdd100k_mask_src_tgt.yaml \
+      OUTPUT_DIR outputs/mask_src_7_10_v1 \
+      > mask_src_7_10_v1.out 2>&1 &

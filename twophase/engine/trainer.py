@@ -8,6 +8,7 @@ from fvcore.nn.precise_bn import get_bn_modules
 import numpy as np
 from collections import OrderedDict
 import torchvision.transforms as T
+import sys
 
 import torchvision
 from torchvision.utils import save_image
@@ -523,29 +524,9 @@ class TwoPCTrainer(DefaultTrainer):
                                                 )
             label_data.extend(label_data_aug)
 
-            # NOTE: original seems to be BGR instead of RGB
             if self.cfg.USE_DEBUG:
-                for i in range(6):
-
-                    image = label_data[i]['image']
-                    aug_image = label_data_aug[i]['image']
-
-                    # print(aug_image.min(), aug_image.max())
-                    image = (image - image.min()) / (image.max() - image.min())
-                    aug_image = (aug_image - aug_image.min()) / (aug_image.max() - aug_image.min())
-                    
-                    # Switch from BGR to RGB
-                    print("image shape", image.shape)
-                    print("aug_image shape", aug_image.shape)
-                    image = torch.flip(image, [0])
-                    aug_image = torch.flip(aug_image, [0])
-                    
-                    out_dir = 'aug_image/light_reflect'
-                    os.makedirs(out_dir, exist_ok=True)
-                    save_image(image, f'{out_dir}/img_{i}.png')
-                    save_image(aug_image, f'{out_dir}/aug_{i}.png')
-
-                import sys
+                print("saving self.cfg.USE_DEBUG")
+                save_normalized_images(label_data, label_data_aug, 'debug_image/night_aug')
                 sys.exit(1)
 
         
@@ -555,20 +536,34 @@ class TwoPCTrainer(DefaultTrainer):
             for i in range(len(label_data)):
                 label_mask_data[i]['image'] = self.masking(label_data[i]['image'].to('cuda')) # speed up with GPU
 
-                # ########## For visualization with debug purposes ##########
-                # # Normalize the images to be in the range [0, 1]
-                # src_image = label_data[i]['image']
-                # src_image = (src_image - src_image.min()) / (src_image.max() - src_image.min())
+            # ########## For visualization with debug purposes ##########
+            # if self.cfg.USE_SRC_DEBUG:
 
-                # mask_image = label_mask_data[i]['image']
-                # mask_image = (mask_image - mask_image.min()) / (mask_image.max() - mask_image.min())
+            #     # Normalize the images to be in the range [0, 1]
+            #     src_image = label_data[i]['image']
+            #     src_image = (src_image - src_image.min()) / (src_image.max() - src_image.min())
 
-                # # Save the images
-                # save_image(src_image, f'tmp_src/src_{i}.png')
-                # save_image(mask_image, f'tmp_src/mask_{i}.png')
+            #     mask_image = label_mask_data[i]['image']
+            #     mask_image = (mask_image - mask_image.min()) / (mask_image.max() - mask_image.min())
+
+            #     # Save the images
+            #     out_dir = 'aug_image/src_masks'
+            #     os.makedirs(out_dir, exist_ok=True)
+            #     save_image(image, f'{out_dir}/src_{i}.png')
+            #     save_image(aug_image, f'{out_dir}/mask_{i}.png')
+
+            if self.cfg.USE_SRC_DEBUG:
+                print("saving USE_SRC_DEBUG")
+                save_normalized_images(label_data, label_mask_data, 'debug_image/src_mask')
+                sys.exit(1)
     
         # burn-in stage (supervised training with labeled data)
-        if self.iter < self.cfg.SEMISUPNET.BURN_UP_STEP:
+        if not self.cfg.USE_TGT_DEBUG:
+            BURN_UP_STEP = self.cfg.SEMISUPNET.BURN_UP_STEP
+        else:
+            BURN_UP_STEP = 0
+
+        if self.iter < BURN_UP_STEP:
 
             record_dict, _, _, _ = self.model(
                 label_data, branch="supervised")
@@ -627,24 +622,31 @@ class TwoPCTrainer(DefaultTrainer):
                         unlabel_mask_data[i]['image'] = self.masking(unlabel_data[i]['image'].to('cuda')) # speed up with GPU
 
                     # ########## For visualization with debug purposes ##########
-                    # # Normalize the images to be in the range [0, 1]
-                    # print("start visualization")
-                    # src_image = unlabel_data[i]['image']
-                    # src_image = (src_image - src_image.min()) / (src_image.max() - src_image.min())
+                    # if self.USE_TGT_DEBUG:
 
-                    # dep_image = unlabel_dep_data[i]['image']
-                    # dep_image = (dep_image - dep_image.min()) / (dep_image.max() - dep_image.min())
+                    #     # Normalize the images to be in the range [0, 1]
+                    #     src_image = unlabel_data[i]['image']
+                    #     src_image = (src_image - src_image.min()) / (src_image.max() - src_image.min())
 
-                    # mask_image = unlabel_mask_data[i]['image']
-                    # mask_image = (mask_image - mask_image.min()) / (mask_image.max() - mask_image.min())
+                    #     # dep_image = unlabel_dep_data[i]['image']
+                    #     # dep_image = (dep_image - dep_image.min()) / (dep_image.max() - dep_image.min())
 
-                    # # Save the images
-                    # save_image(src_image, f'tmp/src_{i}.png')
-                    # save_image(dep_image, f'tmp/dep_{i}.png')
-                    # save_image(mask_image, f'tmp/mask_{i}.png')
+                    #     mask_image = unlabel_mask_data[i]['image']
+                    #     mask_image = (mask_image - mask_image.min()) / (mask_image.max() - mask_image.min())
 
-                    # import sys
-                    # sys.exit(1)
+                    #     # Save the images
+                    #     out_dir = 'aug_image/src_masks'
+                    #     os.makedirs(out_dir, exist_ok=True)
+                    #     save_image(image, f'{out_dir}/tgt_{i}.png')
+                    #     save_image(mask_image, f'{out_dir}/mask_{i}.png')
+
+                    #     import sys
+                    #     sys.exit(1)
+
+                if self.cfg.USE_TGT_DEBUG:
+                    print("saving USE_TGT_DEBUG")
+                    save_normalized_images(unlabel_data, unlabel_mask_data, 'debug_image/tgt_mask')
+                    sys.exit(1)
                 
                 _ = self.get_label(unlabel_mask_data)
                 unlabel_mask_data = self.remove_label(unlabel_mask_data)
@@ -1079,3 +1081,52 @@ class BaselineTrainer(DefaultTrainer):
 #     adjusted_threshold = default_threshold - (default_threshold - min_threshold) * normalized_depth
 
 #     return adjusted_threshold
+
+
+def save_normalized_images(data, data_aug, out_dir):
+    """
+    This function takes in two lists of image data, normalizes and saves them.
+
+    Inputs:
+    - data, data_aug: Lists containing dictionaries with 'image' key holding the image tensors.
+    - out_dir: output directory for images or image folders
+
+    Outputs:
+    - None. This function saves the images in the specified output directory.
+    """
+    # Ensure the input data lists are of the same length
+    assert len(data) >= len(data_aug), f"length invalid! len(data) = {len(data)}, len(data_aug) = {len(data_aug)}"
+
+    # assert (data[0]['image'].device) == (data_aug[0]['image'].device), print(f"device mismatch! \
+    #                                          data.device = {data[0]['image'].device}, \
+    #                                          data_aug.device = {data_aug[0]['image'].device}")
+
+    # Initialize a counter for the number of images saved
+    image_counter = 0
+
+    for i in range(len(data)):
+        # If we have already saved 6 images, break the loop
+        if image_counter >= 6:
+            break
+
+        image = data[i]['image'].cuda()
+        aug_image = data_aug[i]['image'].cuda()
+
+        # Normalize the images
+        image = (image - image.min()) / (image.max() - image.min())
+        aug_image = (aug_image - aug_image.min()) / (aug_image.max() - aug_image.min())
+
+        # Switch from BGR to RGB
+        image = torch.flip(image, [0])
+        aug_image = torch.flip(aug_image, [0])
+
+        # Concatenate images along width dimension
+        combined_image = torch.cat((image, aug_image), 2)  # assumes image size is (C, H, W)
+
+        os.makedirs(out_dir, exist_ok=True)
+        
+        # Save the combined image
+        save_image(combined_image, f'{out_dir}/img_{i}.png')
+
+        # Increment the counter
+        image_counter += 1

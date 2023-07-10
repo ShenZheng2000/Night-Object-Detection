@@ -94,3 +94,5 @@ def add_teacher_config(cfg):
 
     # NOTE: debug_mode
     _C.USE_DEBUG = False
+    _C.USE_SRC_DEBUG = False
+    _C.USE_TGT_DEBUG = False
