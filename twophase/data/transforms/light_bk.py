@@ -5,7 +5,6 @@ from detectron2.structures import Boxes
 from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
 import json
 import time
-import random
 
 
 def generate_light_color():
@@ -13,24 +12,15 @@ def generate_light_color():
     return white
 
 
-# NOTE: replace with reflection-aware version
-def gaussian_heatmap_kernel(height, width, ch, cw, y1, y2, HIGH, wei, device, use_reflect=False):
-    """
-    This function generates a Gaussian heatmap (kernel) and a rectangular reflection of the light region in the kernel.
+def gaussian_heatmap_kernel(height, width, ch, cw, HIGH, wei, device):
 
-    Inputs:
-    - height, width: The height and width of the image.
-    - ch, cw: The center coordinates of the Gaussian distribution in the kernel.
-    - y1, y2: The y coordinates defining the vertical span of the rectangular reflection region.
-    - HIGH: The standard deviation of the Gaussian distribution in the kernel.
-    - wei: A weight factor applied to HIGH to adjust the size of the light region.
-    - device: The device on which to perform the calculations (e.g., 'cpu' or 'cuda').
-
-    Outputs:
-    - kernel: The generated Gaussian heatmap.
-    - reflection: The rectangular reflection of the light region in the kernel.
-    """
+    # HIGH = compute_high(height, width, ch, cw, vp)
     HIGH = max(1, int(HIGH * wei))
+    # print("HIGH is", HIGH)
+
+    # NOTE: change scale to fixed for now. 
+    # sig = torch.randint(low=1, high=HIGH, size=(1,)).cuda()[0]
+    # center = (torch.tensor(ch).cuda(), torch.tensor(cw).cuda())
     sig = torch.tensor(HIGH).to(device)
     center = (ch, cw)
     x_axis = torch.linspace(0, height-1, height).to(device) - center[0]
@@ -38,37 +28,7 @@ def gaussian_heatmap_kernel(height, width, ch, cw, y1, y2, HIGH, wei, device, us
     xx, yy = torch.meshgrid(x_axis, y_axis)
     kernel = torch.exp(-0.5 * (torch.square(xx) + torch.square(yy)) / torch.square(sig))
 
-    if use_reflect:
-
-        # Define the boundaries of the reflection
-        x1 = max(0, cw - 3 * HIGH)
-        x2 = min(width, cw + 3 * HIGH)
-
-        # Compute the width and height of the rectangular region
-        rect_width = x2 - x1
-        rect_height = y2 - y1
-
-        assert ch < y1 < y2 < height , print(f"rect_height invalid: ch = {ch}, y1 = {y1}, y2 = {y2}, height = {height}")
-
-        # Crop the light region from the kernel
-        light_region = kernel[ch-3*HIGH:ch+3*HIGH, cw-3*HIGH:cw+3*HIGH]
-        
-        # Resize the light region to fit the dimensions of the rectangular region
-        light_region_resized = F.interpolate(light_region[None, None, ...], 
-                                            size=(rect_height, rect_width), 
-                                            mode='bilinear', 
-                                            align_corners=False)[0, 0]
-        
-        # Create an empty tensor of the same size as the image
-        reflection = torch.zeros((height, width), device=device)
-        
-        # Place the resized light region in the rectangular region in the image
-        reflection[y1:y2, x1:x2] = light_region_resized
-
-        return kernel, reflection
-
-    else:
-        return kernel, None
+    return kernel
 
 
 def convert_bbox_format(bbox):
@@ -145,7 +105,7 @@ def get_keypoints(file_name, key_point, ratio, flip_transform):
 
 
 # NOTE: old code without vec. 
-def generate_light(image, ins, keypoints, HIGH, use_reflect=False):
+def generate_light(image, ins, keypoints, HIGH):
     device = image.device
 
     assert image.max() <= 255 and image.min() >= 0, "Image should have intensity values in the range [0, 255]"
@@ -154,12 +114,9 @@ def generate_light(image, ins, keypoints, HIGH, use_reflect=False):
         raise ValueError("Image should be CxHxW and have 3 color channels")
 
     kernels = []
-    reflects = []
     img_area = image.shape[1] * image.shape[2]  # Total area of the image
 
-    # NOTE: keypoints for wheels
-    indices_of_light = [4, 3, 13, 14] # front_light_left, front_light_right, rear_light_left, rear_light_right
-    indices_of_wheel = [8, 20, 9, 19] # front_wheel_left, front_wheel_right, rear_wheel_left, rear_wheel_right
+    indices_to_draw = [3, 4, 13, 14] # headlight and tailights
 
     # read bboxes from sample
     # start_time = time.time()
@@ -171,46 +128,28 @@ def generate_light(image, ins, keypoints, HIGH, use_reflect=False):
     # convert [x1, y1, x2, y2] to [x1, y1, w, h]
     car_bboxes = [convert_bbox_format(bbox) for bbox in car_bboxes]
 
-    # Create a mapping from lights to wheels
-    light_wheel_mapping = {light_idx: wheel_idx for light_idx, wheel_idx in zip(indices_of_light, indices_of_wheel)}
-
     # print("image device is", image.device)
     # print("keypoints device", keypoints.device)
     # end_time_1 = time.time()
     # print(f"convert_bbox_format {end_time_1 - end_time_0_5}")
 
-    # NOTE: use indices_of_light and indices_of_wheel
-    for idx in indices_of_light:
+    for idx in indices_to_draw:
         x, y, c = keypoints[idx-1]
         if c > 0:
             weight = 0.0  # Default weight if keypoint is not in any bounding box
             # Check if the keypoint is inside a car bounding box
             for bbox in car_bboxes:
+                # print("bbox is", bbox)
                 x1, y1, w, h = bbox
                 if x1 <= x <= x1+w and y1 <= y <= y1+h:
                     # If keypoint is inside the bounding box, calculate the weight
                     bbox_area = w * h
                     weight = math.sqrt(bbox_area / img_area)
+                    # print("Old Code: weight is", weight)
                     break
 
-            wheel_x, wheel_y, wheel_c = keypoints[light_wheel_mapping[idx]-1]
-            
-            # Randomize y2
-            y1 = wheel_y
-            y2 = random.randint(y1, image.shape[1])
-
-            kernel, reflect = gaussian_heatmap_kernel(image.shape[1], 
-                                                      image.shape[2], 
-                                                      y,
-                                                      x,  
-                                                      y1,
-                                                      y2,
-                                                      HIGH=HIGH, 
-                                                      wei=weight, 
-                                                      device=device, 
-                                                      use_reflect=use_reflect and wheel_c > 0) # NOTE: y->h, x->w
+            kernel = gaussian_heatmap_kernel(image.shape[1], image.shape[2], y, x, HIGH=HIGH, wei=weight, device=device) # NOTE: y->h, x->w
             kernels.append(kernel)
-            reflects.append(reflect)
 
     # end_time_2 = time.time()
     # print(f"gaussian_heatmap_kernel {end_time_2 - end_time_1}")
@@ -226,11 +165,6 @@ def generate_light(image, ins, keypoints, HIGH, use_reflect=False):
     color = generate_light_color().to(device) # No need to scale
     # print(f"image min {image.min()} max {image.max()}")
     new_img = (image * (1-aggregate_kernel) + color * aggregate_kernel).type(torch.uint8)
-
-    # NOTE: add light reflected image here 
-    if use_reflect:
-        aggregate_reflect = torch.clamp(torch.sum(torch.stack(reflects), 0), 0, 1)
-        new_img = (new_img * (1-aggregate_reflect) + color * aggregate_reflect).type(torch.uint8)
 
     # end_time_3 = time.time()
     # print(f"aggregation {end_time_3 - end_time_2}")

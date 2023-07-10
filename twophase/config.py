@@ -87,3 +87,6 @@ def add_teacher_config(cfg):
     # NOTE: check if using 2pcnet's augmentation (default is True)
     _C.TWO_PC_AUG = True
     _C.AUG_PROB = 0.5
+
+    # NOTE: add reflect
+    _C.REFLECT_RENDER = False

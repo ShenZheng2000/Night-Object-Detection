@@ -83,12 +83,13 @@ class NightAug:
         return img
     
 
-    def apply_light_render(self, img, ins, file_name, key_point, light_render, light_high, flip):
+    def apply_light_render(self, img, ins, file_name, key_point, light_render, light_high, flip, reflect_render):
 
         if light_render:
             keypoints_list = get_keypoints(file_name, key_point, self.ratio, flip)
             for keypoints in keypoints_list:
-                img = generate_light(image=img, ins=ins, keypoints=keypoints, HIGH=light_high)
+                print("img shape", img.shape)
+                img = generate_light(image=img, ins=ins, keypoints=keypoints, HIGH=light_high, reflect_render=reflect_render)
 
         return img
 
@@ -103,6 +104,7 @@ class NightAug:
                 vanishing_point=None, 
                 path_blur_cons=False,
                 path_blur_var=False,
+                reflect_render=False,
                 two_pc_aug=True,
                 aug_prob=0.5):
         for sample in x:
@@ -181,17 +183,18 @@ class NightAug:
                 img = self.apply_motion_blur(img, motion_blur=motion_blur, motion_blur_rand=motion_blur_rand)
 
             # Light Rendering
-            # if True:
-            if R.random()>aug_prob:
+            # TODO: change to random later after debug
+            if True:
+            # if R.random()>aug_prob:
                 # start_time = time.time()
-                img = self.apply_light_render(img, ins, file_name, key_point, light_render, light_high, flip)
+                img = self.apply_light_render(img, ins, file_name, key_point, light_render, light_high, flip, reflect_render)
                 # end_time = time.time()
                 # print(f"apply_light_render elapsed {end_time - start_time}:.3f")
 
             # save_image(img / 255.0, 'before_blur.png')
 
-            if True:
-            # if R.random()>aug_prob: # TODO: change to this for training
+            # if True:
+            if R.random()>aug_prob:
                 img = self.apply_path_blur(img, 
                                             file_name, 
                                             vanishing_point, 

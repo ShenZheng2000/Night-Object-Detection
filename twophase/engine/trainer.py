@@ -515,34 +515,35 @@ class TwoPCTrainer(DefaultTrainer):
                                                 vanishing_point= self.vanishing_point,
                                                 path_blur_cons=self.cfg.PATH_BLUR_CONS, 
                                                 path_blur_var=self.cfg.PATH_BLUR_VAR,
+                                                reflect_render=self.cfg.REFLECT_RENDER,
                                                 two_pc_aug=self.cfg.TWO_PC_AUG,
                                                 aug_prob=self.cfg.AUG_PROB,
                                                 )
             label_data.extend(label_data_aug)
 
-            # # NOTE: original seems to be BGR instead of RGB
-            # for i in range(6):
+            # NOTE: original seems to be BGR instead of RGB
+            for i in range(6):
 
-            #     image = label_data[i]['image']
-            #     aug_image = label_data_aug[i]['image']
+                image = label_data[i]['image']
+                aug_image = label_data_aug[i]['image']
 
-            #     # print(aug_image.min(), aug_image.max())
-            #     image = (image - image.min()) / (image.max() - image.min())
-            #     aug_image = (aug_image - aug_image.min()) / (aug_image.max() - aug_image.min())
+                # print(aug_image.min(), aug_image.max())
+                image = (image - image.min()) / (image.max() - image.min())
+                aug_image = (aug_image - aug_image.min()) / (aug_image.max() - aug_image.min())
                 
-            #     # Switch from BGR to RGB
-            #     print("image shape", image.shape)
-            #     print("aug_image shape", aug_image.shape)
-            #     image = torch.flip(image, [0])
-            #     aug_image = torch.flip(aug_image, [0])
+                # Switch from BGR to RGB
+                print("image shape", image.shape)
+                print("aug_image shape", aug_image.shape)
+                image = torch.flip(image, [0])
+                aug_image = torch.flip(aug_image, [0])
                 
-            #     out_dir = 'aug_image/path_blur'
-            #     os.makedirs(out_dir, exist_ok=True)
-            #     save_image(image, f'{out_dir}/img_{i}.png')
-            #     save_image(aug_image, f'{out_dir}/aug_{i}.png')
+                out_dir = 'aug_image/light_reflect'
+                os.makedirs(out_dir, exist_ok=True)
+                save_image(image, f'{out_dir}/img_{i}.png')
+                save_image(aug_image, f'{out_dir}/aug_{i}.png')
 
-            # import sys
-            # sys.exit(1)
+            import sys
+            sys.exit(1)
 
         
         # NOTE: add masking for src images
