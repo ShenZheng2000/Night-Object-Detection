@@ -88,7 +88,6 @@ class NightAug:
         if light_render:
             keypoints_list = get_keypoints(file_name, key_point, self.ratio, flip)
             for keypoints in keypoints_list:
-                print("img shape", img.shape)
                 img = generate_light(image=img, ins=ins, keypoints=keypoints, HIGH=light_high, reflect_render=reflect_render)
 
         return img
