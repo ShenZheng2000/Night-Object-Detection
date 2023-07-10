@@ -479,7 +479,7 @@ class TwoPCTrainer(DefaultTrainer):
             )
         
         # 10. Compute consistency loss
-        # NOTE: add one-stage choice
+        # NOTE: add one-stage choice (not working for now)
         if self.cfg.ONE_STAGE:
             cons_loss = self.consistency_losses.losses(roi_stu,proposals_roih_unsup,prefix=prefix)
         else:
@@ -537,21 +537,6 @@ class TwoPCTrainer(DefaultTrainer):
                 label_mask_data[i]['image'] = self.masking(label_data[i]['image'].to('cuda')) # speed up with GPU
 
             # ########## For visualization with debug purposes ##########
-            # if self.cfg.USE_SRC_DEBUG:
-
-            #     # Normalize the images to be in the range [0, 1]
-            #     src_image = label_data[i]['image']
-            #     src_image = (src_image - src_image.min()) / (src_image.max() - src_image.min())
-
-            #     mask_image = label_mask_data[i]['image']
-            #     mask_image = (mask_image - mask_image.min()) / (mask_image.max() - mask_image.min())
-
-            #     # Save the images
-            #     out_dir = 'aug_image/src_masks'
-            #     os.makedirs(out_dir, exist_ok=True)
-            #     save_image(image, f'{out_dir}/src_{i}.png')
-            #     save_image(aug_image, f'{out_dir}/mask_{i}.png')
-
             if self.cfg.USE_SRC_DEBUG:
                 print("saving USE_SRC_DEBUG")
                 save_normalized_images(label_data, label_mask_data, 'debug_image/src_mask')
@@ -567,6 +552,18 @@ class TwoPCTrainer(DefaultTrainer):
 
             record_dict, _, _, _ = self.model(
                 label_data, branch="supervised")
+
+            # NOTE: skip this part since no teacher-student in source domain
+            # record_dict, _, roi_stu_src_1, _ = self.model(
+            #     label_data, branch="supervised")
+
+            # record_dict, _, roi_stu_src_2, _ = self.model(
+            #     label_mask_data, branch='supervised'
+            # )
+
+            # if self.cfg.MASKING_CONS_SRC:
+            #     mask_stu_cons_loss = self.consistency_losses.losses(roi_stu_src_1, roi_stu_src_2, use_match=True, prefix='mask_stu_src')
+            #     record_dict.update(mask_stu_cons_loss)
             
             # weight losses
             loss_dict = {}
@@ -621,33 +618,7 @@ class TwoPCTrainer(DefaultTrainer):
                     else:
                         unlabel_mask_data[i]['image'] = self.masking(unlabel_data[i]['image'].to('cuda')) # speed up with GPU
 
-                    # ########## For visualization with debug purposes ##########
-                    # if self.USE_TGT_DEBUG:
 
-                    #     # Normalize the images to be in the range [0, 1]
-                    #     src_image = unlabel_data[i]['image']
-                    #     src_image = (src_image - src_image.min()) / (src_image.max() - src_image.min())
-
-                    #     # dep_image = unlabel_dep_data[i]['image']
-                    #     # dep_image = (dep_image - dep_image.min()) / (dep_image.max() - dep_image.min())
-
-                    #     mask_image = unlabel_mask_data[i]['image']
-                    #     mask_image = (mask_image - mask_image.min()) / (mask_image.max() - mask_image.min())
-
-                    #     # Save the images
-                    #     out_dir = 'aug_image/src_masks'
-                    #     os.makedirs(out_dir, exist_ok=True)
-                    #     save_image(image, f'{out_dir}/tgt_{i}.png')
-                    #     save_image(mask_image, f'{out_dir}/mask_{i}.png')
-
-                    #     import sys
-                    #     sys.exit(1)
-
-                if self.cfg.USE_TGT_DEBUG:
-                    print("saving USE_TGT_DEBUG")
-                    save_normalized_images(unlabel_data, unlabel_mask_data, 'debug_image/tgt_mask')
-                    sys.exit(1)
-                
                 _ = self.get_label(unlabel_mask_data)
                 unlabel_mask_data = self.remove_label(unlabel_mask_data)
 
@@ -664,6 +635,12 @@ class TwoPCTrainer(DefaultTrainer):
                     record_dict.update(mask_stu_cons_loss)
                     record_dict.update(mask_teach_cons_loss)
 
+
+                # ########## For visualization with debug purposes ##########
+                if self.cfg.USE_TGT_DEBUG:
+                    print("saving USE_TGT_DEBUG")
+                    save_normalized_images(unlabel_data, unlabel_mask_data, 'debug_image/tgt_mask')
+                    sys.exit(1)
 
             # weight losses
             loss_dict = {}
@@ -822,8 +799,8 @@ class TwoPCTrainer(DefaultTrainer):
         return ret
 
 
-# NOTE: add baseline trainer based on AT
-# Supervised-only Trainer
+# # NOTE: add baseline trainer based on AT
+# # Supervised-only Trainer
 class BaselineTrainer(DefaultTrainer):
     def __init__(self, cfg):
         """

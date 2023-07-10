@@ -63,11 +63,13 @@ def add_teacher_config(cfg):
     _C.USE_MASK_SRC = False
     _C.MASKING_SPA = False
     _C.MASKING_CONS = False
+    _C.MASKING_CONS_SRC = False
     _C.MASKING_BLOCK_SIZE = 32
     _C.MASKING_RATIO = 0.3
     _C.MASKING_AUGMENTATION = False
     _C.PIXEL_MEAN = [102.9801, 115.9465, 122.7717]
     _C.PIXEL_STD = [1., 1., 1.]
+
 
 
     # NOTE: add motion blur

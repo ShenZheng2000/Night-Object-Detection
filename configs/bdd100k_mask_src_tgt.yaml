@@ -26,8 +26,8 @@ SOLVER:
   STEPS: (60000, 80000, 90000, 360000)
   FACTOR_LIST: (1, 1, 1, 1, 1)
   MAX_ITER: 100000
-  IMG_PER_BATCH_LABEL: 6 # NOTE: 18
-  IMG_PER_BATCH_UNLABEL: 6 # NOTE: 18
+  IMG_PER_BATCH_LABEL: 18 # NOTE: 18
+  IMG_PER_BATCH_UNLABEL: 18 # NOTE: 18
   BASE_LR: 0.04
 DATALOADER:
   SUP_PERCENT: 100.0
@@ -64,10 +64,7 @@ MASKING_RATIO: 0.3 # NOTE: 0.5
 MASKING_BLOCK_SIZE: 32 # NOTE: 32
 # TODO: depth info. to decrease mask size for farway size
 
-USE_DEBUG: False
-USE_SRC_DEBUG: False
-USE_TGT_DEBUG: True
-TWO_PC_AUG: False
+TWO_PC_AUG: True
 
 # TODO: add hyperparameters for mask ing like this
 # block_size=cfg.MODEL.MASKING_BLOCK_SIZE,

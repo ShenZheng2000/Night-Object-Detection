@@ -272,10 +272,19 @@
 #       > reflect_white_100_7_9_v1.out 2>&1 &
 
 
-# TODO: masking on source AND target
+# # TODO later: masking on source AND target
+# nohup \
+# python train_net.py \
+#       --num-gpus 1 \
+#       --config configs/bdd100k_mask_src_tgt.yaml \
+#       OUTPUT_DIR outputs/mask_src_7_10_v1 \
+#       > mask_src_7_10_v1.out 2>&1 &
+
+
+# NOTE: retrain this to debug
 nohup \
 python train_net.py \
-      --num-gpus 1 \
-      --config configs/bdd100k_mask_src_tgt.yaml \
-      OUTPUT_DIR outputs/mask_src_7_10_v1 \
-      > mask_src_7_10_v1.out 2>&1 &
+      --num-gpus 3 \
+      --config configs/bdd100k_mask_src.yaml \
+      OUTPUT_DIR outputs/mask_src_6_18_v2 \
+      > mask_src_6_18_v2.out 2>&1 &
