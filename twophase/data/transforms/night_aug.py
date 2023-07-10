@@ -83,12 +83,17 @@ class NightAug:
         return img
     
 
-    def apply_light_render(self, img, ins, file_name, key_point, light_render, light_high, flip, reflect_render):
+    def apply_light_render(self, img, ins, file_name, key_point, light_render, light_high, flip, reflect_render, hot_tail):
 
         if light_render:
             keypoints_list = get_keypoints(file_name, key_point, self.ratio, flip)
             for keypoints in keypoints_list:
-                img = generate_light(image=img, ins=ins, keypoints=keypoints, HIGH=light_high, reflect_render=reflect_render)
+                img = generate_light(image=img, 
+                                    ins=ins, 
+                                    keypoints=keypoints, 
+                                    HIGH=light_high, 
+                                    reflect_render=reflect_render,
+                                    hot_tail=hot_tail)
 
         return img
 
@@ -105,7 +110,14 @@ class NightAug:
                 path_blur_var=False,
                 reflect_render=False,
                 two_pc_aug=True,
-                aug_prob=0.5):
+                aug_prob=0.5,
+                hot_tail=False,
+                use_debug=False):
+
+        # NOTE: add debug mode here
+        if use_debug:
+            aug_prob = 0.0
+
         for sample in x:
 
             # print("sample is", sample)
@@ -177,22 +189,18 @@ class NightAug:
                     img = torch.clamp(img,max = 255).type(torch.uint8)
 
             # Apply motion blur
-            # if True:
             if R.random()>aug_prob:
                 img = self.apply_motion_blur(img, motion_blur=motion_blur, motion_blur_rand=motion_blur_rand)
 
             # Light Rendering
-            # TODO: change to random later after debug
-            if True:
-            # if R.random()>aug_prob:
+            if R.random()>aug_prob:
                 # start_time = time.time()
-                img = self.apply_light_render(img, ins, file_name, key_point, light_render, light_high, flip, reflect_render)
+                img = self.apply_light_render(img, ins, file_name, key_point, light_render, light_high, flip, reflect_render, hot_tail)
                 # end_time = time.time()
                 # print(f"apply_light_render elapsed {end_time - start_time}:.3f")
 
             # save_image(img / 255.0, 'before_blur.png')
 
-            # if True:
             if R.random()>aug_prob:
                 img = self.apply_path_blur(img, 
                                             file_name, 

@@ -136,6 +136,7 @@ def gaussian_heatmap_kernel(height, width, ch, cw, wheel_y1, wheel_y2, HIGH, wei
     kernel = torch.exp(-0.5 * (torch.square(xx) + torch.square(yy)) / torch.square(sig))
 
     if reflect_render:
+
         # Define the boundaries of the light
         std = 3 * HIGH
         x1 = max(0, int(cw-std))
@@ -147,18 +148,23 @@ def gaussian_heatmap_kernel(height, width, ch, cw, wheel_y1, wheel_y2, HIGH, wei
         wheel_y1 += 1.5 * HIGH
         wheel_y1 = min(height, wheel_y1)
 
-        # NOTE: hardcode reflecion length
+        # NOTE: hardcode reflection length as *4
         if wheel_y2 is None:
             wheel_y2 = wheel_y1 + 4 * (y2 - y1)
             wheel_y2 = min(height, wheel_y2)
             # print("wheel_y2 is", wheel_y2)
 
-        # Compute the width and height of the rectangular region
+        # Compute the width and height of the reflection rectangular region
+        # NOTE: add + 1 to avoid empty area
         rect_width = int(x2) - int(x1)
         rect_height = int(wheel_y2) - int(wheel_y1)
 
+        if rect_width == 0 or rect_height == 0:
+            print(f"rect_width = {rect_width}, rect_height = {rect_height}. Skipping reflection generation.")
+            return kernel, None
+
         assert ch <= wheel_y1 <= wheel_y2 <= height , \
-            print(f"rect_height invalid: ch = {ch}, wheel_y1 = {wheel_y1}, wheel_y2 = {wheel_y2}, height = {height}")
+            print(f"invalid vals: ch = {ch}, wheel_y1 = {wheel_y1}, wheel_y2 = {wheel_y2}, height = {height}")
 
         # Crop the lower half of the light region from the kernel
         light_region_half = kernel[y1 + ((y2-y1)//2):y2, x1:x2]
@@ -196,7 +202,7 @@ def apply_light_effect(light_type, kernels, image, color, color_hot=None):
 
 
 # NOTE: old code without vec. 
-def generate_light(image, ins, keypoints, HIGH, reflect_render=False):
+def generate_light(image, ins, keypoints, HIGH, reflect_render=False, hot_tail=False):
     device = image.device
 
     assert image.max() <= 255 and image.min() >= 0, "Image should have intensity values in the range [0, 255]"
@@ -268,13 +274,14 @@ def generate_light(image, ins, keypoints, HIGH, reflect_render=False):
     if not (kernels_head or kernels_rear):  # if no keypoints passed the confidence score check, return the original image
         return image
 
+    tail_type = "taillight" if hot_tail else "headlight"
 
     image = apply_light_effect("headlight", kernels_head, image, color_white)
-    image = apply_light_effect("taillight", kernels_rear, image, color_white, color_hot)
+    image = apply_light_effect(tail_type, kernels_rear, image, color_white, color_hot)
 
     if reflect_render:
         image = apply_light_effect("headlight", reflects_head, image, color_white)
-        image = apply_light_effect("taillight", reflects_rear, image, color_white, color_hot)
+        image = apply_light_effect(tail_type, reflects_rear, image, color_white, color_hot)
 
 
     if len(image.shape) == 4:

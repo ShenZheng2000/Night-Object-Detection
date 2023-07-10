@@ -265,9 +265,8 @@
 
 # TODO: reflection rendering experiments
 nohup \
-env CUDA_LAUNCH_BLOCKING=1 \
 python train_net.py \
-      --num-gpus 1 \
+      --num-gpus 3 \
       --config configs/bdd100k_reflect_white_100.yaml \
       OUTPUT_DIR outputs/reflect_white_100_7_9_v1 \
       > reflect_white_100_7_9_v1.out 2>&1 &
