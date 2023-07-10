@@ -182,6 +182,19 @@ def gaussian_heatmap_kernel(height, width, ch, cw, wheel_y1, wheel_y2, HIGH, wei
 
 
 
+def apply_light_effect(light_type, kernels, image, color, color_hot=None):
+    if kernels:
+        aggregate_kernel = torch.clamp(torch.sum(torch.stack(kernels), 0), 0, 1)
+        if light_type == "headlight":
+            image = (image * (1 - aggregate_kernel) + color * aggregate_kernel).type(torch.uint8)
+        elif light_type == "taillight":
+            aggregate_kernel_idx = (aggregate_kernel * (color_hot.shape[0] - 1)).long()
+            color = color_hot[aggregate_kernel_idx].permute(2, 0, 1)
+            image = (1 - aggregate_kernel.unsqueeze(0).unsqueeze(1)) * image \
+                        + aggregate_kernel.unsqueeze(0).unsqueeze(1) * color.to(device=image.device)
+    return image
+
+
 # NOTE: old code without vec. 
 def generate_light(image, ins, keypoints, HIGH, reflect_render=False):
     device = image.device
@@ -255,57 +268,13 @@ def generate_light(image, ins, keypoints, HIGH, reflect_render=False):
     if not (kernels_head or kernels_rear):  # if no keypoints passed the confidence score check, return the original image
         return image
 
-    # print(f"color_white = {color_white.shape}, color_hot = {color_hot.shape}")
-
-    # # Aggregate all kernels and make sure values are in range [0, 1]
-    # if kernels_head:
-    #     aggregate_kernel_head = torch.clamp(torch.sum(torch.stack(kernels_head), 0), 0, 1)
-    #     image = (image * (1 - aggregate_kernel_head) + color_white * aggregate_kernel_head).type(torch.uint8)
-
-    # if kernels_rear:
-    #     aggregate_kernel_rear = torch.clamp(torch.sum(torch.stack(kernels_rear), 0), 0, 1)
-    #     # print("aggregate_kernel_rear shape is", aggregate_kernel_rear.shape)
-    #     # print("aggregate_kernel_rear.min()", aggregate_kernel_rear.min())
-    #     # print("aggregate_kernel_rear.max()", aggregate_kernel_rear.max())
-
-    #     # Rescale the aggregate_kernel_rear values to match the range of indices in lut
-    #     aggregate_kernel_rear_idx = (aggregate_kernel_rear * (color_hot.shape[0] - 1)).long()
-    #     # print("aggregate_kernel_rear_idx shape", aggregate_kernel_rear_idx.shape)
-    #     # print("aggregate_kernel_rear_idx.min()", aggregate_kernel_rear_idx.min())
-    #     # print("aggregate_kernel_rear_idx.max()", aggregate_kernel_rear_idx.max())
-
-    #     # Apply color map
-    #     color_rear = color_hot[aggregate_kernel_rear_idx].permute(2, 0, 1)
-    #     # print("Color_rear shape after permute: ", color_rear.shape)
-    #     # print("color_rear[:, 0, 0]", color_rear[:, 0, 0])  # The color applied to the pixel at (0, 0)
-
-    #     image = (1 - aggregate_kernel_rear.unsqueeze(0).unsqueeze(1)) * image + \
-    #         aggregate_kernel_rear.unsqueeze(0).unsqueeze(1) * color_rear.to(device=image.device)
-
-
-    # # NOTE: add light reflected image here 
-    # if reflect_render:
-
-    #     if reflects_head:
-    #         aggregate_reflect_head = torch.clamp(torch.sum(torch.stack(reflects_head), 0), 0, 1)
-    #         image = (image * (1 - aggregate_reflect_head) + color_white * aggregate_reflect_head).type(torch.uint8)
-        
-    #     if reflects_rear:
-    #         aggregate_reflect_rear = torch.clamp(torch.sum(torch.stack(reflects_rear), 0), 0, 1)
-    #         aggregate_reflect_rear_idx = (aggregate_reflect_rear * (color_hot.shape[0] - 1)).long()
-
-    #         color_rear_reflect = color_hot[aggregate_reflect_rear_idx].permute(2, 0, 1)
-    #         # print("color_rear_reflect shape after permute: ", color_rear_reflect.shape)
-    #         image = (1 - aggregate_reflect_rear.unsqueeze(0).unsqueeze(1)) * image + \
-    #                     aggregate_reflect_rear.unsqueeze(0).unsqueeze(1) * color_rear_reflect.to(device=image.device)
-
 
     image = apply_light_effect("headlight", kernels_head, image, color_white)
-    image = apply_light_effect("taillight", kernels_rear, image, color_hot)
+    image = apply_light_effect("taillight", kernels_rear, image, color_white, color_hot)
 
     if reflect_render:
         image = apply_light_effect("headlight", reflects_head, image, color_white)
-        image = apply_light_effect("taillight", reflects_rear, image, color_hot)
+        image = apply_light_effect("taillight", reflects_rear, image, color_white, color_hot)
 
 
     if len(image.shape) == 4:
@@ -314,14 +283,3 @@ def generate_light(image, ins, keypoints, HIGH, reflect_render=False):
     return image.type(torch.uint8)
 
 
-def apply_light_effect(light_type, kernels, image, color, color_hot=None):
-    if kernels:
-        aggregate_kernel = torch.clamp(torch.sum(torch.stack(kernels), 0), 0, 1)
-        if light_type == "headlight":
-            image = (image * (1 - aggregate_kernel) + color * aggregate_kernel).type(torch.uint8)
-        elif light_type == "taillight":
-            aggregate_kernel_idx = (aggregate_kernel * (color_hot.shape[0] - 1)).long()
-            color = color_hot[aggregate_kernel_idx].permute(2, 0, 1)
-            image = (1 - aggregate_kernel.unsqueeze(0).unsqueeze(1)) * image \
-                        + aggregate_kernel.unsqueeze(0).unsqueeze(1) * color.to(device=image.device)
-    return image
