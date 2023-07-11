@@ -6,7 +6,7 @@ from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTran
 import json
 import time
 import random
-
+import torch.nn.functional as F
 
 def generate_light_color():
     white = torch.tensor([255, 255, 255]).view(3, 1, 1)
