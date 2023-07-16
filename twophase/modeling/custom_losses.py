@@ -45,7 +45,7 @@ class ConsistencyLosses:
     def __init__(self):
         self.kldivloss = KLDivLoss(reduction="none", log_target=False)
 
-    def losses(self, student_roi, teacher_roi, use_match=False, prefix=None):
+    def losses(self, student_roi, teacher_roi, use_match=False, prefix=None, wei=1.0):
 
         loss = {}
         class_scores_student = []
@@ -80,8 +80,8 @@ class ConsistencyLosses:
         kl_loss = torch.mean(kl_loss)
 
         if prefix is None:
-            loss['loss_cls_pseudo'] = kl_loss
+            loss['loss_cls_pseudo'] = kl_loss * wei
         else:
-            loss[f'{prefix}_loss_cls_pseudo'] = kl_loss
+            loss[f'{prefix}_loss_cls_pseudo'] = kl_loss * wei
 
         return loss

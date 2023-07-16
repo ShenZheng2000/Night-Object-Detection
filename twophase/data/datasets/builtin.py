@@ -222,6 +222,17 @@ register_coco_instances("bdd100k_train_last",
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_night_cur.json', 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
 
+# TODO: register for c.l. (w/ simple swap)
+register_coco_instances("bdd100k_train_mid_swap", 
+{}, 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_day_dawn_dusk_cur.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
+
+register_coco_instances("bdd100k_train_last_swap", 
+{}, 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_dawn_dusk_night_cur.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
+
 
 register_coco_instances("bdd100k_night_val", 
 {}, 
@@ -255,7 +266,7 @@ register_coco_instances("bdd100k_night_val_foggy",
 
 register_coco_instances("bdd100k_night_train_depth", 
 {}, 
-'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_night_png.json', # TODO: change the surfix to png
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_night_png.json',
 '/home/aghosh/Projects/2PCNet/Datasets/Depth/train__night_dawn_dusk')
 
 register_coco_instances("sim_day_train",

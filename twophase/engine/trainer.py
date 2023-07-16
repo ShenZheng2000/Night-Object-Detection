@@ -529,7 +529,7 @@ class TwoPCTrainer(DefaultTrainer):
             
             # last stage => adapt from dawn/dusk  (src) to night  (tgt)
             elif last_stage:
-                label_data = unlabel_data_mid
+                # label_data = unlabel_data_mid
                 unlabel_data = unlabel_data_last
 
         else:
@@ -658,9 +658,24 @@ class TwoPCTrainer(DefaultTrainer):
                 
                 # NOTE: add mask consistency here
                 if self.cfg.MASKING_CONS:
-                    # TODO: maybe assign a 0.5 or 0.2 or 0.1 to reduce these losses
-                    mask_stu_cons_loss = self.consistency_losses.losses(roi_stu_1, roi_stu_2, use_match=True, prefix='mask_stu')
-                    mask_teach_cons_loss = self.consistency_losses.losses(roi_teach_1, roi_teach_2, use_match=True, prefix='mask_teach')
+                    
+                    # cal cons loss
+                    mask_stu_cons_loss = self.consistency_losses.losses(roi_stu_1, 
+                                                                        roi_stu_2, 
+                                                                        use_match=True, 
+                                                                        prefix='mask_stu',
+                                                                        wei=self.cfg.MASKING_CONS_WEI)
+                    mask_teach_cons_loss = self.consistency_losses.losses(roi_teach_1, 
+                                                                        roi_teach_2, 
+                                                                        use_match=True, 
+                                                                        prefix='mask_teach',
+                                                                        wei=self.cfg.MASKING_CONS_WEI)
+
+                    # reweight cons loss
+                    # print("self.cfg.MASKING_CONS_WEI is", self.cfg.MASKING_CONS_WEI)
+                    # print("mask_stu_cons_loss is", mask_stu_cons_loss)
+                    # print("mask_teach_cons_loss is", mask_teach_cons_loss)
+
                     record_dict.update(mask_stu_cons_loss)
                     record_dict.update(mask_teach_cons_loss)
 
