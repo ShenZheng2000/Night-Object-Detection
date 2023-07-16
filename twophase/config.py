@@ -75,6 +75,7 @@ def add_teacher_config(cfg):
     # NOTE: add motion blur
     _C.MOTION_BLUR = False
     _C.MOTION_BLUR_RAND = False
+    _C.MOTION_BLUR_VET = False
 
     # NOTE: add light rendering and keypoint
     _C.LIGHT_RENDER = False
@@ -98,3 +99,9 @@ def add_teacher_config(cfg):
     _C.USE_DEBUG = False
     _C.USE_SRC_DEBUG = False
     _C.USE_TGT_DEBUG = False
+
+    # NOTE: add cur learning here
+    _C.DATASETS.CUR_LEARN = True
+    _C.DATASETS.TRAIN_UNLABEL_MID = ("coco_2017_train",)
+    _C.DATASETS.TRAIN_UNLABEL_LAST = ("coco_2017_train",)
+    _C.SOLVER.MID_ITER = None

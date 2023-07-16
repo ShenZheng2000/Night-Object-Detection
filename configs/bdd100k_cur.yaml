@@ -1,3 +1,4 @@
+# TODO: add configs for curriculum learning
 _BASE_: "./Base-RCNN-C4.yaml"
 MODEL:
   META_ARCHITECTURE: "DAobjTwoStagePseudoLabGeneralizedRCNN"
@@ -25,7 +26,9 @@ SOLVER:
   LR_SCHEDULER_NAME: "WarmupTwoStageMultiStepLR"
   STEPS: (60000, 80000, 90000, 360000)
   FACTOR_LIST: (1, 1, 1, 1, 1)
-  MAX_ITER: 100000
+  # NOTE: extrapolate to 150k now because splitting stages
+  MID_ITER: 100000
+  MAX_ITER: 150000
   IMG_PER_BATCH_LABEL: 18
   IMG_PER_BATCH_UNLABEL: 18
   BASE_LR: 0.04
@@ -37,6 +40,11 @@ DATASETS:
   TRAIN_UNLABEL: ("bdd100k_night_train",) #Clipart1k_train
   TEST: ("bdd100k_night_val",) #Clipart1k_test
   TRAIN_UNLABEL_DEPTH: ("bdd100k_night_train_depth",)
+  # NOTE: add cur learning here
+  CUR_LEARN: True
+  TRAIN_UNLABEL_MID: ("bdd100k_train_mid",)
+  TRAIN_UNLABEL_LAST: ("bdd100k_train_last",)
+  
 SEMISUPNET:
   Trainer: "studentteacher"
   BBOX_THRESHOLD: 0.8
@@ -52,3 +60,5 @@ TEST:
 NIGHTAUG: True
 STUDENT_SCALE: True
 CONSISTENCY: True
+
+# USE_DEBUG: True

@@ -43,9 +43,12 @@ class NightAug:
         new_img = (x*(1-kernel) + 255*kernel).type(torch.uint8)
         return new_img
 
-    def apply_motion_blur(self, img, motion_blur=False, motion_blur_rand=False):
+    def apply_motion_blur(self, img, motion_blur=False, motion_blur_vet=False, motion_blur_rand=False):
         if motion_blur:
             img = motion_blur_adjustable(img)
+
+        elif motion_blur_vet:
+            img = motion_blur_adjustable(img, direction=90)
 
         elif motion_blur_rand:
             img = motion_blur_adjustable(img, direction=R.random() * 360)
@@ -101,6 +104,7 @@ class NightAug:
     def aug(self,
                 x,
                 motion_blur=False,
+                motion_blur_vet=False,
                 motion_blur_rand=False,
                 light_render=False,
                 light_high=None,
@@ -190,7 +194,10 @@ class NightAug:
 
             # Apply motion blur
             if R.random()>aug_prob:
-                img = self.apply_motion_blur(img, motion_blur=motion_blur, motion_blur_rand=motion_blur_rand)
+                img = self.apply_motion_blur(img, 
+                                             motion_blur=motion_blur, 
+                                             motion_blur_vet=motion_blur_vet,
+                                             motion_blur_rand=motion_blur_rand)
 
             # Light Rendering
             if R.random()>aug_prob:

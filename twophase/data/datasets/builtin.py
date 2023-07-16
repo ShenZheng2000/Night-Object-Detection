@@ -200,50 +200,63 @@ register_all_water(_root)
 
 # NOTE: change to current path
 # TODO: use the correct label and #GPU for training!
+# NOTE: change according to each server
 register_coco_instances("bdd100k_day_train",
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_day.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_day.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
 
 register_coco_instances("bdd100k_night_train", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_night.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_night.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
+
+# NOTE: add labels for curriculum learning
+register_coco_instances("bdd100k_train_mid", 
+{}, 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_dawn_dusk_cur.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
+
+register_coco_instances("bdd100k_train_last", 
+{}, 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_night_cur.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
+
 
 register_coco_instances("bdd100k_night_val", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/val_night.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/val_night.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val')
 
 register_coco_instances("20230112_o", 
 {}, 
-'/root/autodl-tmp/Datasets/rain_night01/20230112_o.json',
-'/root/autodl-tmp/Datasets/rain_night01/20230112_o')
+'/home/aghosh/Projects/2PCNet/Datasets/rain_night01/20230112_o.json',
+'/home/aghosh/Projects/2PCNet/Datasets/rain_night01/20230112_o')
 
 register_coco_instances("bdd100k_night_val_all", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels_new/all/bdd100k_labels_images_det_coco_val_night_dawn_dusk.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels_new/all/bdd100k_labels_images_det_coco_val_night_dawn_dusk.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val')
 
 register_coco_instances("bdd100k_night_val_rainy", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels_new/rainy/bdd100k_labels_images_det_coco_val_rainy_night_dawn_dusk.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels_new/rainy/bdd100k_labels_images_det_coco_val_rainy_night_dawn_dusk.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val')
 
 register_coco_instances("bdd100k_night_val_snowy", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels_new/snowy/bdd100k_labels_images_det_coco_val_snowy_night_dawn_dusk.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels_new/snowy/bdd100k_labels_images_det_coco_val_snowy_night_dawn_dusk.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val')
 
 register_coco_instances("bdd100k_night_val_foggy", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels_new/foggy/bdd100k_labels_images_det_coco_val_foggy_night_dawn_dusk.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels_new/foggy/bdd100k_labels_images_det_coco_val_foggy_night_dawn_dusk.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val')
 
 register_coco_instances("bdd100k_night_train_depth", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_night_png.json', # TODO: change the surfix to png
-'/root/autodl-tmp/Datasets/Depth/train__night_dawn_dusk')
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_night_png.json', # TODO: change the surfix to png
+'/home/aghosh/Projects/2PCNet/Datasets/Depth/train__night_dawn_dusk')
 
 register_coco_instances("sim_day_train",
 {},

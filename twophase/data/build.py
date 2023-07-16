@@ -170,50 +170,35 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     return data_loader
 
 
+# Helper function to reduce code redund. 
+def build_dataset_dicts(cfg, dataset_name, filter_empty=False):
+    return get_detection_dataset_dicts(
+        dataset_name,
+        filter_empty=filter_empty,
+        min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
+            if cfg.MODEL.KEYPOINT_ON
+            else 0,
+        proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
+            if cfg.MODEL.LOAD_PROPOSALS
+            else None,
+    )
+
+
+# Helper function to reduce code redund. 
+def build_unlabel_dataset(cfg, dataset_name, mapper, copy=False):
+    dataset_dicts = build_dataset_dicts(cfg, dataset_name)
+    dataset = DatasetFromList(dataset_dicts, copy=copy)
+    return MapDataset(dataset, mapper)
+
+
 # uesed by unbiased teacher trainer
 def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
     if cfg.DATASETS.CROSS_DATASET:  # cross-dataset (e.g., coco-additional)
-        label_dicts = get_detection_dataset_dicts(
-            cfg.DATASETS.TRAIN_LABEL,
-            filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
-            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-            if cfg.MODEL.KEYPOINT_ON
-            else 0,
-            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
-            if cfg.MODEL.LOAD_PROPOSALS
-            else None,
-        )
-        unlabel_dicts = get_detection_dataset_dicts(
-            cfg.DATASETS.TRAIN_UNLABEL,
-            filter_empty=False,
-            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-            if cfg.MODEL.KEYPOINT_ON
-            else 0,
-            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
-            if cfg.MODEL.LOAD_PROPOSALS
-            else None,
-        )
-        unlabel_dep_dicts = get_detection_dataset_dicts(
-            cfg.DATASETS.TRAIN_UNLABEL_DEPTH,
-            filter_empty=False,
-            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-            if cfg.MODEL.KEYPOINT_ON
-            else 0,
-            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
-            if cfg.MODEL.LOAD_PROPOSALS
-            else None,
-        ) 
+        label_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_LABEL, filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS)
+        unlabel_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_UNLABEL)
+        unlabel_dep_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_UNLABEL_DEPTH)
     else:  # different degree of supervision (e.g., COCO-supervision)
-        dataset_dicts = get_detection_dataset_dicts(
-            cfg.DATASETS.TRAIN,
-            filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
-            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-            if cfg.MODEL.KEYPOINT_ON
-            else 0,
-            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
-            if cfg.MODEL.LOAD_PROPOSALS
-            else None,
-        )
+        dataset_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN, filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS)
 
         # Divide into labeled and unlabeled sets according to supervision percentage
         label_dicts, unlabel_dicts = divide_label_unlabel(
@@ -223,44 +208,84 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
             cfg.DATALOADER.RANDOM_DATA_SEED_PATH,
         )
 
-    label_dataset = DatasetFromList(label_dicts, copy=False)
-    # exclude the labeled set from unlabeled dataset
-    unlabel_dataset = DatasetFromList(unlabel_dicts, copy=False)
-    # include the labeled set in unlabel dataset
-    # unlabel_dataset = DatasetFromList(dataset_dicts, copy=False)
-    unlabel_dep_dataset = DatasetFromList(unlabel_dep_dicts, copy=False)
-
     if mapper is None:
         mapper = DatasetMapper(cfg, True)
+
+    label_dataset = DatasetFromList(label_dicts, copy=False)
     label_dataset = MapDataset(label_dataset, mapper)
-    unlabel_dataset = MapDataset(unlabel_dataset, mapper)
-    unlabel_dep_dataset = MapDataset(unlabel_dep_dataset, mapper)
+
+    unlabel_dataset = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL, mapper)
+    unlabel_dep_dataset = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL_DEPTH, mapper)
 
     sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
     logger = logging.getLogger(__name__)
     logger.info("Using training sampler {}".format(sampler_name))
+
+    # if sampler_name == "TrainingSampler":
+    #     label_sampler = TrainingSampler(len(label_dataset))
+    #     unlabel_sampler = TrainingSampler(len(unlabel_dataset))
+    #     unlabel_dep_sampler = TrainingSampler(len(unlabel_dep_dataset))
+
     if sampler_name == "TrainingSampler":
         label_sampler = TrainingSampler(len(label_dataset))
         unlabel_sampler = TrainingSampler(len(unlabel_dataset))
         unlabel_dep_sampler = TrainingSampler(len(unlabel_dep_dataset))
+
+        # NOTE: add if (not elif) for cur learning options
+        if cfg.DATASETS.CUR_LEARN:
+            unlabel_dataset_mid = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL_MID, mapper)
+            unlabel_dataset_last = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL_LAST, mapper)
+            unlabel_sampler_mid = TrainingSampler(len(unlabel_dataset_mid))
+            unlabel_sampler_last = TrainingSampler(len(unlabel_dataset_last))
+
     elif sampler_name == "RepeatFactorTrainingSampler":
         raise NotImplementedError("{} not yet supported.".format(sampler_name))
     else:
         raise ValueError("Unknown training sampler: {}".format(sampler_name))
-    return build_semisup_batch_data_loader_two_crop(
-        (label_dataset, unlabel_dataset, unlabel_dep_dataset),
-        (label_sampler, unlabel_sampler, unlabel_dep_sampler),
-        cfg.SOLVER.IMG_PER_BATCH_LABEL,
-        cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
-        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
-        num_workers=cfg.DATALOADER.NUM_WORKERS,
-    )
-
+    
+    # return build_semisup_batch_data_loader_two_crop(
+    #     (label_dataset, unlabel_dataset, unlabel_dep_dataset),
+    #     (label_sampler, unlabel_sampler, unlabel_dep_sampler),
+    #     cfg.SOLVER.IMG_PER_BATCH_LABEL,
+    #     cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
+    #     aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+    #     num_workers=cfg.DATALOADER.NUM_WORKERS,
+    # )
+    if cfg.DATASETS.CUR_LEARN:
+        return build_semisup_batch_data_loader_two_crop(
+            (label_dataset, unlabel_dataset, unlabel_dep_dataset, unlabel_dataset_mid, unlabel_dataset_last),
+            (label_sampler, unlabel_sampler, unlabel_dep_sampler, unlabel_sampler_mid, unlabel_sampler_last),
+            cfg.SOLVER.IMG_PER_BATCH_LABEL,
+            cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
+            aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+            num_workers=cfg.DATALOADER.NUM_WORKERS,
+        )
+    else:
+        return build_semisup_batch_data_loader_two_crop(
+            (label_dataset, unlabel_dataset, unlabel_dep_dataset),
+            (label_sampler, unlabel_sampler, unlabel_dep_sampler),
+            cfg.SOLVER.IMG_PER_BATCH_LABEL,
+            cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
+            aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+            num_workers=cfg.DATALOADER.NUM_WORKERS,
+        )
 
 # batch data loader
+# TODO: change this function to accomodate cur learning options
+def build_data_loader(dataset, sampler, num_workers):
+    return torch.utils.data.DataLoader(
+        dataset,
+        sampler=sampler,
+        num_workers=num_workers,
+        batch_sampler=None,
+        collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
+        worker_init_fn=worker_init_reset_seed,
+    )  # yield individual mapped dict
+
+
 def build_semisup_batch_data_loader_two_crop(
-    dataset,
-    sampler,
+    dataset_tuple,
+    sampler_tuple,
     total_batch_size_label,
     total_batch_size_unlabel,
     *,
@@ -277,45 +302,58 @@ def build_semisup_batch_data_loader_two_crop(
     assert (
         total_batch_size_unlabel > 0 and total_batch_size_unlabel % world_size == 0
     ), "Total unlabel batch size ({}) must be divisible by the number of gpus ({}).".format(
-        total_batch_size_label, world_size
+        total_batch_size_unlabel, world_size
     )
 
     batch_size_label = total_batch_size_label // world_size
     batch_size_unlabel = total_batch_size_unlabel // world_size
 
-    label_dataset, unlabel_dataset, unlabel_dep_dataset = dataset
-    label_sampler, unlabel_sampler, unlabel_dep_sampler = sampler
-
     if aspect_ratio_grouping:
-        label_data_loader = torch.utils.data.DataLoader(
-            label_dataset,
-            sampler=label_sampler,
-            num_workers=num_workers,
-            batch_sampler=None,
-            collate_fn=operator.itemgetter(
-                0
-            ),  # don't batch, but yield individual elements
-            worker_init_fn=worker_init_reset_seed,
-        )  # yield individual mapped dict
-        unlabel_data_loader = torch.utils.data.DataLoader(
-            unlabel_dataset,
-            sampler=unlabel_sampler,
-            num_workers=num_workers,
-            batch_sampler=None,
-            collate_fn=operator.itemgetter(0),
-            worker_init_fn=worker_init_reset_seed,
-        )
-        unlabel_depth_data_loader = torch.utils.data.DataLoader(
-            unlabel_dep_dataset,
-            sampler=unlabel_sampler,  # Use the same sampler as in unlabel_data_loader
-            num_workers=num_workers,
-            batch_sampler=None,
-            collate_fn=operator.itemgetter(0),
-            worker_init_fn=worker_init_reset_seed,
-        )    
-        return AspectRatioGroupedSemiSupDatasetTwoCrop(
-            (label_data_loader, unlabel_data_loader, unlabel_depth_data_loader),
-            (batch_size_label, batch_size_unlabel, batch_size_unlabel),
-        )
+        data_loaders = [build_data_loader(dataset, sampler, num_workers) 
+                        for dataset, sampler in zip(dataset_tuple, sampler_tuple)]
+        
+        batch_sizes = [batch_size_label] + [batch_size_unlabel] * (len(data_loaders) - 1)
+
+        return AspectRatioGroupedSemiSupDatasetTwoCrop(data_loaders, batch_sizes)
     else:
         raise NotImplementedError("ASPECT_RATIO_GROUPING = False is not supported yet")
+
+# def build_semisup_batch_data_loader_two_crop(
+#     dataset,
+#     sampler,
+#     total_batch_size_label,
+#     total_batch_size_unlabel,
+#     *,
+#     aspect_ratio_grouping=False,
+#     num_workers=0
+# ):
+#     world_size = get_world_size()
+#     assert (
+#         total_batch_size_label > 0 and total_batch_size_label % world_size == 0
+#     ), "Total label batch size ({}) must be divisible by the number of gpus ({}).".format(
+#         total_batch_size_label, world_size
+#     )
+
+#     assert (
+#         total_batch_size_unlabel > 0 and total_batch_size_unlabel % world_size == 0
+#     ), "Total unlabel batch size ({}) must be divisible by the number of gpus ({}).".format(
+#         total_batch_size_unlabel, world_size
+#     )
+
+#     batch_size_label = total_batch_size_label // world_size
+#     batch_size_unlabel = total_batch_size_unlabel // world_size
+
+#     label_dataset, unlabel_dataset, unlabel_dep_dataset = dataset
+#     label_sampler, unlabel_sampler, unlabel_dep_sampler = sampler
+
+#     if aspect_ratio_grouping:
+#         label_data_loader = build_data_loader(label_dataset, label_sampler, num_workers)
+#         unlabel_data_loader = build_data_loader(unlabel_dataset, unlabel_sampler, num_workers)
+#         unlabel_depth_data_loader = build_data_loader(unlabel_dep_dataset, unlabel_dep_sampler, num_workers)
+        
+#         return AspectRatioGroupedSemiSupDatasetTwoCrop(
+#             (label_data_loader, unlabel_data_loader, unlabel_depth_data_loader),
+#             (batch_size_label, batch_size_unlabel, batch_size_unlabel),
+#         )
+#     else:
+#         raise NotImplementedError("ASPECT_RATIO_GROUPING = False is not supported yet")

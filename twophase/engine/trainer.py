@@ -501,7 +501,41 @@ class TwoPCTrainer(DefaultTrainer):
         data = next(self._trainer._data_loader_iter)
         # data_q and data_k from different augmentations (q:strong, k:weak)
         # label_strong, label_weak, unlabed_strong, unlabled_weak
-        label_data, unlabel_data, unlabel_dep_data = data
+
+        # burn-in stage (supervised training with labeled data)
+        if not self.cfg.USE_TGT_DEBUG:
+            BURN_UP_STEP = self.cfg.SEMISUPNET.BURN_UP_STEP
+            MID_ITER = self.cfg.SOLVER.MID_ITER
+        else:
+            BURN_UP_STEP = 0
+            MID_ITER = 1
+
+        # NOTE: add cur learning here
+        if self.cfg.DATASETS.CUR_LEARN:
+
+            # print("self.cfg.DATASETS.CUR_LEARN is", self.cfg.DATASETS.CUR_LEARN)
+            label_data, unlabel_data, unlabel_dep_data, \
+               unlabel_data_mid, unlabel_data_last = data
+            
+            # determine stages
+            mid_stage = (BURN_UP_STEP <= self.iter < MID_ITER)
+            last_stage = (self.iter >= MID_ITER)
+            # print(f"mid_stage = {mid_stage}, last_stage = {last_stage}")
+            
+            # mid stage => adapt from day (src) to dawn/dusk (tgt)
+            if mid_stage:
+                # label_data = label_data
+                unlabel_data = unlabel_data_mid
+            
+            # last stage => adapt from dawn/dusk  (src) to night  (tgt)
+            elif last_stage:
+                label_data = unlabel_data_mid
+                unlabel_data = unlabel_data_last
+
+        else:
+            label_data, unlabel_data, unlabel_dep_data = data
+
+
         data_time = time.perf_counter() - start
 
         # Add NightAug images into supervised batch
@@ -509,6 +543,7 @@ class TwoPCTrainer(DefaultTrainer):
             # print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
             label_data_aug = self.night_aug.aug([x.copy() for x in label_data], 
                                                 motion_blur=self.cfg.MOTION_BLUR,
+                                                motion_blur_vet=self.cfg.MOTION_BLUR_VET,
                                                 motion_blur_rand=self.cfg.MOTION_BLUR_RAND,
                                                 light_render=self.cfg.LIGHT_RENDER,
                                                 light_high=self.cfg.LIGHT_HIGH,
@@ -541,12 +576,6 @@ class TwoPCTrainer(DefaultTrainer):
                 print("saving USE_SRC_DEBUG")
                 save_normalized_images(label_data, label_mask_data, 'debug_image/src_mask')
                 sys.exit(1)
-    
-        # burn-in stage (supervised training with labeled data)
-        if not self.cfg.USE_TGT_DEBUG:
-            BURN_UP_STEP = self.cfg.SEMISUPNET.BURN_UP_STEP
-        else:
-            BURN_UP_STEP = 0
 
         if self.iter < BURN_UP_STEP:
 

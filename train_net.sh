@@ -172,17 +172,6 @@
 #       > mask_src_debug_6_18.out 2>&1 &
 
 
-# ################## Mask (Sparse) TODO ##################
-# nohup \
-# python train_net.py \
-#       --resume \
-#       --num-gpus 3 \
-#       --config configs/bdd100k_mask_sparse.yaml \
-#       MODEL.WEIGHTS outputs/mask_sparse_6_21/model_0049999.pth \
-#       OUTPUT_DIR outputs/mask_sparse_6_21 \
-#       > mask_sparse_6_21.out 2>&1 &
-
-
 # ################## Mask (Cons) ##################
 # nohup \
 # python train_net.py \
@@ -281,10 +270,52 @@
 #       > mask_src_7_10_v1.out 2>&1 &
 
 
-# NOTE: retrain this to debug
+# # NOTE: retrain this to debug
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_mask_src.yaml \
+#       OUTPUT_DIR outputs/mask_src_6_18_v2 \
+#       > mask_src_6_18_v2.out 2>&1 &
+
+
+# # TODO: retrain baseline models
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/faster_rcnn_R50_bdd100k.yaml \
+#       OUTPUT_DIR outputs/pretrained_7_12_v1 \
+#       > pretrained_7_12_v1.out 2>&1 &
+
+
+# # train vertical motion blur
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_mask_blur_vet.yaml \
+#       OUTPUT_DIR outputs/mask_blur_vet_7_13_v1 \
+#       > mask_blur_vet_7_13_v1.out 2>&1 &
+
+
+
+# ################## Mask (Sparse, Target) TODO ##################
+# TODO: set ckpts in directory
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_mask_sparse.yaml \
+#       MODEL.WEIGHTS outputs/mask_sparse_7_14/model_0049999.pth \
+#       OUTPUT_DIR outputs/mask_sparse_7_14 \
+#       > mask_sparse_7_14.out 2>&1 &
+
+
+# NOTE: train model with cur learning (M1)
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_mask_src.yaml \
-      OUTPUT_DIR outputs/mask_src_6_18_v2 \
-      > mask_src_6_18_v2.out 2>&1 &
+      --config configs/bdd100k_cur.yaml \
+      OUTPUT_DIR outputs/mask_cur_7_15 \
+      > mask_cur_7_15.out 2>&1 &
+
+# TODO: train model with cur learning (M2)
