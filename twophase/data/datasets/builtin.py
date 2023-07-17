@@ -212,23 +212,28 @@ register_coco_instances("bdd100k_night_train",
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
 
 # NOTE: add labels for curriculum learning
-register_coco_instances("bdd100k_train_mid", 
+register_coco_instances("bdd100k_train_dd", 
 {}, 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_dawn_dusk_cur.json', 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
 
-register_coco_instances("bdd100k_train_last", 
+register_coco_instances("bdd100k_train_n", 
 {}, 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_night_cur.json', 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
 
-# TODO: register for c.l. (w/ simple swap)
-register_coco_instances("bdd100k_train_mid_swap", 
+register_coco_instances("bdd100k_train_n_png", 
+{}, 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_night_cur_png.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/Depth/train__night_dawn_dusk')
+
+# register for c.l. (w/ simple swap)
+register_coco_instances("bdd100k_train_ddd", 
 {}, 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_day_dawn_dusk_cur.json', 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')
 
-register_coco_instances("bdd100k_train_last_swap", 
+register_coco_instances("bdd100k_train_ddn", 
 {}, 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_dawn_dusk_night_cur.json', 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train')

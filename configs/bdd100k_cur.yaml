@@ -42,8 +42,8 @@ DATASETS:
   TRAIN_UNLABEL_DEPTH: ("bdd100k_night_train_depth",)
   # NOTE: add cur learning here
   CUR_LEARN: True
-  TRAIN_UNLABEL_MID: ("bdd100k_train_mid",)
-  TRAIN_UNLABEL_LAST: ("bdd100k_train_last",)
+  TRAIN_UNLABEL_MID: ("bdd100k_train_dd",)
+  TRAIN_UNLABEL_LAST: ("bdd100k_train_n",)
   
 SEMISUPNET:
   Trainer: "studentteacher"

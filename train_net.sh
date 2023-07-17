@@ -310,22 +310,23 @@
 #       > mask_sparse_7_14.out 2>&1 &
 
 
-# NOTE: train model with cur learning (M1)
-# NOTE: kill before stage-3 and retrain model with new code!
+# # NOTE: train model with cur learning (M1)
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_cur.yaml \
+#       MODEL.WEIGHTS outputs/mask_cur_7_15/model_0094999.pth \
+#       OUTPUT_DIR outputs/mask_cur_7_15 \
+#       > mask_cur_7_15.out 2>&1 &
+
+# TODO: train model with cur learning (M2)
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_cur.yaml \
-      OUTPUT_DIR outputs/mask_cur_7_15 \
-      > mask_cur_7_15.out 2>&1 &
-
-# TODO: train model with cur learning (M2)
-# nohup \
-# python train_net.py \
-#       --num-gpus 3 \
-#       --config configs/bdd100k_cur_swap.yaml \
-#       OUTPUT_DIR outputs/mask_cur_swap_7_16 \
-#       > mask_cur_swap_7_16.out 2>&1 &
+      --config configs/bdd100k_ddd.yaml \
+      OUTPUT_DIR outputs/mask_ddd_7_17 \
+      > mask_ddd_7_17.out 2>&1 &
 
 # # train model with cons loss (weight = 0.5) (DOING another machine)
 # nohup \

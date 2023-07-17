@@ -101,7 +101,10 @@ def add_teacher_config(cfg):
     _C.USE_TGT_DEBUG = False
 
     # NOTE: add cur learning here
-    _C.DATASETS.CUR_LEARN = True
+    _C.DATASETS.CUR_LEARN = False
     _C.DATASETS.TRAIN_UNLABEL_MID = ("coco_2017_train",)
     _C.DATASETS.TRAIN_UNLABEL_LAST = ("coco_2017_train",)
     _C.SOLVER.MID_ITER = None
+
+    # NOTE: add mask cons weight
+    _C.MASKING_CONS_WEI = 1.0
