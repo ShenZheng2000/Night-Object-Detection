@@ -108,3 +108,8 @@ def add_teacher_config(cfg):
 
     # NOTE: add mask cons weight
     _C.MASKING_CONS_WEI = 1.0
+
+    # NOTE: add new path blur
+    _C.PATH_BLUR = False
+    _C.T_z_values = None
+    _C.zeta_values = None

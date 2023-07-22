@@ -347,9 +347,19 @@
 #       MODEL.WEIGHTS outputs/pretrained_SGZ/model_final.pth \
 #       OUTPUT_DIR outputs/pretrained_SGZ
 
-CUDA_VISIBLE_DEVICES=1 \
+# CUDA_VISIBLE_DEVICES=1 \
+# python train_net.py \
+#       --eval-only \
+#       --config configs/faster_rcnn_R50_bdd100k_CLAHE.yaml \
+#       MODEL.WEIGHTS outputs/pretrained_CLAHE/model_final.pth \
+#       OUTPUT_DIR outputs/pretrained_CLAHE
+
+
+# TODO: new path blur
+CUDA_VISIBLE_DEVICES=2 \
+nohup \
 python train_net.py \
-      --eval-only \
-      --config configs/faster_rcnn_R50_bdd100k_CLAHE.yaml \
-      MODEL.WEIGHTS outputs/pretrained_CLAHE/model_final.pth \
-      OUTPUT_DIR outputs/pretrained_CLAHE
+      --num-gpus 1 \
+      --config configs/bdd100k_path_blur_7_22.yaml \
+      OUTPUT_DIR outputs/path_blur_7_22 \
+      > path_blur_7_22.out 2>&1 &

@@ -14,6 +14,8 @@ from .blur import motion_blur_adjustable
 from .path_blur import make_path_blur, get_vanising_points, is_out_of_bounds
 from .light import get_keypoints, generate_light
 import time
+from .reblur import *
+import random
 
 
 class NightAug:
@@ -56,7 +58,9 @@ class NightAug:
         return img
 
 
-    def apply_path_blur(self, img, file_name, vanishing_point, path_blur_cons=False, path_blur_var=False, flip=None):
+    def apply_path_blur(self, img, file_name, vanishing_point, path_blur_cons=False, 
+                        path_blur_var=False, flip=None, 
+                        path_blur_new=False, T_z_values=None, zeta_values=None):
         # start_time = time.time()
         # print(f"Before img min {img.min()} {img.max()}") # 0, 255
         # print("img shape", img.shape) # C, H, W
@@ -68,16 +72,25 @@ class NightAug:
 
         img_height, img_width = img.shape[1:]
 
-        # Skip path blur if any element of vanishing_point is negative
-        if is_out_of_bounds(vanishing_point, img_width, img_height):
-            print("Warning: Vanishing point both coords outside. Skipping path blur.")
-        else:
-            if path_blur_cons:
-                img = make_path_blur(img, vanishing_point, change_size=False)
+        T_z = random.uniform(float(T_z_values[0]), float(T_z_values[1]))
+        zeta = random.uniform(float(zeta_values[0]), float(zeta_values[1]))
+        # print(f"T_z = {T_z}, zeta = {zeta}")
 
-            elif path_blur_var:
-                img = make_path_blur(img, vanishing_point, change_size=True)
+        if path_blur_new:
+            img = make_path_blur_new(img, vanishing_point, T_z, zeta)
             img = img * 255.0
+            # print(f"img shape {img.shape} min {img.min()} max {img.max()}")
+        else:
+            # Skip path blur if any element of vanishing_point is negative
+            if is_out_of_bounds(vanishing_point, img_width, img_height):
+                print("Warning: Vanishing point both coords outside. Skipping path blur.")
+            else:
+                if path_blur_cons:
+                    img = make_path_blur(img, vanishing_point, change_size=False)
+
+                elif path_blur_var:
+                    img = make_path_blur(img, vanishing_point, change_size=True)
+                img = img * 255.0
 
         # reshape 4d to 3d
         if len(img.shape) == 4:
@@ -116,6 +129,9 @@ class NightAug:
                 two_pc_aug=True,
                 aug_prob=0.5,
                 hot_tail=False,
+                path_blur_new=False,
+                T_z_values=None,
+                zeta_values=None,
                 use_debug=False):
 
         # NOTE: add debug mode here
@@ -214,7 +230,10 @@ class NightAug:
                                             vanishing_point, 
                                             path_blur_cons, 
                                             path_blur_var, 
-                                            flip)
+                                            flip,
+                                            path_blur_new,
+                                            T_z_values,
+                                            zeta_values)
                 # save_image(img / 255.0, 'after_blur.png')
 
             # send image to cpu

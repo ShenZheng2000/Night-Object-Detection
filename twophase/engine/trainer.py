@@ -555,6 +555,9 @@ class TwoPCTrainer(DefaultTrainer):
                                                 two_pc_aug=self.cfg.TWO_PC_AUG,
                                                 aug_prob=self.cfg.AUG_PROB,
                                                 hot_tail=self.cfg.HOT_TAIL,
+                                                path_blur_new=self.cfg.PATH_BLUR,
+                                                T_z_values=self.cfg.T_z_values,
+                                                zeta_values=self.cfg.zeta_values,
                                                 use_debug=self.cfg.USE_DEBUG,
                                                 )
             label_data.extend(label_data_aug)
