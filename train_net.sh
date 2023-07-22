@@ -320,13 +320,13 @@
 #       OUTPUT_DIR outputs/mask_cur_7_15 \
 #       > mask_cur_7_15.out 2>&1 &
 
-# TODO: train model with cur learning (M2)
-nohup \
-python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_ddd.yaml \
-      OUTPUT_DIR outputs/mask_ddd_7_17 \
-      > mask_ddd_7_17.out 2>&1 &
+# # TODO: train model with cur learning (M2)
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_ddd.yaml \
+#       OUTPUT_DIR outputs/mask_ddd_7_17 \
+#       > mask_ddd_7_17.out 2>&1 &
 
 # # train model with cons loss (weight = 0.5) (DOING another machine)
 # nohup \
@@ -337,3 +337,19 @@ python train_net.py \
 #       MODEL.WEIGHTS outputs/mask_cons_05_7_16/model_0049999.pth \
 #       OUTPUT_DIR outputs/mask_cons_05_7_16 \
 #       > mask_cons_05_7_16.out 2>&1 &
+
+
+# TODO: train with LLIE_preprocessed images (pretrained model)
+# CUDA_VISIBLE_DEVICES=1 \
+# python train_net.py \
+#       --eval-only \
+#       --config configs/faster_rcnn_R50_bdd100k_SGZ.yaml \
+#       MODEL.WEIGHTS outputs/pretrained_SGZ/model_final.pth \
+#       OUTPUT_DIR outputs/pretrained_SGZ
+
+CUDA_VISIBLE_DEVICES=1 \
+python train_net.py \
+      --eval-only \
+      --config configs/faster_rcnn_R50_bdd100k_CLAHE.yaml \
+      MODEL.WEIGHTS outputs/pretrained_CLAHE/model_final.pth \
+      OUTPUT_DIR outputs/pretrained_CLAHE

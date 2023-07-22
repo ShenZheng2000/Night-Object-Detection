@@ -244,6 +244,17 @@ register_coco_instances("bdd100k_night_val",
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/val_night.json', 
 '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val')
 
+# NOTE: add enhanced images
+register_coco_instances("bdd100k_night_val_SGZ", 
+{}, 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/val_night.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_enhance/SGZ')
+
+register_coco_instances("bdd100k_night_val_CLAHE", 
+{}, 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/val_night.json', 
+'/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_enhance/CLAHE')
+
 register_coco_instances("20230112_o", 
 {}, 
 '/home/aghosh/Projects/2PCNet/Datasets/rain_night01/20230112_o.json',
