@@ -14,7 +14,7 @@ from .blur import motion_blur_adjustable
 from .path_blur import make_path_blur, get_vanising_points, is_out_of_bounds
 from .light import get_keypoints, generate_light
 import time
-from .reblur import *
+from .reblur import make_path_blur_new
 import random
 
 

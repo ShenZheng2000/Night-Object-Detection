@@ -356,10 +356,9 @@
 
 
 # TODO: new path blur
-CUDA_VISIBLE_DEVICES=2 \
 nohup \
 python train_net.py \
-      --num-gpus 1 \
+      --num-gpus 3 \
       --config configs/bdd100k_path_blur_7_22.yaml \
       OUTPUT_DIR outputs/path_blur_7_22 \
       > path_blur_7_22.out 2>&1 &
