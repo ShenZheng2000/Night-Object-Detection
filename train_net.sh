@@ -358,7 +358,9 @@
 # TODO: new path blur
 nohup \
 python train_net.py \
+      --resume \
       --num-gpus 3 \
       --config configs/bdd100k_path_blur_7_22.yaml \
+      MODEL.WEIGHTS outputs/path_blur_7_22/model_0049999.pth \
       OUTPUT_DIR outputs/path_blur_7_22 \
       > path_blur_7_22.out 2>&1 &
