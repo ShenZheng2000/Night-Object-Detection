@@ -1130,7 +1130,7 @@ def save_normalized_images(data, data_aug, out_dir):
 
     for i in range(len(data)):
         # If we have already saved 6 images, break the loop
-        if image_counter >= 6:
+        if image_counter >= 5:
             break
 
         image = data[i]['image'].cuda()
