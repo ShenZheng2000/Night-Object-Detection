@@ -113,3 +113,6 @@ def add_teacher_config(cfg):
     _C.PATH_BLUR = False
     _C.T_z_values = None
     _C.zeta_values = None
+
+    # NOTE: using warping augmentation
+    _C.WARP_AUG = False

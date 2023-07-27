@@ -558,6 +558,7 @@ class TwoPCTrainer(DefaultTrainer):
                                                 path_blur_new=self.cfg.PATH_BLUR,
                                                 T_z_values=self.cfg.T_z_values,
                                                 zeta_values=self.cfg.zeta_values,
+                                                warp_aug=self.cfg.WARP_AUG,
                                                 use_debug=self.cfg.USE_DEBUG,
                                                 )
             label_data.extend(label_data_aug)
@@ -581,7 +582,7 @@ class TwoPCTrainer(DefaultTrainer):
                 sys.exit(1)
 
         if self.iter < BURN_UP_STEP:
-
+            
             record_dict, _, _, _ = self.model(
                 label_data, branch="supervised")
 
@@ -1119,7 +1120,8 @@ def save_normalized_images(data, data_aug, out_dir):
     - None. This function saves the images in the specified output directory.
     """
     # Ensure the input data lists are of the same length
-    assert len(data) >= len(data_aug), f"length invalid! len(data) = {len(data)}, len(data_aug) = {len(data_aug)}"
+    data_len = min(len(data), len(data_aug))
+    # assert len(data) >= len(data_aug), f"length invalid! len(data) = {len(data)}, len(data_aug) = {len(data_aug)}"
 
     # assert (data[0]['image'].device) == (data_aug[0]['image'].device), print(f"device mismatch! \
     #                                          data.device = {data[0]['image'].device}, \
@@ -1128,9 +1130,10 @@ def save_normalized_images(data, data_aug, out_dir):
     # Initialize a counter for the number of images saved
     image_counter = 0
 
-    for i in range(len(data)):
+    for i in range(data_len):
+
         # If we have already saved 6 images, break the loop
-        if image_counter >= 5:
+        if image_counter >= 6:
             break
 
         image = data[i]['image'].cuda()

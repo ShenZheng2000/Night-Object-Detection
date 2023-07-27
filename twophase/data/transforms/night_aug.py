@@ -15,6 +15,7 @@ from .path_blur import make_path_blur, get_vanising_points, is_out_of_bounds
 from .light import get_keypoints, generate_light
 import time
 from .reblur import make_path_blur_new
+from .fovea import make_warp_aug
 import random
 
 
@@ -72,11 +73,10 @@ class NightAug:
 
         img_height, img_width = img.shape[1:]
 
-        T_z = random.uniform(float(T_z_values[0]), float(T_z_values[1]))
-        zeta = random.uniform(float(zeta_values[0]), float(zeta_values[1]))
-        # print(f"T_z = {T_z}, zeta = {zeta}")
-
         if path_blur_new:
+            T_z = random.uniform(float(T_z_values[0]), float(T_z_values[1]))
+            zeta = random.uniform(float(zeta_values[0]), float(zeta_values[1]))
+            # print(f"T_z = {T_z}, zeta = {zeta}")
             img = make_path_blur_new(img, vanishing_point, T_z, zeta)
             img = img * 255.0
             # print(f"img shape {img.shape} min {img.min()} max {img.max()}")
@@ -87,16 +87,34 @@ class NightAug:
             else:
                 if path_blur_cons:
                     img = make_path_blur(img, vanishing_point, change_size=False)
+                    img = img * 255.0
 
                 elif path_blur_var:
                     img = make_path_blur(img, vanishing_point, change_size=True)
-                img = img * 255.0
+                    img = img * 255.0
 
         # reshape 4d to 3d
         if len(img.shape) == 4:
             img = img.squeeze(0)
         
         return img
+    
+
+    def apply_warp_aug(self, img, ins, file_name, vanishing_point, warp_aug=False, flip=None):
+
+        if vanishing_point is None:
+            return img
+
+        vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
+
+        if warp_aug:
+            img, ins = make_warp_aug(img, ins, vanishing_point)
+
+        # reshape 4d to 3d
+        if len(img.shape) == 4:
+            img = img.squeeze(0) 
+
+        return img, ins
     
 
     def apply_light_render(self, img, ins, file_name, key_point, light_render, light_high, flip, reflect_render, hot_tail):
@@ -112,7 +130,6 @@ class NightAug:
                                     hot_tail=hot_tail)
 
         return img
-
 
     def aug(self,
                 x,
@@ -132,6 +149,7 @@ class NightAug:
                 path_blur_new=False,
                 T_z_values=None,
                 zeta_values=None,
+                warp_aug=False,
                 use_debug=False):
 
         # NOTE: add debug mode here
@@ -139,8 +157,6 @@ class NightAug:
             aug_prob = 0.0
 
         for sample in x:
-
-            # print("sample is", sample)
 
             # read filenames and transforms
             file_name = sample['file_name']
@@ -161,8 +177,11 @@ class NightAug:
             # read images and instances
             img = sample['image'].cuda()
             ins = sample['instances']
+            # print("Before ins", ins)
             g_b_flag = True
-
+            
+            # print("ins.gt_boxes.tensor is", ins.gt_boxes.tensor) # x1, y1, x2, y2
+            # print("ins.gt_boxes.tensor.shape is", ins.gt_boxes.tensor.shape) # [N, 4]
             # print("two_pc_aug is", two_pc_aug)
             # print("aug_prob is", aug_prob)
 
@@ -236,6 +255,11 @@ class NightAug:
                                             zeta_values)
                 # save_image(img / 255.0, 'after_blur.png')
 
+            if R.random()>aug_prob:
+                img, ins = self.apply_warp_aug(img, ins, file_name, vanishing_point, warp_aug, flip)
+            
+            # print("After ins", ins)
+            
             # send image to cpu
             sample['image'] = img.cpu()                
 
