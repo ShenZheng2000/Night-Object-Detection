@@ -177,7 +177,7 @@ class NightAug:
             # read images and instances
             img = sample['image'].cuda()
             ins = sample['instances']
-            print("Before ins", ins)
+            # print("Before ins", ins)
             g_b_flag = True
             
             # print("ins.gt_boxes.tensor is", ins.gt_boxes.tensor) # x1, y1, x2, y2
@@ -259,7 +259,7 @@ class NightAug:
                 img, ins = self.apply_warp_aug(img, ins, file_name, vanishing_point, warp_aug, flip)
             
             # TODO: format should be same as previous
-            print("After ins", ins)
+            # print("After ins", ins)
             
             # send image to cpu
             sample['image'] = img.cpu()                
