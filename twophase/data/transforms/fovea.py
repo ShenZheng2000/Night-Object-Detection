@@ -84,7 +84,10 @@ def make_warp_aug(img, ins, vanishing_point):
     # warp bboxes
     warped_bboxes = warp_bboxes(bboxes, grid, separable=True)
 
-    return warped_imgs, warped_bboxes
+    # update ins
+    ins.gt_boxes.tensor = warped_bboxes
+
+    return warped_imgs, ins
 
 
 if __name__ == '__main__':
