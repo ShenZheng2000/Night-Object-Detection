@@ -327,7 +327,7 @@ class CuboidGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         # v_pts = torch.tensor(v_pts_arr, device=device)
         v_pts = torch.tensor(v_pts, device=device)
         v_pts = v_pts.unsqueeze(0)
-        print("v_pts is", v_pts)
+        # print("v_pts is", v_pts)
 
         self.saliency = self.homo.forward(imgs, v_pts)
 

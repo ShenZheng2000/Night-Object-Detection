@@ -367,19 +367,19 @@
 
 # TODO: train this model
 # NOTE: switch to 3 GPU once having model
-nohup \
-python train_net.py \
-      --resume \
-      --num-gpus 2 \
-      --config configs/bdd100k_path_blur_7_25.yaml \
-      MODEL.WEIGHTS outputs/path_blur_7_25/model_0074999.pth \
-      OUTPUT_DIR outputs/path_blur_7_25 \
-      > path_blur_7_25.out 2>&1 &
-
-# CUDA_VISIBLE_DEVICES=3 \
 # nohup \
 # python train_net.py \
-#       --num-gpus 1 \
-#       --config configs/bdd100k_warp_aug_7_26.yaml \
-#       OUTPUT_DIR outputs/warp_aug_7_26 \
-#       > warp_aug_7_26.out 2>&1 &
+#       --resume \
+#       --num-gpus 2 \
+#       --config configs/bdd100k_path_blur_7_25.yaml \
+#       MODEL.WEIGHTS outputs/path_blur_7_25/model_0084999.pth \
+#       OUTPUT_DIR outputs/path_blur_7_25 \
+#       > path_blur_7_25.out 2>&1 &
+
+CUDA_VISIBLE_DEVICES=2 \
+nohup \
+python train_net.py \
+      --num-gpus 1 \
+      --config configs/bdd100k_warp_aug_7_26.yaml \
+      OUTPUT_DIR outputs/warp_aug_7_26 \
+      > warp_aug_7_26.out 2>&1 &

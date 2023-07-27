@@ -14,7 +14,6 @@ from .blur import motion_blur_adjustable
 from .path_blur import make_path_blur, get_vanising_points, is_out_of_bounds
 from .light import get_keypoints, generate_light
 import time
-from .reblur import make_path_blur_new
 from .fovea import make_warp_aug
 import random
 
@@ -74,6 +73,7 @@ class NightAug:
         img_height, img_width = img.shape[1:]
 
         if path_blur_new:
+            from .reblur import make_path_blur_new
             T_z = random.uniform(float(T_z_values[0]), float(T_z_values[1]))
             zeta = random.uniform(float(zeta_values[0]), float(zeta_values[1]))
             # print(f"T_z = {T_z}, zeta = {zeta}")

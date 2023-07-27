@@ -6,6 +6,12 @@ import torch
 
 def invert_grid(grid, input_shape, separable=False):
     f = invert_separable_grid if separable else invert_nonseparable_grid
+    # NOTE: add for debug here
+    try:
+        res = f(grid, list(input_shape))
+        print(f"GOOD! input_shape is {input_shape} grid shape {grid.shape} min {grid.min()} max {grid.max()}")
+    except:
+        print(f"ERROR! input_shape is {input_shape} grid shape {grid.shape} min {grid.min()} max {grid.max()}")
     return f(grid, list(input_shape))
 
 
