@@ -105,12 +105,17 @@ class NightAug:
     def apply_warp_aug(self, img, ins, file_name, vanishing_point, warp_aug=False, flip=None):
 
         if vanishing_point is None:
-            return img
+            return img, ins
 
         vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
 
+        img_height, img_width = img.shape[1:]
+
         if warp_aug:
-            img, ins = make_warp_aug(img, ins, vanishing_point, self.grid_net)
+            if is_out_of_bounds(vanishing_point, img_width, img_height):
+                pass
+            else:
+                img, ins = make_warp_aug(img, ins, vanishing_point, self.grid_net)
 
         # reshape 4d to 3d
         if len(img.shape) == 4:

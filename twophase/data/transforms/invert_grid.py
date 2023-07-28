@@ -38,16 +38,10 @@ def invert_separable_grid(grid, input_shape: List[int]):
         vx = p01[:, 0] - p00[:, 0]
         vy = p10[:, 1] - p00[:, 1]
 
-        # NOTE: this cause value underflow
-        # min_x = int(floor(v00[:, 0].min() - eps))
-        # max_x = int(ceil(v01[:, 0].max() + eps))
-        # min_y = int(floor(v00[:, 1].min() - eps))
-        # max_y = int(ceil(v10[:, 1].max() + eps))
-
-        min_x = int(floor(v00[:, 0].min() + eps))
-        max_x = int(ceil(v01[:, 0].max() - eps))
-        min_y = int(floor(v00[:, 1].min() + eps))
-        max_y = int(ceil(v10[:, 1].max() - eps))
+        min_x = int(floor(v00[:, 0].min() - eps))
+        max_x = int(ceil(v01[:, 0].max() + eps))
+        min_y = int(floor(v00[:, 1].min() - eps))
+        max_y = int(ceil(v10[:, 1].max() + eps))
 
         pts = torch.cartesian_prod(
             torch.arange(min_x, max_x + 1, device=device),
