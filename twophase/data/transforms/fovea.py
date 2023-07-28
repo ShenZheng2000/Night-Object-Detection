@@ -36,11 +36,14 @@ def unwarp_bboxes(bboxes, grid, output_shape):
 
 
 def warp_bboxes(bboxes, grid, separable=True):
+
     size = grid.shape
+    
     inverse_grid_shape = torch.Size((size[0], size[3], size[1], size[2]))
-    print("bboxes is", bboxes.shape)
     inverse_grid = invert_grid(grid, inverse_grid_shape, separable) # [1, 2, 720, 1280]
+
     bboxes = unwarp_bboxes(bboxes, inverse_grid.squeeze(0), size[1:3]) #output_shape[1:3]=[720, 1280]
+
     return bboxes
 
 
@@ -68,7 +71,7 @@ def simple_test(grid_net, imgs, vanishing_point):
 
 
 
-def make_warp_aug(img, ins, vanishing_point):
+def make_warp_aug(img, ins, vanishing_point, grid_net):
     # read image
     img = img.float()
     device = img.device
@@ -78,22 +81,21 @@ def make_warp_aug(img, ins, vanishing_point):
     bboxes = ins.gt_boxes.tensor
     bboxes = bboxes.to(device)
 
-    # Create an instance of CuboidGlobalKDEGrid
-    grid_net = CuboidGlobalKDEGrid(separable=True, 
-                                    anti_crop=True, 
-                                    input_shape=my_shape, 
-                                    output_shape=my_shape)
-    
+    # # Create an instance of CuboidGlobalKDEGrid
+    # grid_net = CuboidGlobalKDEGrid(separable=True, 
+    #                                 anti_crop=True, 
+    #                                 input_shape=my_shape, 
+    #                                 output_shape=my_shape)
+
     # warp image
     imgs = img.unsqueeze(0) 
     grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point)
 
-    # # NOTE: hardcode clamp border values => no use for now
-    # bboxes = torch.clamp(bboxes, min=1, max=1066)
-
     # warp bboxes
-    print("bboxes is", bboxes)
     warped_bboxes = warp_bboxes(bboxes, grid, separable=True)
+
+    # # NOTE: hardcode for debug only. Delete later
+    # warped_bboxes = unwarp_bboxes(warped_bboxes, grid.squeeze(0), [600, 1067])
 
     # update ins
     ins.gt_boxes.tensor = warped_bboxes

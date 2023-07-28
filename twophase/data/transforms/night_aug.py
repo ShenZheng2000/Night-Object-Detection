@@ -14,6 +14,7 @@ from .blur import motion_blur_adjustable
 from .path_blur import make_path_blur, get_vanising_points, is_out_of_bounds
 from .light import get_keypoints, generate_light
 import time
+from .grid_generator import CuboidGlobalKDEGrid
 from .fovea import make_warp_aug
 import random
 
@@ -21,6 +22,7 @@ import random
 class NightAug:
     def __init__(self):
         self.gaussian = T.GaussianBlur(11,(0.1,2.0))
+        self.grid_net = None
 
     def mask_img(self,img,cln_img):
         while R.random()>0.4:
@@ -108,7 +110,7 @@ class NightAug:
         vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
 
         if warp_aug:
-            img, ins = make_warp_aug(img, ins, vanishing_point)
+            img, ins = make_warp_aug(img, ins, vanishing_point, self.grid_net)
 
         # reshape 4d to 3d
         if len(img.shape) == 4:
@@ -155,6 +157,14 @@ class NightAug:
         # NOTE: add debug mode here
         if use_debug:
             aug_prob = 0.0
+
+        # NOTE: pre-build grid_net here to save comp. time
+        if warp_aug:
+            my_shape = x[0]['image'].shape[1:]
+            self.grid_net = CuboidGlobalKDEGrid(separable=True, 
+                                            anti_crop=True, 
+                                            input_shape=my_shape, 
+                                            output_shape=my_shape)
 
         for sample in x:
 
