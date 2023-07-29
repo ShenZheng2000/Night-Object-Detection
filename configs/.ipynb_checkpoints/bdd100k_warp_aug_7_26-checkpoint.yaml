@@ -41,7 +41,7 @@ SEMISUPNET:
   Trainer: "studentteacher"
   BBOX_THRESHOLD: 0.8
   TEACHER_UPDATE_ITER: 1
-  BURN_UP_STEP: 60000 # NOTE: 50000
+  BURN_UP_STEP: 50000 # NOTE: 50000
   EMA_KEEP_RATE: 0.9996
   UNSUP_LOSS_WEIGHT: 0.3
   SUP_LOSS_WEIGHT: 1.0
@@ -55,9 +55,8 @@ CONSISTENCY: True
 
 VANISHING_POINT: "/root/autodl-tmp/Datasets/VP/train_day.json"
 
-PATH_BLUR: True
-T_z_values: [1e-3, 1e-3] # [5e-4, 2e-3]
-zeta_values: [0.4, 0.4] # 0.4
+# Add warp aug
+WARP_AUG: True
 
 # USE_DEBUG: True
 # TWO_PC_AUG: False

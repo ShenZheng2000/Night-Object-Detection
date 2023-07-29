@@ -55,9 +55,10 @@ CONSISTENCY: True
 
 VANISHING_POINT: "/root/autodl-tmp/Datasets/VP/train_day.json"
 
+# TODO: add path blur and hyperparameters
 PATH_BLUR: True
-T_z_values: [1e-3, 1e-3] # [5e-4, 2e-3]
-zeta_values: [0.4, 0.4] # 0.4
+T_z_values: [1e-3, 1e-3]
+zeta_values: [0.4, 0.4]
 
 # USE_DEBUG: True
 # TWO_PC_AUG: False
