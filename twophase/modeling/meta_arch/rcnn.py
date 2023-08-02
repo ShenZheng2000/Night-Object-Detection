@@ -87,7 +87,8 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         return images, images_t
 
     def forward(
-        self, batched_inputs, branch="supervised", given_proposals=None, val_mode=False, proposal_index = None
+        self, batched_inputs, branch="supervised", given_proposals=None, val_mode=False, proposal_index = None,
+        warp_aug_lzu=False,
     ):
         """
         Args:
@@ -124,8 +125,14 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
-
+        # TODO: call warp here
         features = self.backbone(images.tensor)
+        # TODO: call unwarp here
+
+        # first_key = next(iter(features))
+        # first_value = features[first_key]
+        # print(f"len {len(features)} all_keys {features.keys()} first_key {first_key}, first_value {first_value.shape}")
+        # 1, dict_keys(['res5']), res5, torch.Size([10, 2048, 38, 67])
 
         # TODO: remove the usage of if else here. This needs to be re-organized
         if branch == "supervised":

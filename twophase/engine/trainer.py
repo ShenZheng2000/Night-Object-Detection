@@ -522,12 +522,12 @@ class TwoPCTrainer(DefaultTrainer):
             last_stage = (self.iter >= MID_ITER)
             # print(f"mid_stage = {mid_stage}, last_stage = {last_stage}")
             
-            # mid stage => adapt from day (src) to dawn/dusk (tgt)
+            # mid stage => adapt from day (src) to dawn/dusk (first tgt)
             if mid_stage:
                 # label_data = label_data
                 unlabel_data = unlabel_data_mid
             
-            # last stage => adapt from dawn/dusk  (src) to night  (tgt)
+            # last stage => adapt from day (src) to night (second tgt)
             elif last_stage:
                 # label_data = unlabel_data_mid
                 unlabel_data = unlabel_data_last
@@ -559,6 +559,7 @@ class TwoPCTrainer(DefaultTrainer):
                                                 T_z_values=self.cfg.T_z_values,
                                                 zeta_values=self.cfg.zeta_values,
                                                 warp_aug=self.cfg.WARP_AUG,
+                                                warp_aug_lzu=self.cfg.WARP_AUG_LZU,
                                                 use_debug=self.cfg.USE_DEBUG,
                                                 )
             label_data.extend(label_data_aug)
@@ -566,7 +567,7 @@ class TwoPCTrainer(DefaultTrainer):
             if self.cfg.USE_DEBUG:
                 print("saving self.cfg.USE_DEBUG")
                 save_normalized_images(label_data, label_data_aug, 'debug_image/night_aug')
-                sys.exit(1)
+                sys.exit(1) # TODO: uncomment this later
 
         
         # NOTE: add masking for src images
@@ -582,9 +583,12 @@ class TwoPCTrainer(DefaultTrainer):
                 sys.exit(1)
 
         if self.iter < BURN_UP_STEP:
-            
+              
             record_dict, _, _, _ = self.model(
-                label_data, branch="supervised")
+                                            label_data, branch="supervised", 
+                                            warp_aug_lzu=self.cfg.WARP_AUG_LZU)
+            
+            sys.exit(1) # TODO: delete this 
 
             # NOTE: skip this part since no teacher-student in source domain
             # record_dict, _, roi_stu_src_1, _ = self.model(

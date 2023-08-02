@@ -53,7 +53,7 @@ NIGHTAUG: True
 STUDENT_SCALE: True
 CONSISTENCY: True
 
-VANISHING_POINT: "/root/autodl-tmp/Datasets/VP/train_day.json"
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
 
 # TODO: add path blur and hyperparameters
 PATH_BLUR: True

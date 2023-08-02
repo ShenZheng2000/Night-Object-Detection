@@ -116,3 +116,4 @@ def add_teacher_config(cfg):
 
     # NOTE: using warping augmentation
     _C.WARP_AUG = False
+    _C.WARP_AUG_LZU = False

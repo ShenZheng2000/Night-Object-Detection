@@ -377,13 +377,30 @@
 #       > path_blur_7_25.out 2>&1 &
 
 # NOTE: use gpu now for debug vis
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_7_26.yaml \
+#       MODEL.WEIGHTS outputs/warp_aug_7_26/model_0044999.pth \
+#       OUTPUT_DIR outputs/warp_aug_7_26 \
+#       > warp_aug_7_26.out 2>&1 &
+
+# TODO: train this later
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_path_blur_7_29.yaml \
+#       MODEL.WEIGHTS outputs/path_blur_7_29/model_0019999.pth \
+#       OUTPUT_DIR outputs/path_blur_7_29 \
+#       > path_blur_7_29.out 2>&1 &
+
+
+# TODO: wait code to finish
 nohup \
 python train_net.py \
-      --resume \
       --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_7_26.yaml \
-      MODEL.WEIGHTS outputs/warp_aug_7_26/model_0044999.pth \
-      OUTPUT_DIR outputs/warp_aug_7_26 \
-      > warp_aug_7_26.out 2>&1 &
-
-# NOTE: must use separate code for testing (because no data aug )
+      --config configs/bdd100k_warp_aug_8_2.yaml \
+      OUTPUT_DIR outputs/warp_aug_8_2 \
+      > warp_aug_8_2.out 2>&1 &

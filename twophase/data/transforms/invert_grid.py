@@ -12,6 +12,7 @@ def invert_grid(grid, input_shape, separable=False):
 @torch.jit.script
 def invert_separable_grid(grid, input_shape: List[int]):
     grid = grid.clone()
+    # print(f"input_shape is {input_shape} grid is {grid.shape}")
     device = grid.device
     H: int = input_shape[2]
     W: int = input_shape[3]

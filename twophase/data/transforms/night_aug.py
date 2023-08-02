@@ -15,7 +15,8 @@ from .path_blur import make_path_blur, get_vanising_points, is_out_of_bounds
 from .light import get_keypoints, generate_light
 import time
 from .grid_generator import CuboidGlobalKDEGrid
-from .fovea import make_warp_aug
+from .fovea import apply_warp_aug, apply_unwarp
+# from .fixed_grid import FixedGrid
 import random
 
 
@@ -60,17 +61,17 @@ class NightAug:
         return img
 
 
-    def apply_path_blur(self, img, file_name, vanishing_point, path_blur_cons=False, 
-                        path_blur_var=False, flip=None, 
+    def apply_path_blur(self, img, vanishing_point, path_blur_cons=False, 
+                        path_blur_var=False,
                         path_blur_new=False, T_z_values=None, zeta_values=None):
         # start_time = time.time()
         # print(f"Before img min {img.min()} {img.max()}") # 0, 255
         # print("img shape", img.shape) # C, H, W
 
-        if vanishing_point is None:
-            return img
+        # if vanishing_point is None:
+        #     return img
 
-        vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
+        # vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
 
         img_height, img_width = img.shape[1:]
 
@@ -100,29 +101,8 @@ class NightAug:
             img = img.squeeze(0)
         
         return img
-    
 
-    def apply_warp_aug(self, img, ins, file_name, vanishing_point, warp_aug=False, flip=None):
 
-        if vanishing_point is None:
-            return img, ins
-
-        vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
-
-        img_height, img_width = img.shape[1:]
-
-        if warp_aug:
-            if is_out_of_bounds(vanishing_point, img_width, img_height):
-                pass
-            else:
-                img, ins = make_warp_aug(img, ins, vanishing_point, self.grid_net)
-
-        # reshape 4d to 3d
-        if len(img.shape) == 4:
-            img = img.squeeze(0) 
-
-        return img, ins
-    
 
     def apply_light_render(self, img, ins, file_name, key_point, light_render, light_high, flip, reflect_render, hot_tail):
 
@@ -157,6 +137,7 @@ class NightAug:
                 T_z_values=None,
                 zeta_values=None,
                 warp_aug=False,
+                warp_aug_lzu=False,
                 use_debug=False):
 
         # NOTE: add debug mode here
@@ -164,13 +145,14 @@ class NightAug:
             aug_prob = 0.0
 
         # NOTE: pre-build grid_net here to save comp. time
-        if warp_aug:
-            my_shape = x[0]['image'].shape[1:]
+        my_shape = x[0]['image'].shape[1:]
+
+        if warp_aug or warp_aug_lzu:
             self.grid_net = CuboidGlobalKDEGrid(separable=True, 
                                             anti_crop=True, 
                                             input_shape=my_shape, 
                                             output_shape=my_shape)
-
+                            
         for sample in x:
 
             # read filenames and transforms
@@ -258,22 +240,30 @@ class NightAug:
 
             # save_image(img / 255.0, 'before_blur.png')
 
-            if R.random()>aug_prob:
-                img = self.apply_path_blur(img, 
-                                            file_name, 
-                                            vanishing_point, 
-                                            path_blur_cons, 
-                                            path_blur_var, 
-                                            flip,
-                                            path_blur_new,
-                                            T_z_values,
-                                            zeta_values)
-                # save_image(img / 255.0, 'after_blur.png')
+            # NOTE: pre-compute vp here to save time
+            if vanishing_point is not None:
+                new_vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
 
-            if R.random()>aug_prob:
-                img, ins = self.apply_warp_aug(img, ins, file_name, vanishing_point, warp_aug, flip)
+                if R.random()>aug_prob:
+                    img = self.apply_path_blur(img, 
+                                                new_vanishing_point, 
+                                                path_blur_cons, 
+                                                path_blur_var, 
+                                                path_blur_new,
+                                                T_z_values,
+                                                zeta_values)
+                    # save_image(img / 255.0, 'after_blur.png')
+
+                if R.random()>aug_prob:
+                    img, ins, grid = apply_warp_aug(img, ins, new_vanishing_point, 
+                                                    warp_aug, warp_aug_lzu, self.grid_net)
+                    
+                    # # unwarp images here
+                    if warp_aug_lzu:
+                        img = apply_unwarp(img, grid)
+
             
-            # TODO: format should be same as previous
+            # NOTE: format should be same as previous
             # print(f"file_name {file_name} After ins {ins}")
             
             # send image to cpu

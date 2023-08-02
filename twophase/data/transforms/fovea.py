@@ -9,6 +9,7 @@ import json
 import time
 from pycocotools.coco import COCO
 from copy import deepcopy
+from .path_blur import is_out_of_bounds
     
 
 def unwarp_bboxes(bboxes, grid, output_shape):
@@ -58,12 +59,14 @@ def simple_test(grid_net, imgs, vanishing_point):
             The outer list corresponds to each image. The inner list
             corresponds to each class.
     """
-    if len(imgs.shape) != 4:
+    if len(imgs.shape) == 3:
         imgs = imgs.unsqueeze(0)
 
     imgs = torch.stack(tuple(imgs), dim=0)
+    # print("imgs shape", imgs.shape)
 
     grid = grid_net(imgs, vanishing_point)
+    # print("grid shape", grid.shape)
 
     warped_imgs = F.grid_sample(imgs, grid, align_corners=True)
 
@@ -71,36 +74,150 @@ def simple_test(grid_net, imgs, vanishing_point):
 
 
 
-def make_warp_aug(img, ins, vanishing_point, grid_net):
+def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True):
+
     # read image
     img = img.float()
     device = img.device
     my_shape = img.shape[1:]
-
-    # read bboxes
-    bboxes = ins.gt_boxes.tensor
-    bboxes = bboxes.to(device)
-
-    # # Create an instance of CuboidGlobalKDEGrid
-    # grid_net = CuboidGlobalKDEGrid(separable=True, 
-    #                                 anti_crop=True, 
-    #                                 input_shape=my_shape, 
-    #                                 output_shape=my_shape)
-
-    # warp image
     imgs = img.unsqueeze(0) 
-    grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point)
 
-    # warp bboxes
-    warped_bboxes = warp_bboxes(bboxes, grid, separable=True)
+    if use_ins:
 
-    # # NOTE: hardcode for debug only. Delete later
-    # warped_bboxes = unwarp_bboxes(warped_bboxes, grid.squeeze(0), [600, 1067])
+        # read bboxes
+        bboxes = ins.gt_boxes.tensor
+        bboxes = bboxes.to(device)
 
-    # update ins
-    ins.gt_boxes.tensor = warped_bboxes
+        # # Create an instance of CuboidGlobalKDEGrid
+        # grid_net = CuboidGlobalKDEGrid(separable=True, 
+        #                                 anti_crop=True, 
+        #                                 input_shape=my_shape, 
+        #                                 output_shape=my_shape)
 
-    return warped_imgs, ins
+        # warp image
+        grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point)
+
+        # warp bboxes
+        warped_bboxes = warp_bboxes(bboxes, grid, separable=True)
+
+        # # NOTE: hardcode for debug only. Delete later
+        # warped_bboxes = unwarp_bboxes(warped_bboxes, grid.squeeze(0), [600, 1067])
+
+        # update ins
+        ins.gt_boxes.tensor = warped_bboxes
+
+        return warped_imgs, ins, grid
+    
+    else:
+        # warp image
+        grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point)
+
+        return warped_imgs, ins, grid
+    
+
+
+def apply_warp_aug(img, ins, vanishing_point, warp_aug=False, warp_aug_lzu=False, grid_net=None):
+
+    img_height, img_width = img.shape[1:]
+
+    if is_out_of_bounds(vanishing_point, img_width, img_height):
+        return img, ins
+    elif warp_aug:
+        img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
+    elif warp_aug_lzu:
+        img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False)
+
+    # reshape 4d to 3d
+    if len(img.shape) == 4:
+        img = img.squeeze(0) 
+
+    return img, ins, grid
+
+
+# TODO: debug single images
+# TODO: experiments tensor size like [10, 2048, 38, 67]
+# TODO: use rcnn.py to call this file
+# TODO: debug visuslization
+def apply_unwarp(warped_x, grid):
+    if len(warped_x.shape) == 3:
+        warped_x = warped_x.unsqueeze(0)
+
+    # print(f'warped_x is {warped_x.shape} grid is {grid.shape}') # [1, 3, 600, 1067], [1, 600, 1067, 2]
+
+    # Compute inverse_grid
+    inverse_grid = invert_grid(grid, warped_x.shape, separable=True)[0:1]
+
+    # Expand inverse_grid to match batch size
+    B = warped_x.shape[0]
+    inverse_grid = inverse_grid.expand(B, -1, -1, -1)
+
+    # Perform unzoom
+    unwarped_x = F.grid_sample(
+        warped_x, inverse_grid, mode='bilinear',
+        align_corners=True, padding_mode='zeros'
+    )
+    # print("unwarped_x shape", unwarped_x.shape)
+
+    return unwarped_x
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def apply_unwarp(warped_x, grid):
+#     print(f'warped_x is {warped_x.shape} grid is {grid.shape}' ) # [1, 3, 600, 1067], [1, 600, 1067, 2]
+
+#     # NOTE: unsqueeze to 5d, maybe change later
+#     if len(warped_x.shape) == 3:
+#         warped_x = warped_x.unsqueeze(0).unsqueeze(0)
+    
+#     elif len(warped_x.shape) == 4:
+#         warped_x = warped_x.unsqueeze(0)
+    
+#     # init all these for now
+#     inverse_grids = None
+
+#     # Unzoom
+#     # x = []
+    
+#     # precompute and cache inverses
+#     if inverse_grids is None:
+#         inverse_grids = []
+#         for i in range(len(warped_x)):
+#             input_shape = warped_x[i].shape
+#             inverse_grid = invert_grid(grid, input_shape,
+#                                         separable=True)[0:1]
+#             print("inverse_grid shape", inverse_grid.shape)
+#             inverse_grids.append(inverse_grid)
+#     # perform unzoom
+#     for i in range(len(warped_x)):
+#         B = len(warped_x[i])
+#         inverse_grid = inverse_grids[i].expand(B, -1, -1, -1)
+#         unwarped_x = F.grid_sample(
+#             warped_x[i], inverse_grid, mode='bilinear',
+#             align_corners=True, padding_mode='zeros'
+#         )
+#         print("unwarped_x shape", unwarped_x.shape) # [1, 3, 600, 1067]
+#         # x.append(unwarped_x)
+
+#     # return tuple(x)
+#     return unwarped_x
+
 
 
 # # NOTE: for one-way inference only. Do not use during training (NOTE: not working for now)
