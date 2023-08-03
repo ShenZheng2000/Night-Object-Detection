@@ -10,6 +10,7 @@ import time
 from pycocotools.coco import COCO
 from copy import deepcopy
 from .path_blur import is_out_of_bounds
+from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
     
 
 def unwarp_bboxes(bboxes, grid, output_shape):
@@ -79,7 +80,7 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True):
     # read image
     img = img.float()
     device = img.device
-    my_shape = img.shape[1:]
+    my_shape = img.shape[-2:]
     imgs = img.unsqueeze(0) 
 
     if use_ins:
@@ -116,30 +117,39 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True):
     
 
 
-def apply_warp_aug(img, ins, vanishing_point, warp_aug=False, warp_aug_lzu=False, grid_net=None):
+def apply_warp_aug(img, ins, vanishing_point, warp_aug=False, 
+                    warp_aug_lzu=False, grid_net=None, keep_size=True):
+    # print(f"img is {img.shape}") # [3, 600, 1067]
+    grid = None
 
-    img_height, img_width = img.shape[1:]
+    img_height, img_width = img.shape[-2:]
 
     if is_out_of_bounds(vanishing_point, img_width, img_height):
-        return img, ins
+        return img, ins, grid
     elif warp_aug:
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
     elif warp_aug_lzu:
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False)
 
     # reshape 4d to 3d
-    if len(img.shape) == 4:
+    if (len(img.shape) == 4) and keep_size:
         img = img.squeeze(0) 
 
     return img, ins, grid
 
 
-# TODO: debug single images
-# TODO: experiments tensor size like [10, 2048, 38, 67]
-# TODO: use rcnn.py to call this file
-# TODO: debug visuslization
-def apply_unwarp(warped_x, grid):
-    if len(warped_x.shape) == 3:
+# TODO: debug single images (DONE)
+# TODO: read vp and file_name in rcnn.py (DONE)
+# TODO: use rcnn.py to call this file (DONE)
+# TODO: visualize warpped images (DONE)
+# TODO: comment out night_aug's unwarp code (DONE)
+# TODO: address both oob cases => skip images or edit original json files (DONE)
+# TODO: move all to GPU (DONE)
+# TODO: vectorize the code (TODO later)
+# TODO: clean into one function here (TODO later)
+# TODO: start training
+def apply_unwarp(warped_x, grid, keep_size=True):
+    if (len(warped_x.shape) == 3) and keep_size:
         warped_x = warped_x.unsqueeze(0)
 
     # print(f'warped_x is {warped_x.shape} grid is {grid.shape}') # [1, 3, 600, 1067], [1, 600, 1067, 2]
@@ -156,12 +166,26 @@ def apply_unwarp(warped_x, grid):
         warped_x, inverse_grid, mode='bilinear',
         align_corners=True, padding_mode='zeros'
     )
-    # print("unwarped_x shape", unwarped_x.shape)
+    # print("unwarped_x shape", unwarped_x.shape) # [1, 3, 600, 1067]
+
+    if (len(unwarped_x.shape) == 4) and keep_size:
+        unwarped_x = unwarped_x.squeeze(0)
+
+    # print("unwarped_x shape", unwarped_x.shape) # [3, 600, 1067]
+
+    # print(f"unwarped_x min {unwarped_x.min()} max {unwarped_x.max()}") # [0, 255]
 
     return unwarped_x
 
 
 
+def extract_ratio_and_flip(transform_list):
+    for transform in transform_list:
+        if isinstance(transform, ResizeTransform):
+            ratio = transform.new_h / transform.h
+        elif isinstance(transform, (HFlipTransform, NoOpTransform)):
+            flip = transform
+    return ratio, flip
 
 
 

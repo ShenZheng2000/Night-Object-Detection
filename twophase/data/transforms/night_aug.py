@@ -15,7 +15,7 @@ from .path_blur import make_path_blur, get_vanising_points, is_out_of_bounds
 from .light import get_keypoints, generate_light
 import time
 from .grid_generator import CuboidGlobalKDEGrid
-from .fovea import apply_warp_aug, apply_unwarp
+from .fovea import apply_warp_aug, apply_unwarp, extract_ratio_and_flip
 # from .fixed_grid import FixedGrid
 import random
 
@@ -23,7 +23,6 @@ import random
 class NightAug:
     def __init__(self):
         self.gaussian = T.GaussianBlur(11,(0.1,2.0))
-        self.grid_net = None
 
     def mask_img(self,img,cln_img):
         while R.random()>0.4:
@@ -138,20 +137,12 @@ class NightAug:
                 zeta_values=None,
                 warp_aug=False,
                 warp_aug_lzu=False,
+                grid_net=None,
                 use_debug=False):
 
         # NOTE: add debug mode here
         if use_debug:
             aug_prob = 0.0
-
-        # NOTE: pre-build grid_net here to save comp. time
-        my_shape = x[0]['image'].shape[1:]
-
-        if warp_aug or warp_aug_lzu:
-            self.grid_net = CuboidGlobalKDEGrid(separable=True, 
-                                            anti_crop=True, 
-                                            input_shape=my_shape, 
-                                            output_shape=my_shape)
                             
         for sample in x:
 
@@ -159,15 +150,17 @@ class NightAug:
             file_name = sample['file_name']
             transform_list = sample['transform']
 
-            self.ratio = None
-            flip = None
+            self.ratio, flip = extract_ratio_and_flip(transform_list)
 
-            for transform in transform_list:
-                if isinstance(transform, ResizeTransform):
-                    if self.ratio is None:
-                        self.ratio = transform.new_h / transform.h
-                elif isinstance(transform, (HFlipTransform, NoOpTransform)):
-                    flip = transform
+            # self.ratio = None
+            # flip = None
+
+            # for transform in transform_list:
+            #     if isinstance(transform, ResizeTransform):
+            #         if self.ratio is None:
+            #             self.ratio = transform.new_h / transform.h
+            #     elif isinstance(transform, (HFlipTransform, NoOpTransform)):
+            #         flip = transform
 
             # print("transform_list is", transform_list)
 
@@ -254,14 +247,13 @@ class NightAug:
                                                 zeta_values)
                     # save_image(img / 255.0, 'after_blur.png')
 
-                if R.random()>aug_prob:
-                    img, ins, grid = apply_warp_aug(img, ins, new_vanishing_point, 
-                                                    warp_aug, warp_aug_lzu, self.grid_net)
-                    
-                    # # unwarp images here
-                    if warp_aug_lzu:
-                        img = apply_unwarp(img, grid)
 
+                if R.random()>aug_prob:
+                    # NOTE: only warp_aug here. use xxx.lzu later in rcnn
+                    if warp_aug:
+                        img, ins, grid = apply_warp_aug(img, ins, new_vanishing_point, 
+                                                    warp_aug, warp_aug_lzu, grid_net)
+                    
             
             # NOTE: format should be same as previous
             # print(f"file_name {file_name} After ins {ins}")

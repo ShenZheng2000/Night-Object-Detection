@@ -15,6 +15,15 @@ from detectron2.modeling.roi_heads import build_roi_heads
 from detectron2.utils.events import get_event_storage
 from detectron2.structures import ImageList
 
+import sys
+sys.path.append('/root/autodl-tmp/Methods/Night-Object-Detection')
+
+from twophase.data.transforms.fovea import apply_warp_aug, apply_unwarp, extract_ratio_and_flip
+from twophase.data.transforms.path_blur import get_vanising_points
+
+import torchvision.utils as vutils
+import matplotlib.pyplot as plt
+import time
 #######################
 
 @META_ARCH_REGISTRY.register()
@@ -88,7 +97,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
     def forward(
         self, batched_inputs, branch="supervised", given_proposals=None, val_mode=False, proposal_index = None,
-        warp_aug_lzu=False,
+        warp_aug_lzu=False, vp_dict=None, grid_net=None,
     ):
         """
         Args:
@@ -125,14 +134,84 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
-        # TODO: call warp here
-        features = self.backbone(images.tensor)
-        # TODO: call unwarp here
 
+        # print(f"batched_inputs len is {len(batched_inputs)}, [0].keys() is {batched_inputs[0].keys()}") 
+            # 12, dict_keys(['file_name', 'height', 'width', 'image_id', 'transform', 'instances', 'image'])
+        # print("images.tensor shape", images.tensor.shape) # [10, 3, 600, 1067]
+        # print("images is", images) # <detectron2.structures.image_list.ImageList object at 0x7fc5ab256fd0>
+        # .to(self.device)
+
+        if warp_aug_lzu:
+
+            t1 = time.time()
+
+            # Preprocessing
+            vanishing_points = []
+            for sample in batched_inputs:
+                # Step 0: Obtain file_name, transform_list
+                file_name = sample['file_name']
+                transform_list = sample['transform']
+
+                # Step 1: Compute self.ratio and flip from transform_list
+                ratio, flip = extract_ratio_and_flip(transform_list)
+
+                # Step 2: Compute vanishing points
+                # print(f"file_name {file_name}, ratio {ratio}, flip {flip}")
+                vp = get_vanising_points(file_name, vp_dict, ratio, flip)
+                vanishing_points.append(vp)
+
+            pvp = time.time()
+            # print(f"preprocess vp {(pvp - t1)}")
+
+            # Step 3: Apply warping
+            warped_images = []
+            grids = []
+            for image, vp in zip(images.tensor, vanishing_points):
+                # print(f"image.device {image.device}")
+                warped_image, _, grid = apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net)
+                warped_images.append(warped_image)
+                grids.append(grid)
+            warped_images = torch.stack(warped_images) # [BS, C, H, W]
+
+            war = time.time()
+            # print(f"image warpping {(war - pvp)}")
+
+            # NOTE: save image for debug
+            # for i, img in enumerate(warped_images):
+            #     # Save the image
+            #     vutils.save_image(img, f'warped_image_{i}.jpg', normalize=True)            
+
+            # Step 4: Call the backbone
+            features = self.backbone(warped_images)
+
+            fet = time.time()
+            # print(f"features {(fet - war)}")
+
+            # Step 5: Apply unwarping
+            feature_key = next(iter(features))
+            feature_val = features[feature_key]
+
+            unwarped_features = []
+            for feature, grid in zip(feature_val, grids):
+                # print(f"feature.device {feature.device} grid.device {grid.device}")
+                unwarped_feature = apply_unwarp(feature, grid)
+                unwarped_features.append(unwarped_feature)
+            
+            unwarped_features = torch.stack(unwarped_features) # [BS, c, h, w]
+
+            # Replace the original features with unwarped ones
+            features[feature_key] = unwarped_features
+
+            unwar = time.time()
+            # print(f"features {(unwar - fet)}")
+
+        
+        else:
+            features = self.backbone(images.tensor)
         # first_key = next(iter(features))
         # first_value = features[first_key]
         # print(f"len {len(features)} all_keys {features.keys()} first_key {first_key}, first_value {first_value.shape}")
-        # 1, dict_keys(['res5']), res5, torch.Size([10, 2048, 38, 67])
+            # 1, dict_keys(['res5']), res5, torch.Size([BS, 2048, 38, 67])
 
         # TODO: remove the usage of if else here. This needs to be re-organized
         if branch == "supervised":

@@ -43,6 +43,7 @@ from twophase.solver.build import build_lr_scheduler
 from twophase.evaluation import PascalVOCDetectionEvaluator, COCOEvaluator
 from twophase.modeling.custom_losses import ConsistencyLosses
 from twophase.data.transforms.night_aug import NightAug
+from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid
 import copy
 
 from twophase.modeling.masking import Masking
@@ -535,6 +536,16 @@ class TwoPCTrainer(DefaultTrainer):
         else:
             label_data, unlabel_data, unlabel_dep_data = data
 
+        # NOTE: build grid_net here
+        if self.cfg.WARP_AUG or self.cfg.WARP_AUG_LZU:
+            my_shape = label_data[0]['image'].shape[1:]
+            self.grid_net = CuboidGlobalKDEGrid(separable=True, 
+                                                anti_crop=True, 
+                                                input_shape=my_shape, 
+                                                output_shape=my_shape)
+        else:
+            self.grid_net = None
+
 
         data_time = time.perf_counter() - start
 
@@ -560,6 +571,7 @@ class TwoPCTrainer(DefaultTrainer):
                                                 zeta_values=self.cfg.zeta_values,
                                                 warp_aug=self.cfg.WARP_AUG,
                                                 warp_aug_lzu=self.cfg.WARP_AUG_LZU,
+                                                grid_net=self.grid_net,
                                                 use_debug=self.cfg.USE_DEBUG,
                                                 )
             label_data.extend(label_data_aug)
@@ -586,9 +598,11 @@ class TwoPCTrainer(DefaultTrainer):
               
             record_dict, _, _, _ = self.model(
                                             label_data, branch="supervised", 
-                                            warp_aug_lzu=self.cfg.WARP_AUG_LZU)
+                                            warp_aug_lzu=self.cfg.WARP_AUG_LZU,
+                                            vp_dict=self.vanishing_point,
+                                            grid_net=self.grid_net)
             
-            sys.exit(1) # TODO: delete this 
+            # sys.exit(1) # TODO: delete this 
 
             # NOTE: skip this part since no teacher-student in source domain
             # record_dict, _, roi_stu_src_1, _ = self.model(
@@ -1152,6 +1166,7 @@ def save_normalized_images(data, data_aug, out_dir):
         aug_image = torch.flip(aug_image, [0])
 
         # Concatenate images along width dimension
+        # print(f"image shape {image.shape} aug_image shape {aug_image.shape}")
         combined_image = torch.cat((image, aug_image), 2)  # assumes image size is (C, H, W)
 
         os.makedirs(out_dir, exist_ok=True)

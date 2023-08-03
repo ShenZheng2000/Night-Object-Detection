@@ -33,7 +33,7 @@ DATALOADER:
   SUP_PERCENT: 100.0
 DATASETS:
   CROSS_DATASET: True
-  TRAIN_LABEL: ("bdd100k_day_train",) #voc_2012_train
+  TRAIN_LABEL: ("bdd100k_day_train_valid_vp",) #voc_2012_train # TODO: replace with all valid vps
   TRAIN_UNLABEL: ("bdd100k_night_train",) #Clipart1k_train
   TRAIN_UNLABEL_DEPTH: ("bdd100k_night_train_depth",)
   TEST: ("bdd100k_night_val",) #Clipart1k_test
@@ -53,12 +53,12 @@ NIGHTAUG: True
 STUDENT_SCALE: True
 CONSISTENCY: True
 
-VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
+VANISHING_POINT: "/root/autodl-tmp/Datasets/VP/train_day.json"
 
 # WARP_AUG: True
 WARP_AUG_LZU: True
 
 
-USE_DEBUG: True
-TWO_PC_AUG: False
-AUG_PROB: 1.0
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
