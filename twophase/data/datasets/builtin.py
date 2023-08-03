@@ -198,97 +198,104 @@ register_all_water(_root)
 # 'datasets/bdd100k/val_night.json', 
 # 'datasets/bdd100k/val')
 
+data_path = '/root/autodl-tmp/Datasets'
+
 # NOTE: change to current path
 # TODO: use the correct label and #GPU for training!
 # NOTE: change according to each server
 register_coco_instances("bdd100k_day_train",
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_day.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+f'{data_path}/bdd100k/coco_labels/train_day.json', 
+f'{data_path}/bdd100k/images/100k/train')
 
 register_coco_instances("bdd100k_day_train_valid_vp",
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_day_valid_vp.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+f'{data_path}/bdd100k/coco_labels/train_day_valid_vp.json', 
+f'{data_path}/bdd100k/images/100k/train')
 
 register_coco_instances("bdd100k_night_train", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_night.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+f'{data_path}/bdd100k/coco_labels/train_night.json', 
+f'{data_path}/bdd100k/images/100k/train')
+
+register_coco_instances("bdd100k_night_train_TPSeNCE", 
+{}, 
+f'{data_path}/bdd100k/coco_labels/train_day.json', 
+f'{data_path}/bdd100k/images/100k/TPSeNCE_night')
 
 # NOTE: add labels for curriculum learning
 register_coco_instances("bdd100k_train_dd", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_dawn_dusk_cur.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+f'{data_path}/bdd100k/coco_labels/train_dawn_dusk_cur.json', 
+f'{data_path}/bdd100k/images/100k/train')
 
 register_coco_instances("bdd100k_train_n", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_night_cur.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+f'{data_path}/bdd100k/coco_labels/train_night_cur.json', 
+f'{data_path}/bdd100k/images/100k/train')
 
 register_coco_instances("bdd100k_train_n_png", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_night_cur_png.json', 
-'/root/autodl-tmp/Datasets/Depth/train__night_dawn_dusk')
+f'{data_path}/bdd100k/coco_labels/train_night_cur_png.json', 
+f'{data_path}/Depth/train__night_dawn_dusk')
 
 # register for c.l. (w/ simple swap)
 register_coco_instances("bdd100k_train_ddd", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_day_dawn_dusk_cur.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+f'{data_path}/bdd100k/coco_labels/train_day_dawn_dusk_cur.json', 
+f'{data_path}/bdd100k/images/100k/train')
 
 register_coco_instances("bdd100k_train_ddn", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_dawn_dusk_night_cur.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/train')
+f'{data_path}/bdd100k/coco_labels/train_dawn_dusk_night_cur.json', 
+f'{data_path}/bdd100k/images/100k/train')
 
 
 register_coco_instances("bdd100k_night_val", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/val_night.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+f'{data_path}/bdd100k/coco_labels/val_night.json', 
+f'{data_path}/bdd100k/images/100k/val')
 
 # NOTE: add enhanced images
 register_coco_instances("bdd100k_night_val_SGZ", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/val_night.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val_enhance/SGZ')
+f'{data_path}/bdd100k/coco_labels/val_night.json', 
+f'{data_path}/bdd100k/images/100k/val_enhance/SGZ')
 
 register_coco_instances("bdd100k_night_val_CLAHE", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/val_night.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val_enhance/CLAHE')
+f'{data_path}/bdd100k/coco_labels/val_night.json', 
+f'{data_path}/bdd100k/images/100k/val_enhance/CLAHE')
 
 register_coco_instances("20230112_o", 
 {}, 
-'/root/autodl-tmp/Datasets/rain_night01/20230112_o.json',
-'/root/autodl-tmp/Datasets/rain_night01/20230112_o')
+f'{data_path}/rain_night01/20230112_o.json',
+f'{data_path}/rain_night01/20230112_o')
 
 register_coco_instances("bdd100k_night_val_all", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels_new/all/bdd100k_labels_images_det_coco_val_night_dawn_dusk.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+f'{data_path}/bdd100k/coco_labels_new/all/bdd100k_labels_images_det_coco_val_night_dawn_dusk.json', 
+f'{data_path}/bdd100k/images/100k/val')
 
 register_coco_instances("bdd100k_night_val_rainy", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels_new/rainy/bdd100k_labels_images_det_coco_val_rainy_night_dawn_dusk.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+f'{data_path}/bdd100k/coco_labels_new/rainy/bdd100k_labels_images_det_coco_val_rainy_night_dawn_dusk.json', 
+f'{data_path}/bdd100k/images/100k/val')
 
 register_coco_instances("bdd100k_night_val_snowy", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels_new/snowy/bdd100k_labels_images_det_coco_val_snowy_night_dawn_dusk.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+f'{data_path}/bdd100k/coco_labels_new/snowy/bdd100k_labels_images_det_coco_val_snowy_night_dawn_dusk.json', 
+f'{data_path}/bdd100k/images/100k/val')
 
 register_coco_instances("bdd100k_night_val_foggy", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels_new/foggy/bdd100k_labels_images_det_coco_val_foggy_night_dawn_dusk.json', 
-'/root/autodl-tmp/Datasets/bdd100k/images/100k/val')
+f'{data_path}/bdd100k/coco_labels_new/foggy/bdd100k_labels_images_det_coco_val_foggy_night_dawn_dusk.json', 
+f'{data_path}/bdd100k/images/100k/val')
 
 register_coco_instances("bdd100k_night_train_depth", 
 {}, 
-'/root/autodl-tmp/Datasets/bdd100k/coco_labels/train_night_png.json',
-'/root/autodl-tmp/Datasets/Depth/train__night_dawn_dusk')
+f'{data_path}/bdd100k/coco_labels/train_night_png.json',
+f'{data_path}/Depth/train__night_dawn_dusk')
 
 register_coco_instances("sim_day_train",
 {},
