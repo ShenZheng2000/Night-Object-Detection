@@ -9,8 +9,10 @@ import json
 import time
 from pycocotools.coco import COCO
 from copy import deepcopy
-from .path_blur import is_out_of_bounds
+from .path_blur import is_out_of_bounds, get_vanising_points
 from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
+import sys
+import torchvision.utils as vutils
     
 
 def unwarp_bboxes(bboxes, grid, output_shape):
@@ -186,6 +188,49 @@ def extract_ratio_and_flip(transform_list):
         elif isinstance(transform, (HFlipTransform, NoOpTransform)):
             flip = transform
     return ratio, flip
+
+
+
+def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone):
+    features = None
+    if warp_aug_lzu:
+        # Preprocessing
+        vanishing_points = [
+            get_vanising_points(
+                sample['file_name'], 
+                vp_dict, 
+                *extract_ratio_and_flip(sample['transform'])
+            ) for sample in batched_inputs
+        ]
+
+        # Apply warping
+        warped_images, _, grids = zip(*[
+            apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
+            for image, vp in zip(images.tensor, vanishing_points)
+        ])
+        warped_images = torch.stack(warped_images)
+
+        # NOTE: debug visualization
+        # for i, img in enumerate(warped_images):
+        #     # Save the image
+        #     vutils.save_image(img, f'warped_image_{i}.jpg', normalize=True)        
+
+        # sys.exit(1)
+
+        # Call the backbone
+        features = backbone(warped_images)
+
+        # Apply unwarping
+        feature_key = next(iter(features))
+        unwarped_features = torch.stack([
+            apply_unwarp(feature, grid)
+            for feature, grid in zip(features[feature_key], grids)
+        ])
+
+        # Replace the original features with unwarped ones
+        features[feature_key] = unwarped_features
+
+    return features
 
 
 

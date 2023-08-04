@@ -400,8 +400,10 @@
 # TODO: wait code to finish
 nohup \
 python train_net.py \
+      --resume \
       --num-gpus 3 \
       --config configs/bdd100k_warp_aug_8_2.yaml \
+      MODEL.WEIGHTS outputs/warp_aug_8_2/model_0029999.pth \
       OUTPUT_DIR outputs/warp_aug_8_2 \
       > warp_aug_8_2.out 2>&1 &
 

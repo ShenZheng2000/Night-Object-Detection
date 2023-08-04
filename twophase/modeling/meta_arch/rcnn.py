@@ -18,8 +18,7 @@ from detectron2.structures import ImageList
 import sys
 sys.path.append('/root/autodl-tmp/Methods/Night-Object-Detection')
 
-from twophase.data.transforms.fovea import apply_warp_aug, apply_unwarp, extract_ratio_and_flip
-from twophase.data.transforms.path_blur import get_vanising_points
+from twophase.data.transforms.fovea import process_and_update_features
 
 import torchvision.utils as vutils
 import matplotlib.pyplot as plt
@@ -95,6 +94,62 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
         return images, images_t
 
+    def inference(
+        self,
+        batched_inputs: List[Dict[str, torch.Tensor]],
+        detected_instances = None,
+        do_postprocess: bool = True,
+        warp_aug_lzu = False,
+        vp_dict = None,
+        grid_net = None,
+
+    ):
+        """
+        Run inference on the given inputs.
+
+        Args:
+            batched_inputs (list[dict]): same as in :meth:`forward`
+            detected_instances (None or list[Instances]): if not None, it
+                contains an `Instances` object per image. The `Instances`
+                object contains "pred_boxes" and "pred_classes" which are
+                known boxes in the image.
+                The inference will then skip the detection of bounding boxes,
+                and only predict other per-ROI outputs.
+            do_postprocess (bool): whether to apply post-processing on the outputs.
+
+        Returns:
+            When do_postprocess=True, same as in :meth:`forward`.
+            Otherwise, a list[Instances] containing raw network outputs.
+        """
+        assert not self.training
+
+        images = self.preprocess_image(batched_inputs)
+
+        # NOTE: add zoom-unzoom here
+        if warp_aug_lzu:
+            print("Hello! Running model inference with warp_aug_lzu!")
+            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, self.backbone)
+        else:
+            features = self.backbone(images.tensor)
+
+        if detected_instances is None:
+            if self.proposal_generator is not None:
+                proposals, _ = self.proposal_generator(images, features, None)
+            else:
+                assert "proposals" in batched_inputs[0]
+                proposals = [x["proposals"].to(self.device) for x in batched_inputs]
+
+            results, _ = self.roi_heads(images, features, proposals, None)
+        else:
+            detected_instances = [x.to(self.device) for x in detected_instances]
+            results = self.roi_heads.forward_with_given_boxes(features, detected_instances)
+
+        if do_postprocess:
+            assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
+            return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
+        return results
+
+
     def forward(
         self, batched_inputs, branch="supervised", given_proposals=None, val_mode=False, proposal_index = None,
         warp_aug_lzu=False, vp_dict=None, grid_net=None,
@@ -122,7 +177,10 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
                 "pred_boxes", "pred_classes", "scores", "pred_masks", "pred_keypoints"
         """
         if (not self.training) and (not val_mode):  # only conduct when testing mode
-            return self.inference(batched_inputs)
+            return self.inference(batched_inputs = batched_inputs,
+                                    warp_aug_lzu = warp_aug_lzu,
+                                    vp_dict = vp_dict,
+                                    grid_net = grid_net)
 
         source_label = 0
         target_label = 1
@@ -141,71 +199,9 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         # print("images is", images) # <detectron2.structures.image_list.ImageList object at 0x7fc5ab256fd0>
         # .to(self.device)
 
+        # NOTE: add zoom-unzoom here
         if warp_aug_lzu:
-
-            t1 = time.time()
-
-            # Preprocessing
-            vanishing_points = []
-            for sample in batched_inputs:
-                # Step 0: Obtain file_name, transform_list
-                file_name = sample['file_name']
-                transform_list = sample['transform']
-
-                # Step 1: Compute self.ratio and flip from transform_list
-                ratio, flip = extract_ratio_and_flip(transform_list)
-
-                # Step 2: Compute vanishing points
-                # print(f"file_name {file_name}, ratio {ratio}, flip {flip}")
-                vp = get_vanising_points(file_name, vp_dict, ratio, flip)
-                vanishing_points.append(vp)
-
-            pvp = time.time()
-            # print(f"preprocess vp {(pvp - t1)}")
-
-            # Step 3: Apply warping
-            warped_images = []
-            grids = []
-            for image, vp in zip(images.tensor, vanishing_points):
-                # print(f"image.device {image.device}")
-                warped_image, _, grid = apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net)
-                warped_images.append(warped_image)
-                grids.append(grid)
-            warped_images = torch.stack(warped_images) # [BS, C, H, W]
-
-            war = time.time()
-            # print(f"image warpping {(war - pvp)}")
-
-            # NOTE: save image for debug
-            # for i, img in enumerate(warped_images):
-            #     # Save the image
-            #     vutils.save_image(img, f'warped_image_{i}.jpg', normalize=True)            
-
-            # Step 4: Call the backbone
-            features = self.backbone(warped_images)
-
-            fet = time.time()
-            # print(f"features {(fet - war)}")
-
-            # Step 5: Apply unwarping
-            feature_key = next(iter(features))
-            feature_val = features[feature_key]
-
-            unwarped_features = []
-            for feature, grid in zip(feature_val, grids):
-                # print(f"feature.device {feature.device} grid.device {grid.device}")
-                unwarped_feature = apply_unwarp(feature, grid)
-                unwarped_features.append(unwarped_feature)
-            
-            unwarped_features = torch.stack(unwarped_features) # [BS, c, h, w]
-
-            # Replace the original features with unwarped ones
-            features[feature_key] = unwarped_features
-
-            unwar = time.time()
-            # print(f"features {(unwar - fet)}")
-
-        
+            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, self.backbone)
         else:
             features = self.backbone(images.tensor)
         # first_key = next(iter(features))
