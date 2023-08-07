@@ -398,19 +398,18 @@
 
 
 # TODO: wait code to finish
-nohup \
-python train_net.py \
-      --resume \
-      --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_8_2.yaml \
-      MODEL.WEIGHTS outputs/warp_aug_8_2/model_0029999.pth \
-      OUTPUT_DIR outputs/warp_aug_8_2 \
-      > warp_aug_8_2.out 2>&1 &
-
-# TDOO: Now training on another machine. later: change to 3 GPUs
 # nohup \
 # python train_net.py \
-#       --num-gpus 2 \
-#       --config configs/bdd100k_cur_TPSeNCE_8_3.yaml \
-#       OUTPUT_DIR outputs/cur_TPSeNCE_8_3 \
-#       > cur_TPSeNCE_8_3.out 2>&1 &
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_8_2.yaml \
+#       MODEL.WEIGHTS outputs/warp_aug_8_2/model_0029999.pth \
+#       OUTPUT_DIR outputs/warp_aug_8_2 \
+#       > warp_aug_8_2.out 2>&1 &
+
+nohup \
+python train_net.py \
+      --num-gpus 3 \
+      --config configs/bdd100k_warp_aug_blur_8_5.yaml \
+      OUTPUT_DIR outputs/warp_aug_blur_8_5 \
+      > warp_aug_blur_8_5.out 2>&1 &

@@ -511,7 +511,7 @@ class TwoPCTrainer(DefaultTrainer):
             BURN_UP_STEP = 0
             MID_ITER = 1
 
-        # NOTE: add cur learning here
+        # NOTE: add cur learning here (label => unlabel_mid => unlabel_last)
         if self.cfg.DATASETS.CUR_LEARN:
 
             # print("self.cfg.DATASETS.CUR_LEARN is", self.cfg.DATASETS.CUR_LEARN)
@@ -532,6 +532,20 @@ class TwoPCTrainer(DefaultTrainer):
             elif last_stage:
                 # label_data = unlabel_data_mid
                 unlabel_data = unlabel_data_last
+        
+        # TODO: before all these, rewrite data loader!
+
+        # TODO: add cur learning (mix) here (label)
+            # (1) get label_data and label_data_mid
+            # (2) label_data = mix(label_data, label_data_mid)
+            # (3) first_stage: train on label_data
+            # (4) last_stage: adapt to unlabel_data
+
+        # TODO: add cur learning (seq) here
+            # (1) get label_data and label_data_mid
+            # (2) first_stage: train on label_data
+            # (3) mid_stage: train on label_data_mid
+            # (4) last_stage: adapt to unlabel_data_last
 
         else:
             label_data, unlabel_data, unlabel_dep_data = data
