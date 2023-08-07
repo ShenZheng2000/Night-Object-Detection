@@ -117,3 +117,7 @@ def add_teacher_config(cfg):
     # NOTE: using warping augmentation
     _C.WARP_AUG = False
     _C.WARP_AUG_LZU = False
+    
+    # NOTE: add cur learn seq
+    _C.DATASETS.CUR_LEARN_SEQ = False
+    _C.DATASETS.TRAIN_LABEL_MID = ("coco_2017_train",)

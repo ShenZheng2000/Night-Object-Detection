@@ -407,9 +407,17 @@
 #       OUTPUT_DIR outputs/warp_aug_8_2 \
 #       > warp_aug_8_2.out 2>&1 &
 
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_blur_8_5.yaml \
+#       OUTPUT_DIR outputs/warp_aug_blur_8_5 \
+#       > warp_aug_blur_8_5.out 2>&1 &
+
+
 nohup \
 python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_blur_8_5.yaml \
-      OUTPUT_DIR outputs/warp_aug_blur_8_5 \
-      > warp_aug_blur_8_5.out 2>&1 &
+      --num-gpus 2 \
+      --config configs/bdd100k_cur_TPSeNCE_8_7.yaml \
+      OUTPUT_DIR outputs/cur_TPSeNCE_8_7 \
+      > cur_TPSeNCE_8_7.out 2>&1 &

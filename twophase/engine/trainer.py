@@ -511,41 +511,45 @@ class TwoPCTrainer(DefaultTrainer):
             BURN_UP_STEP = 0
             MID_ITER = 1
 
-        # NOTE: add cur learning here (label => unlabel_mid => unlabel_last)
-        if self.cfg.DATASETS.CUR_LEARN:
-
-            # print("self.cfg.DATASETS.CUR_LEARN is", self.cfg.DATASETS.CUR_LEARN)
-            label_data, unlabel_data, unlabel_dep_data, \
-               unlabel_data_mid, unlabel_data_last = data
-            
-            # determine stages
+        # Determine stages
+        if self.cfg.DATASETS.CUR_LEARN_SEQ or self.cfg.DATASETS.CUR_LEARN:
             mid_stage = (BURN_UP_STEP <= self.iter < MID_ITER)
             last_stage = (self.iter >= MID_ITER)
-            # print(f"mid_stage = {mid_stage}, last_stage = {last_stage}")
+
+        # NOTE: currently CUR_LEARN and CUR_LEARN_SEQ cannot be used together => adjust iterations later
+        # If CUR_LEARN_SEQ is True, expect an additional label_data_mid
+        if self.cfg.DATASETS.CUR_LEARN_SEQ:
+            # Split the data tuple based on the presence of CUR_LEARN
+            if self.cfg.DATASETS.CUR_LEARN:
+                label_data, label_data_mid, unlabel_data, unlabel_dep_data, unlabel_data_mid, unlabel_data_last = data
+            else:
+                label_data, label_data_mid, unlabel_data, unlabel_dep_data = data
             
-            # mid stage => adapt from day (src) to dawn/dusk (first tgt)
+            # Adjust data for stages
             if mid_stage:
-                # label_data = label_data
-                unlabel_data = unlabel_data_mid
-            
-            # last stage => adapt from day (src) to night (second tgt)
-            elif last_stage:
-                # label_data = unlabel_data_mid
+                label_data = label_data_mid
+
+                if self.cfg.DATASETS.CUR_LEARN:
+                    unlabel_data = unlabel_data_mid
+
+            elif last_stage and self.cfg.DATASETS.CUR_LEARN:
                 unlabel_data = unlabel_data_last
-        
-        # TODO: before all these, rewrite data loader!
+
+        # If only CUR_LEARN is True
+        elif self.cfg.DATASETS.CUR_LEARN:
+            label_data, unlabel_data, unlabel_dep_data, unlabel_data_mid, unlabel_data_last = data
+
+            # Adjust data for stages
+            if mid_stage:
+                unlabel_data = unlabel_data_mid
+            elif last_stage:
+                unlabel_data = unlabel_data_last
 
         # TODO: add cur learning (mix) here (label)
             # (1) get label_data and label_data_mid
             # (2) label_data = mix(label_data, label_data_mid)
             # (3) first_stage: train on label_data
             # (4) last_stage: adapt to unlabel_data
-
-        # TODO: add cur learning (seq) here
-            # (1) get label_data and label_data_mid
-            # (2) first_stage: train on label_data
-            # (3) mid_stage: train on label_data_mid
-            # (4) last_stage: adapt to unlabel_data_last
 
         else:
             label_data, unlabel_data, unlabel_dep_data = data
@@ -564,7 +568,11 @@ class TwoPCTrainer(DefaultTrainer):
         data_time = time.perf_counter() - start
 
         # Add NightAug images into supervised batch
-        if self.cfg.NIGHTAUG:
+        # NOTE: do not use nightaug for label_data_mid!!!!
+        label_data_aug = None
+        if self.cfg.DATASETS.CUR_LEARN_SEQ and mid_stage:
+            pass
+        elif self.cfg.NIGHTAUG:
             # print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
             label_data_aug = self.night_aug.aug([x.copy() for x in label_data], 
                                                 motion_blur=self.cfg.MOTION_BLUR,
@@ -590,10 +598,13 @@ class TwoPCTrainer(DefaultTrainer):
                                                 )
             label_data.extend(label_data_aug)
 
-            if self.cfg.USE_DEBUG:
-                print("saving self.cfg.USE_DEBUG")
+        if self.cfg.USE_DEBUG:
+            print("saving self.cfg.USE_DEBUG")
+            if label_data_aug is not None:
                 save_normalized_images(label_data, label_data_aug, 'debug_image/night_aug')
-                sys.exit(1) # TODO: uncomment this later
+            else:
+                save_normalized_images(label_data, label_data, 'debug_image/no_night_aug')
+            sys.exit(1) # TODO: uncomment this later
 
         
         # NOTE: add masking for src images

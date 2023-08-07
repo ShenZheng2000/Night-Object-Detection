@@ -193,26 +193,24 @@ def build_unlabel_dataset(cfg, dataset_name, mapper, copy=False):
 
 # uesed by unbiased teacher trainer
 def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
-    if cfg.DATASETS.CROSS_DATASET:  # cross-dataset (e.g., coco-additional)
+    if cfg.DATASETS.CROSS_DATASET:
         label_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_LABEL, filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS)
         unlabel_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_UNLABEL)
         unlabel_dep_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_UNLABEL_DEPTH)
-    else:  # different degree of supervision (e.g., COCO-supervision)
-        dataset_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN, filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS)
-
-        # Divide into labeled and unlabeled sets according to supervision percentage
-        label_dicts, unlabel_dicts = divide_label_unlabel(
-            dataset_dicts,
-            cfg.DATALOADER.SUP_PERCENT,
-            cfg.DATALOADER.RANDOM_DATA_SEED,
-            cfg.DATALOADER.RANDOM_DATA_SEED_PATH,
-        )
+    else:
+        print("CROSS_DATASET must be True for now")
 
     if mapper is None:
         mapper = DatasetMapper(cfg, True)
 
     label_dataset = DatasetFromList(label_dicts, copy=False)
     label_dataset = MapDataset(label_dataset, mapper)
+
+    if cfg.DATASETS.CUR_LEARN_SEQ:
+        label_mid_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_LABEL_MID, 
+                                              filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS)
+        label_mid_dataset = DatasetFromList(label_mid_dicts, copy=False)
+        label_mid_dataset = MapDataset(label_mid_dataset, mapper)
 
     unlabel_dataset = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL, mapper)
     unlabel_dep_dataset = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL_DEPTH, mapper)
@@ -221,57 +219,45 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
     logger = logging.getLogger(__name__)
     logger.info("Using training sampler {}".format(sampler_name))
 
-    # if sampler_name == "TrainingSampler":
-    #     label_sampler = TrainingSampler(len(label_dataset))
-    #     unlabel_sampler = TrainingSampler(len(unlabel_dataset))
-    #     unlabel_dep_sampler = TrainingSampler(len(unlabel_dep_dataset))
-
     if sampler_name == "TrainingSampler":
         label_sampler = TrainingSampler(len(label_dataset))
         unlabel_sampler = TrainingSampler(len(unlabel_dataset))
         unlabel_dep_sampler = TrainingSampler(len(unlabel_dep_dataset))
+        
+        if cfg.DATASETS.CUR_LEARN_SEQ:
+            label_mid_sampler = TrainingSampler(len(label_mid_dataset))
 
-        # NOTE: add if (not elif) for cur learning options
         if cfg.DATASETS.CUR_LEARN:
             unlabel_dataset_mid = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL_MID, mapper)
             unlabel_dataset_last = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL_LAST, mapper)
             unlabel_sampler_mid = TrainingSampler(len(unlabel_dataset_mid))
             unlabel_sampler_last = TrainingSampler(len(unlabel_dataset_last))
-
     elif sampler_name == "RepeatFactorTrainingSampler":
         raise NotImplementedError("{} not yet supported.".format(sampler_name))
     else:
         raise ValueError("Unknown training sampler: {}".format(sampler_name))
-    
-    # return build_semisup_batch_data_loader_two_crop(
-    #     (label_dataset, unlabel_dataset, unlabel_dep_dataset),
-    #     (label_sampler, unlabel_sampler, unlabel_dep_sampler),
-    #     cfg.SOLVER.IMG_PER_BATCH_LABEL,
-    #     cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
-    #     aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
-    #     num_workers=cfg.DATALOADER.NUM_WORKERS,
-    # )
+
+    datasets = [label_dataset, unlabel_dataset, unlabel_dep_dataset]
+    samplers = [label_sampler, unlabel_sampler, unlabel_dep_sampler]
+
+    if cfg.DATASETS.CUR_LEARN_SEQ:
+        datasets.insert(1, label_mid_dataset)
+        samplers.insert(1, label_mid_sampler)
+
     if cfg.DATASETS.CUR_LEARN:
-        return build_semisup_batch_data_loader_two_crop(
-            (label_dataset, unlabel_dataset, unlabel_dep_dataset, unlabel_dataset_mid, unlabel_dataset_last),
-            (label_sampler, unlabel_sampler, unlabel_dep_sampler, unlabel_sampler_mid, unlabel_sampler_last),
-            cfg.SOLVER.IMG_PER_BATCH_LABEL,
-            cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
-            aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
-            num_workers=cfg.DATALOADER.NUM_WORKERS,
-        )
-    else:
-        return build_semisup_batch_data_loader_two_crop(
-            (label_dataset, unlabel_dataset, unlabel_dep_dataset),
-            (label_sampler, unlabel_sampler, unlabel_dep_sampler),
-            cfg.SOLVER.IMG_PER_BATCH_LABEL,
-            cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
-            aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
-            num_workers=cfg.DATALOADER.NUM_WORKERS,
-        )
+        datasets.extend([unlabel_dataset_mid, unlabel_dataset_last])
+        samplers.extend([unlabel_sampler_mid, unlabel_sampler_last])
+
+    return build_semisup_batch_data_loader_two_crop(
+        datasets,
+        samplers,
+        cfg.SOLVER.IMG_PER_BATCH_LABEL,
+        cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
+        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+    )
 
 # batch data loader
-# TODO: change this function to accomodate cur learning options
 def build_data_loader(dataset, sampler, num_workers):
     return torch.utils.data.DataLoader(
         dataset,

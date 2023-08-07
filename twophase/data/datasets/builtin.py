@@ -198,7 +198,7 @@ register_all_water(_root)
 # 'datasets/bdd100k/val_night.json', 
 # 'datasets/bdd100k/val')
 
-data_path = '/root/autodl-tmp/Datasets'
+data_path = '/home/aghosh/Projects/2PCNet/Datasets'
 
 # NOTE: change to current path
 # TODO: use the correct label and #GPU for training!
@@ -207,6 +207,11 @@ register_coco_instances("bdd100k_day_train",
 {}, 
 f'{data_path}/bdd100k/coco_labels/train_day.json', 
 f'{data_path}/bdd100k/images/100k/train')
+
+register_coco_instances("bdd100k_day_train_mid",
+{}, 
+f'{data_path}/bdd100k/coco_labels/train_day.json', 
+f'{data_path}/bdd100k/images/100k/TPSeNCE_night')
 
 register_coco_instances("bdd100k_day_train_valid_vp",
 {}, 
