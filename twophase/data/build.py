@@ -206,7 +206,7 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
     label_dataset = DatasetFromList(label_dicts, copy=False)
     label_dataset = MapDataset(label_dataset, mapper)
 
-    if cfg.DATASETS.CUR_LEARN_SEQ:
+    if cfg.DATASETS.CUR_LEARN_SEQ or cfg.DATASETS.CUR_LEARN_MIX:
         label_mid_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_LABEL_MID, 
                                               filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS)
         label_mid_dataset = DatasetFromList(label_mid_dicts, copy=False)
@@ -224,7 +224,7 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
         unlabel_sampler = TrainingSampler(len(unlabel_dataset))
         unlabel_dep_sampler = TrainingSampler(len(unlabel_dep_dataset))
         
-        if cfg.DATASETS.CUR_LEARN_SEQ:
+        if cfg.DATASETS.CUR_LEARN_SEQ or cfg.DATASETS.CUR_LEARN_MIX:
             label_mid_sampler = TrainingSampler(len(label_mid_dataset))
 
         if cfg.DATASETS.CUR_LEARN:
@@ -240,7 +240,7 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
     datasets = [label_dataset, unlabel_dataset, unlabel_dep_dataset]
     samplers = [label_sampler, unlabel_sampler, unlabel_dep_sampler]
 
-    if cfg.DATASETS.CUR_LEARN_SEQ:
+    if cfg.DATASETS.CUR_LEARN_SEQ or cfg.DATASETS.CUR_LEARN_MIX:
         datasets.insert(1, label_mid_dataset)
         samplers.insert(1, label_mid_sampler)
 

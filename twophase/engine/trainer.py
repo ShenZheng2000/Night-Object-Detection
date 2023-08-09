@@ -520,20 +520,14 @@ class TwoPCTrainer(DefaultTrainer):
         # If CUR_LEARN_SEQ is True, expect an additional label_data_mid
         if self.cfg.DATASETS.CUR_LEARN_SEQ:
             # Split the data tuple based on the presence of CUR_LEARN
-            if self.cfg.DATASETS.CUR_LEARN:
-                label_data, label_data_mid, unlabel_data, unlabel_dep_data, unlabel_data_mid, unlabel_data_last = data
-            else:
-                label_data, label_data_mid, unlabel_data, unlabel_dep_data = data
+            label_data, label_data_mid, unlabel_data, unlabel_dep_data = data
             
             # Adjust data for stages
             if mid_stage:
                 label_data = label_data_mid
 
-                if self.cfg.DATASETS.CUR_LEARN:
-                    unlabel_data = unlabel_data_mid
-
-            elif last_stage and self.cfg.DATASETS.CUR_LEARN:
-                unlabel_data = unlabel_data_last
+        elif self.cfg.DATASETS.CUR_LEARN_MIX:
+            label_data, label_data_mid, unlabel_data, unlabel_dep_data = data
 
         # If only CUR_LEARN is True
         elif self.cfg.DATASETS.CUR_LEARN:
@@ -544,12 +538,6 @@ class TwoPCTrainer(DefaultTrainer):
                 unlabel_data = unlabel_data_mid
             elif last_stage:
                 unlabel_data = unlabel_data_last
-
-        # TODO: add cur learning (mix) here (label)
-            # (1) get label_data and label_data_mid
-            # (2) label_data = mix(label_data, label_data_mid)
-            # (3) first_stage: train on label_data
-            # (4) last_stage: adapt to unlabel_data
 
         else:
             label_data, unlabel_data, unlabel_dep_data = data
@@ -598,10 +586,15 @@ class TwoPCTrainer(DefaultTrainer):
                                                 )
             label_data.extend(label_data_aug)
 
+        if self.cfg.DATASETS.CUR_LEARN_MIX:
+            label_data.extend(label_data_mid)
+
         if self.cfg.USE_DEBUG:
             print("saving self.cfg.USE_DEBUG")
             if label_data_aug is not None:
                 save_normalized_images(label_data, label_data_aug, 'debug_image/night_aug')
+            if label_data_mid is not None:
+                save_normalized_images(label_data, label_data_mid, 'debug_image/gen_night_aug')
             else:
                 save_normalized_images(label_data, label_data, 'debug_image/no_night_aug')
             sys.exit(1) # TODO: uncomment this later

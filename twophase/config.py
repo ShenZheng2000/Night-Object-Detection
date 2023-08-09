@@ -121,3 +121,6 @@ def add_teacher_config(cfg):
     # NOTE: add cur learn seq
     _C.DATASETS.CUR_LEARN_SEQ = False
     _C.DATASETS.TRAIN_LABEL_MID = ("coco_2017_train",)
+
+    # NOTE: add cur learn mix
+    _C.DATASETS.CUR_LEARN_MIX = False

@@ -415,9 +415,18 @@
 #       > warp_aug_blur_8_5.out 2>&1 &
 
 
+# nohup \
+# python train_net.py \
+#       --num-gpus 2 \
+#       --config configs/bdd100k_cur_TPSeNCE_8_7.yaml \
+#       OUTPUT_DIR outputs/cur_TPSeNCE_8_7 \
+#       > cur_TPSeNCE_8_7.out 2>&1 &
+
+# NOTE: add TPSeNCE_aug as additional augmentation
+# TODO: write yaml in a nice way so no need to hardcode so many iterations
 nohup \
 python train_net.py \
       --num-gpus 2 \
-      --config configs/bdd100k_cur_TPSeNCE_8_7.yaml \
-      OUTPUT_DIR outputs/cur_TPSeNCE_8_7 \
-      > cur_TPSeNCE_8_7.out 2>&1 &
+      --config configs/bdd100k_cur_TPSeNCE_8_8.yaml \
+      OUTPUT_DIR outputs/cur_TPSeNCE_8_8 \
+      > cur_TPSeNCE_8_8.out 2>&1 &
