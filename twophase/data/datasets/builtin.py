@@ -183,6 +183,17 @@ register_all_cityscapes_foggy(_root)
 register_all_clipart(_root)
 register_all_water(_root)
 
+data_path = '/home/aghosh/Projects/2PCNet/Datasets'
+enhance_path = '/home/aghosh/Projects/2PCNet/LLIE/Results'
+
+# NOTE: warp for LLIE enhanced images
+def register_retinex_model(model_name):
+    register_coco_instances(f"bdd100k_night_val_night_{model_name}", 
+                            {}, 
+                            f'{data_path}/bdd100k/coco_labels/val_night.json', 
+                            f'{enhance_path}/{model_name}/val_night')
+
+
 # Register datasets
 
 # register_coco_instances("bdd100k_day_train",
@@ -198,7 +209,6 @@ register_all_water(_root)
 # 'datasets/bdd100k/val_night.json', 
 # 'datasets/bdd100k/val')
 
-data_path = '/home/aghosh/Projects/2PCNet/Datasets'
 
 # NOTE: change to current path
 # TODO: use the correct label and #GPU for training!
@@ -262,6 +272,15 @@ f'{data_path}/bdd100k/coco_labels/val_night.json',
 f'{data_path}/bdd100k/images/100k/val')
 
 # NOTE: add enhanced images
+register_retinex_model("LLFlow")
+register_retinex_model("RetinexNet")
+register_retinex_model("RUAS")
+register_retinex_model("SCI")
+register_retinex_model("SGZ")
+register_retinex_model("URetinexNet")
+register_retinex_model("ZeroDCE")
+
+# SGZ
 register_coco_instances("bdd100k_night_val_SGZ", 
 {}, 
 f'{data_path}/bdd100k/coco_labels/val_night.json', 

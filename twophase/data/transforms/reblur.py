@@ -45,40 +45,6 @@ def generate_flow_and_blur(im, v_pts, T_z, zeta, B, C, H, W):
     return np_rgb, blur_image
 
 
-# def make_path_blur_new(im, v_pt, T_z, zeta):
-#     # start_time = time.time()
-
-#     if len(im.shape) < 4:
-#         im = im.unsqueeze(0)
-
-#     # Swap height and width for vp here
-#     v_pt = v_pt[::-1]
-
-#     # print("im device", im.device)
-#     im = torch.cat([im, im], dim=0)[:,:3,:,:]
-#     im = im / 255.
-    
-#     # print("v_pt is", v_pt)
-#     # print(f"im min {im.min()} {im.max()}")
-    
-#     # Duplicate the v_pt for the second image
-#     v_pts = torch.tensor([v_pt, v_pt]).cuda()
-#     B, C, H, W = im.size()
-
-#     # Iterate over parameter combinations
-#     np_rgb, blur_image = generate_flow_and_blur(im, v_pts, T_z, zeta, B, C, H, W)
-    
-#     # get the first image
-#     blur_image = blur_image[0]
-
-#     # clamp to [0, 1]
-#     blur_image = torch.clamp(blur_image, 0, 1)
-
-#     # end_time = time.time()
-#     # print(f"spend time {end_time - start_time}")
-
-#     return blur_image
-
 def make_path_blur_new(im, v_pt, T_z, zeta):
     # start_time = time.time()
 
@@ -112,3 +78,36 @@ def make_path_blur_new(im, v_pt, T_z, zeta):
 
     return blur_image
 
+# def make_path_blur_new(im, v_pt, T_z, zeta):
+#     # start_time = time.time()
+
+#     if len(im.shape) < 4:
+#         im = im.unsqueeze(0)
+
+#     # Swap height and width for vp here
+#     v_pt = v_pt[::-1]
+
+#     # print("im device", im.device)
+#     im = torch.cat([im, im], dim=0)[:,:3,:,:]
+#     im = im / 255.
+    
+#     # print("v_pt is", v_pt)
+#     # print(f"im min {im.min()} {im.max()}")
+    
+#     # Duplicate the v_pt for the second image
+#     v_pts = torch.tensor([v_pt, v_pt]).cuda()
+#     B, C, H, W = im.size()
+
+#     # Iterate over parameter combinations
+#     np_rgb, blur_image = generate_flow_and_blur(im, v_pts, T_z, zeta, B, C, H, W)
+    
+#     # get the first image
+#     blur_image = blur_image[0]
+
+#     # clamp to [0, 1]
+#     blur_image = torch.clamp(blur_image, 0, 1)
+
+#     # end_time = time.time()
+#     # print(f"spend time {end_time - start_time}")
+
+#     return blur_image

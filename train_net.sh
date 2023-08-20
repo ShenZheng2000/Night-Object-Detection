@@ -414,7 +414,7 @@
 #       OUTPUT_DIR outputs/warp_aug_blur_8_5 \
 #       > warp_aug_blur_8_5.out 2>&1 &
 
-
+# NOTE: not working well
 # nohup \
 # python train_net.py \
 #       --num-gpus 2 \
@@ -422,11 +422,34 @@
 #       OUTPUT_DIR outputs/cur_TPSeNCE_8_7 \
 #       > cur_TPSeNCE_8_7.out 2>&1 &
 
-# NOTE: add TPSeNCE_aug as additional augmentation
-# TODO: write yaml in a nice way so no need to hardcode so many iterations
-nohup \
-python train_net.py \
+# NOTE: add TPSeNCE_aug as additional augmentation => failed training
+# nohup \
+# python train_net.py \
+#       --num-gpus 2 \
+#       --config configs/bdd100k_cur_TPSeNCE_8_8.yaml \
+#       OUTPUT_DIR outputs/cur_TPSeNCE_8_8 \
+#       > cur_TPSeNCE_8_8.out 2>&1 &
+
+# Thought: if vp outside => blur too strong.
+  # Therefore, to improve path blur, we have to think about more balanced blurs
+  # For example, more for close-to-vp regions, and less for far-from-vp regions
+
+# # NOTE: testing on enhanced images
+train_model() {
+    local model_name="$1"
+    echo "Testing with $model_name"
+    python train_net.py \
       --num-gpus 2 \
-      --config configs/bdd100k_cur_TPSeNCE_8_8.yaml \
-      OUTPUT_DIR outputs/cur_TPSeNCE_8_8 \
-      > cur_TPSeNCE_8_8.out 2>&1 &
+      --eval-only \
+      --config "configs/${model_name}.yaml" \
+      MODEL.WEIGHTS "outputs/pretrained/model_final.pth" \
+      OUTPUT_DIR "outputs/${model_name}"
+}
+
+train_model "LLFlow"
+train_model "RetinexNet"
+train_model "RUAS"
+train_model "SCI"
+train_model "SGZ"
+train_model "URetinexNet"
+train_model "ZeroDCE"

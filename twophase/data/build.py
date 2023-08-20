@@ -195,8 +195,8 @@ def build_unlabel_dataset(cfg, dataset_name, mapper, copy=False):
 def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
     if cfg.DATASETS.CROSS_DATASET:
         label_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_LABEL, filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS)
-        unlabel_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_UNLABEL)
-        unlabel_dep_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_UNLABEL_DEPTH)
+        # unlabel_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_UNLABEL)
+        # unlabel_dep_dicts = build_dataset_dicts(cfg, cfg.DATASETS.TRAIN_UNLABEL_DEPTH)
     else:
         print("CROSS_DATASET must be True for now")
 
@@ -213,7 +213,7 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
         label_mid_dataset = MapDataset(label_mid_dataset, mapper)
 
     unlabel_dataset = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL, mapper)
-    unlabel_dep_dataset = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL_DEPTH, mapper)
+    # unlabel_dep_dataset = build_unlabel_dataset(cfg, cfg.DATASETS.TRAIN_UNLABEL_DEPTH, mapper)
 
     sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
     logger = logging.getLogger(__name__)
@@ -222,7 +222,7 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
     if sampler_name == "TrainingSampler":
         label_sampler = TrainingSampler(len(label_dataset))
         unlabel_sampler = TrainingSampler(len(unlabel_dataset))
-        unlabel_dep_sampler = TrainingSampler(len(unlabel_dep_dataset))
+        # unlabel_dep_sampler = TrainingSampler(len(unlabel_dep_dataset))
         
         if cfg.DATASETS.CUR_LEARN_SEQ or cfg.DATASETS.CUR_LEARN_MIX:
             label_mid_sampler = TrainingSampler(len(label_mid_dataset))
@@ -237,8 +237,10 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
     else:
         raise ValueError("Unknown training sampler: {}".format(sampler_name))
 
-    datasets = [label_dataset, unlabel_dataset, unlabel_dep_dataset]
-    samplers = [label_sampler, unlabel_sampler, unlabel_dep_sampler]
+    # datasets = [label_dataset, unlabel_dataset, unlabel_dep_dataset]
+    # samplers = [label_sampler, unlabel_sampler, unlabel_dep_sampler]
+    datasets = [label_dataset, unlabel_dataset]
+    samplers = [label_sampler, unlabel_sampler]
 
     if cfg.DATASETS.CUR_LEARN_SEQ or cfg.DATASETS.CUR_LEARN_MIX:
         datasets.insert(1, label_mid_dataset)

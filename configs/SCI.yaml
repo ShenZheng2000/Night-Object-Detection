@@ -1,0 +1,3 @@
+_BASE_: "./faster_rcnn_R50_bdd100k_CLAHE.yaml"
+DATASETS:
+  TEST: ("bdd100k_night_val_night_SCI",) #Clipart1k_test

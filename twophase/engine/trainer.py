@@ -516,22 +516,23 @@ class TwoPCTrainer(DefaultTrainer):
             mid_stage = (BURN_UP_STEP <= self.iter < MID_ITER)
             last_stage = (self.iter >= MID_ITER)
 
+
         # NOTE: currently CUR_LEARN and CUR_LEARN_SEQ cannot be used together => adjust iterations later
         # If CUR_LEARN_SEQ is True, expect an additional label_data_mid
         if self.cfg.DATASETS.CUR_LEARN_SEQ:
             # Split the data tuple based on the presence of CUR_LEARN
-            label_data, label_data_mid, unlabel_data, unlabel_dep_data = data
+            label_data, label_data_mid, unlabel_data = data
             
             # Adjust data for stages
             if mid_stage:
                 label_data = label_data_mid
 
         elif self.cfg.DATASETS.CUR_LEARN_MIX:
-            label_data, label_data_mid, unlabel_data, unlabel_dep_data = data
+            label_data, label_data_mid, unlabel_data = data
 
         # If only CUR_LEARN is True
         elif self.cfg.DATASETS.CUR_LEARN:
-            label_data, unlabel_data, unlabel_dep_data, unlabel_data_mid, unlabel_data_last = data
+            label_data, unlabel_data, unlabel_data_mid, unlabel_data_last = data
 
             # Adjust data for stages
             if mid_stage:
@@ -540,7 +541,7 @@ class TwoPCTrainer(DefaultTrainer):
                 unlabel_data = unlabel_data_last
 
         else:
-            label_data, unlabel_data, unlabel_dep_data = data
+            label_data, unlabel_data = data
 
         # NOTE: build grid_net here
         if self.cfg.WARP_AUG or self.cfg.WARP_AUG_LZU:
@@ -558,10 +559,11 @@ class TwoPCTrainer(DefaultTrainer):
         # Add NightAug images into supervised batch
         # NOTE: do not use nightaug for label_data_mid!!!!
         label_data_aug = None
+        label_data_mid = None
         if self.cfg.DATASETS.CUR_LEARN_SEQ and mid_stage:
             pass
         elif self.cfg.NIGHTAUG:
-            # print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
+            print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
             label_data_aug = self.night_aug.aug([x.copy() for x in label_data], 
                                                 motion_blur=self.cfg.MOTION_BLUR,
                                                 motion_blur_vet=self.cfg.MOTION_BLUR_VET,
@@ -665,8 +667,9 @@ class TwoPCTrainer(DefaultTrainer):
             gt_unlabel = self.get_label(unlabel_data)
             unlabel_data = self.remove_label(unlabel_data)
 
-            _ = self.get_label(unlabel_dep_data)
-            unlabel_dep_data = self.remove_label(unlabel_dep_data)
+            # _ = self.get_label(unlabel_dep_data)
+            # unlabel_dep_data = self.remove_label(unlabel_dep_data)
+            unlabel_dep_data = None
 
             # NOTE: process unlabel data
             record_dict, roi_stu_1, roi_teach_1 = self.process_data(unlabel_data,
