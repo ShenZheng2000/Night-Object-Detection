@@ -434,22 +434,42 @@
   # Therefore, to improve path blur, we have to think about more balanced blurs
   # For example, more for close-to-vp regions, and less for far-from-vp regions
 
-# # NOTE: testing on enhanced images
-train_model() {
-    local model_name="$1"
-    echo "Testing with $model_name"
-    python train_net.py \
-      --num-gpus 2 \
-      --eval-only \
-      --config "configs/${model_name}.yaml" \
-      MODEL.WEIGHTS "outputs/pretrained/model_final.pth" \
-      OUTPUT_DIR "outputs/${model_name}"
-}
+# # # NOTE: testing on enhanced images
+# train_model() {
+#     local model_name="$1"
+#     echo "Testing with $model_name"
+#     python train_net.py \
+#       --num-gpus 2 \
+#       --eval-only \
+#       --config "configs/${model_name}.yaml" \
+#       MODEL.WEIGHTS "outputs/pretrained/model_final.pth" \
+#       OUTPUT_DIR "outputs/${model_name}"
+# }
 
-train_model "LLFlow"
-train_model "RetinexNet"
-train_model "RUAS"
-train_model "SCI"
-train_model "SGZ"
-train_model "URetinexNet"
-train_model "ZeroDCE"
+# train_model "LLFlow"
+# train_model "RetinexNet"
+# train_model "RUAS"
+# train_model "SCI"
+# train_model "SGZ"
+# train_model "URetinexNet"
+# train_model "ZeroDCE"
+
+
+# # TODO: change config after debu
+# nohup \
+# python train_net.py \
+#       --num-gpus 2 \
+#       --config configs/bdd100k_path_blur_8_23.yaml \
+#       OUTPUT_DIR outputs/path_blur_8_23 \
+#       > path_blur_8_23.out 2>&1 &
+
+
+# TODO: change config after debu
+nohup \
+python train_net.py \
+      --resume \
+      --num-gpus 3 \
+      --config configs/bdd100k_path_blur_8_23.yaml \
+      MODEL.WEIGHTS outputs/path_blur_8_23/model_0019999.pth \
+      OUTPUT_DIR outputs/path_blur_8_23 \
+      > path_blur_8_23.out 2>&1 &

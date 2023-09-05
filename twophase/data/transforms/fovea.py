@@ -140,16 +140,16 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     return img, ins, grid
 
 
-# TODO: debug single images (DONE)
-# TODO: read vp and file_name in rcnn.py (DONE)
-# TODO: use rcnn.py to call this file (DONE)
-# TODO: visualize warpped images (DONE)
-# TODO: comment out night_aug's unwarp code (DONE)
-# TODO: address both oob cases => skip images or edit original json files (DONE)
-# TODO: move all to GPU (DONE)
-# TODO: vectorize the code (TODO later)
-# TODO: clean into one function here (TODO later)
-# TODO: start training
+# debug single images (DONE)
+# read vp and file_name in rcnn.py (DONE)
+# use rcnn.py to call this file (DONE)
+# visualize warpped images (DONE)
+# comment out night_aug's unwarp code (DONE)
+# address both oob cases => skip images or edit original json files (DONE)
+# move all to GPU (DONE)
+# vectorize the code (TODO later)
+# clean into one function here (TODO later)
+# start training
 def apply_unwarp(warped_x, grid, keep_size=True):
     if (len(warped_x.shape) == 3) and keep_size:
         warped_x = warped_x.unsqueeze(0)
@@ -231,17 +231,6 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         features[feature_key] = unwarped_features
 
     return features
-
-
-
-
-
-
-
-
-
-
-
 
 
 

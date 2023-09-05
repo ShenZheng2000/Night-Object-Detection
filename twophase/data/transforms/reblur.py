@@ -6,6 +6,12 @@ import torch
 import time
 
 def vp_flow_generator(im, v_pts, T_z, zeta):
+    '''
+    im: image
+    v_pts: vanishing point
+    T_z: strength of the motion
+    zeta: variability of the motion
+    '''
     B, C, H, W = im.size()
     flow = torch.zeros(B, 2, H, W, device=im.device)
     
@@ -20,7 +26,7 @@ def vp_flow_generator(im, v_pts, T_z, zeta):
     
     # Calculate distances
     # d = torch.sqrt(torch.sum((loc.unsqueeze(0) - v_pts)**2, dim=1))
-    d = torch.sqrt(torch.sum(torch.square(loc.unsqueeze(0) - v_pts), dim=1))
+    d = torch.sqrt(torch.sum(torch.square(loc.unsqueeze(0) - v_pts), dim=1)) # TODO: e.g., d **0.5 to scale distance
     
     # # Calculate flow using the CVPR 17 model
     # flow[:, 0] = T_z * torch.pow(d, zeta) * (loc[0].unsqueeze(0) - v_pts[:, 0])

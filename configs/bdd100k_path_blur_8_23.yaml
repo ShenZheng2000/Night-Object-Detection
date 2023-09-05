@@ -1,0 +1,27 @@
+_BASE_: "./faster_rcnn_R50_bdd100k.yaml"
+
+# basic stuffs with 3 GPUs => reduce based on batch size
+
+SOLVER:
+  STEPS: (72000, 96000, 108000, 432000)
+  MAX_ITER: 120000
+  IMG_PER_BATCH_LABEL: 15
+  IMG_PER_BATCH_UNLABEL: 15
+
+SEMISUPNET:
+  BURN_UP_STEP: 60000
+  SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400)
+
+
+# advanced stuffs => adjust based on your needs
+
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
+PATH_BLUR: True
+T_z_values: [2e-3, 2e-3]
+zeta_values: [0.4, 0.4]
+
+# TODO_later: log scale the distance or suppress vp OOB cases
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0

@@ -546,6 +546,7 @@ class TwoPCTrainer(DefaultTrainer):
         # NOTE: build grid_net here
         if self.cfg.WARP_AUG or self.cfg.WARP_AUG_LZU:
             my_shape = label_data[0]['image'].shape[1:]
+            # TODO: replace this with other gridnet (e.g., lzu's) for comparisons
             self.grid_net = CuboidGlobalKDEGrid(separable=True, 
                                                 anti_crop=True, 
                                                 input_shape=my_shape, 
@@ -563,7 +564,7 @@ class TwoPCTrainer(DefaultTrainer):
         if self.cfg.DATASETS.CUR_LEARN_SEQ and mid_stage:
             pass
         elif self.cfg.NIGHTAUG:
-            print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
+            # print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
             label_data_aug = self.night_aug.aug([x.copy() for x in label_data], 
                                                 motion_blur=self.cfg.MOTION_BLUR,
                                                 motion_blur_vet=self.cfg.MOTION_BLUR_VET,
@@ -594,12 +595,13 @@ class TwoPCTrainer(DefaultTrainer):
         if self.cfg.USE_DEBUG:
             print("saving self.cfg.USE_DEBUG")
             if label_data_aug is not None:
+                print('saving night_aug images')
                 save_normalized_images(label_data, label_data_aug, 'debug_image/night_aug')
             if label_data_mid is not None:
                 save_normalized_images(label_data, label_data_mid, 'debug_image/gen_night_aug')
             else:
                 save_normalized_images(label_data, label_data, 'debug_image/no_night_aug')
-            sys.exit(1) # TODO: uncomment this later
+            sys.exit(1)
 
         
         # NOTE: add masking for src images
@@ -622,7 +624,7 @@ class TwoPCTrainer(DefaultTrainer):
                                             vp_dict=self.vanishing_point,
                                             grid_net=self.grid_net)
             
-            # sys.exit(1) # TODO: delete this 
+            # sys.exit(1)
 
             # NOTE: skip this part since no teacher-student in source domain
             # record_dict, _, roi_stu_src_1, _ = self.model(
