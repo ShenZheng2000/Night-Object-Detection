@@ -1,18 +1,8 @@
 import torch
 import torch.nn.functional as F
-from .grid_generator import CuboidGlobalKDEGrid
 from .invert_grid import invert_grid
-import os
-from PIL import Image
-import torchvision.transforms as transforms
-import json
-import time
-from pycocotools.coco import COCO
-from copy import deepcopy
-from .path_blur import is_out_of_bounds, get_vanising_points
+from .reblur import is_out_of_bounds, get_vanising_points
 from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
-import sys
-import torchvision.utils as vutils
     
 
 def unwarp_bboxes(bboxes, grid, output_shape):
@@ -91,12 +81,6 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True):
         bboxes = ins.gt_boxes.tensor
         bboxes = bboxes.to(device)
 
-        # # Create an instance of CuboidGlobalKDEGrid
-        # grid_net = CuboidGlobalKDEGrid(separable=True, 
-        #                                 anti_crop=True, 
-        #                                 input_shape=my_shape, 
-        #                                 output_shape=my_shape)
-
         # warp image
         grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point)
 
@@ -140,16 +124,7 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     return img, ins, grid
 
 
-# debug single images (DONE)
-# read vp and file_name in rcnn.py (DONE)
-# use rcnn.py to call this file (DONE)
-# visualize warpped images (DONE)
-# comment out night_aug's unwarp code (DONE)
-# address both oob cases => skip images or edit original json files (DONE)
-# move all to GPU (DONE)
-# vectorize the code (TODO later)
-# clean into one function here (TODO later)
-# start training
+
 def apply_unwarp(warped_x, grid, keep_size=True):
     if (len(warped_x.shape) == 3) and keep_size:
         warped_x = warped_x.unsqueeze(0)
@@ -231,165 +206,3 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         features[feature_key] = unwarped_features
 
     return features
-
-
-
-
-
-
-# def apply_unwarp(warped_x, grid):
-#     print(f'warped_x is {warped_x.shape} grid is {grid.shape}' ) # [1, 3, 600, 1067], [1, 600, 1067, 2]
-
-#     # NOTE: unsqueeze to 5d, maybe change later
-#     if len(warped_x.shape) == 3:
-#         warped_x = warped_x.unsqueeze(0).unsqueeze(0)
-    
-#     elif len(warped_x.shape) == 4:
-#         warped_x = warped_x.unsqueeze(0)
-    
-#     # init all these for now
-#     inverse_grids = None
-
-#     # Unzoom
-#     # x = []
-    
-#     # precompute and cache inverses
-#     if inverse_grids is None:
-#         inverse_grids = []
-#         for i in range(len(warped_x)):
-#             input_shape = warped_x[i].shape
-#             inverse_grid = invert_grid(grid, input_shape,
-#                                         separable=True)[0:1]
-#             print("inverse_grid shape", inverse_grid.shape)
-#             inverse_grids.append(inverse_grid)
-#     # perform unzoom
-#     for i in range(len(warped_x)):
-#         B = len(warped_x[i])
-#         inverse_grid = inverse_grids[i].expand(B, -1, -1, -1)
-#         unwarped_x = F.grid_sample(
-#             warped_x[i], inverse_grid, mode='bilinear',
-#             align_corners=True, padding_mode='zeros'
-#         )
-#         print("unwarped_x shape", unwarped_x.shape) # [1, 3, 600, 1067]
-#         # x.append(unwarped_x)
-
-#     # return tuple(x)
-#     return unwarped_x
-
-
-
-# # NOTE: for one-way inference only. Do not use during training (NOTE: not working for now)
-# def set_up(input_dir, vanishing_points_file):
-#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-#     # Load vanishing points from the json file
-#     with open(vanishing_points_file, 'r') as f:
-#         vanishing_points = json.load(f)
-    
-#     # Modify vanishing_points to use basenames as keys
-#     vanishing_points = {os.path.basename(k): v for k, v in vanishing_points.items()}
-
-#     # Load one image to get the shape
-#     one_filename = next(os.path.join(input_dir, f) for f in os.listdir(input_dir) 
-#                         if os.path.isfile(os.path.join(input_dir, f)) and f.lower().endswith(('.png', '.jpg')))
-#     one_img = Image.open(one_filename)
-#     one_img_tensor = transforms.ToTensor()(one_img).float().to(device)
-#     my_shape = one_img_tensor.shape[1:]
-    
-#     # Create an instance of CuboidGlobalKDEGrid
-#     grid_net = CuboidGlobalKDEGrid(separable=True, 
-#                                     anti_crop=True, 
-#                                     input_shape=my_shape, 
-#                                     output_shape=my_shape).to(device)
-    
-#     return device, vanishing_points, grid_net
-
-
-# def make_warp_aug_debug(input_dir, output_dir, vanishing_points_file, coco_json_file, coco_json_out):
-#     device, vanishing_points, grid_net = set_up(input_dir, vanishing_points_file)
-    
-#     # Load the original COCO JSON
-#     coco = COCO(coco_json_file)
-    
-#     # Create a copy of the original COCO dataset that we will modify
-#     new_coco = deepcopy(coco.dataset)
-
-#     # Make an empty list to hold the new annotations
-#     new_annotations = []
-
-#     # Iterate over each image
-#     for img_id, img_info in coco.imgs.items():
-#         filename = img_info['file_name']
-
-#         # Check if the image exists in the input directory
-#         img_path = os.path.join(input_dir, filename)
-#         if not os.path.isfile(img_path):
-#             continue
-
-#         # Skip this image if it doesn't have a vanishing point
-#         if filename not in vanishing_points:
-#             continue
-
-#         # Load the image and convert to tensor
-#         img = Image.open(img_path)
-#         img_tensor = transforms.ToTensor()(img).float().to(device)
-
-#         # Get the vanishing point for this image
-#         vanishing_point = vanishing_points[filename]
-#         vanishing_point = torch.tensor(vanishing_point).float().to(device)
-
-#         # Warp image
-#         imgs = img_tensor.unsqueeze(0)
-#         grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point)
-
-#         # Get all annotations for this image
-#         ann_ids = coco.getAnnIds(imgIds=img_id)
-#         anns = coco.loadAnns(ann_ids)
-
-#         # Extract all bounding boxes for the current image and convert to (x1, y1, x2, y2)
-#         bboxes = [torch.tensor([ann['bbox'][0], ann['bbox'][1], ann['bbox'][0] + ann['bbox'][2], ann['bbox'][1] + ann['bbox'][3]]) for ann in anns]
-
-#         # Concatenate all bounding boxes into a single tensor
-#         bboxes = torch.stack(bboxes).to(device)
-
-#         print(f"unwarped_bboxes {bboxes}")
-
-#         # Warp all bounding boxes together
-#         warped_bboxes = warp_bboxes(bboxes, grid, separable=True)
-
-#         print(f"warped_bboxes {warped_bboxes}")
-
-#         # Update the 'bbox' field for each annotation
-#         for i, ann in enumerate(anns):
-#             warped_bbox = warped_bboxes[i]
-#             ann['bbox'] = warped_bbox.tolist()
-#             new_annotations.append(ann)
-
-#         # Save the warped image
-#         warped_img_pil = transforms.ToPILImage()(warped_imgs.squeeze(0).cpu())
-#         output_path = os.path.join(output_dir, filename)
-#         warped_img_pil.save(output_path)
-
-#     # Replace the annotations in the new COCO dataset
-#     new_coco['annotations'] = new_annotations
-
-#     # Save the new COCO dataset to a JSON file
-#     with open(coco_json_out, 'w') as f:
-#         json.dump(new_coco, f)
-
-#     # TODO: visualization gt images
-
-# if __name__ == '__main__':
-#     # TODO: add image reading and saving code to warp all training images!
-#     input_dir = "/home/aghosh/Projects/2PCNet/Datasets/debug_10"
-#     output_dir = "/home/aghosh/Projects/2PCNet/Datasets/debug_10_warp"
-#     os.makedirs(output_dir, exist_ok=True)
-#     vanishing_points_file = "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
-#     coco_json_file = '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_day.json'
-#     coco_json_out = 'debug_10.json'
-
-#     start_time = time.time()
-#     make_warp_aug_debug(input_dir, output_dir, vanishing_points_file, coco_json_file, coco_json_out)
-#     end_time = time.time()
-
-#     print(f"time elapsed = {(end_time - start_time):.3f}") # about 15 minutes

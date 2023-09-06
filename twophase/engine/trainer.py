@@ -46,8 +46,6 @@ from twophase.data.transforms.night_aug import NightAug
 from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid
 import copy
 
-from twophase.modeling.masking import Masking
-
 # Adaptive Teacher Trainer
 class TwoPCTrainer(DefaultTrainer):
     def __init__(self, cfg):
@@ -101,11 +99,6 @@ class TwoPCTrainer(DefaultTrainer):
         self.night_aug = NightAug()
 
         self.register_hooks(self.build_hooks()) 
-
-        self.masking = Masking(
-            block_size=cfg.MASKING_BLOCK_SIZE,
-            ratio=cfg.MASKING_RATIO
-            )        
 
     def resume_or_load(self, resume=True):
         """
@@ -566,25 +559,12 @@ class TwoPCTrainer(DefaultTrainer):
         elif self.cfg.NIGHTAUG:
             # print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
             label_data_aug = self.night_aug.aug([x.copy() for x in label_data], 
-                                                motion_blur=self.cfg.MOTION_BLUR,
-                                                motion_blur_vet=self.cfg.MOTION_BLUR_VET,
-                                                motion_blur_rand=self.cfg.MOTION_BLUR_RAND,
-                                                light_render=self.cfg.LIGHT_RENDER,
-                                                light_high=self.cfg.LIGHT_HIGH,
-                                                key_point = self.cfg.KEY_POINT,
                                                 vanishing_point= self.vanishing_point,
-                                                path_blur_cons=self.cfg.PATH_BLUR_CONS, 
-                                                path_blur_var=self.cfg.PATH_BLUR_VAR,
-                                                reflect_render=self.cfg.REFLECT_RENDER,
                                                 two_pc_aug=self.cfg.TWO_PC_AUG,
                                                 aug_prob=self.cfg.AUG_PROB,
-                                                hot_tail=self.cfg.HOT_TAIL,
                                                 path_blur_new=self.cfg.PATH_BLUR,
                                                 T_z_values=self.cfg.T_z_values,
                                                 zeta_values=self.cfg.zeta_values,
-                                                warp_aug=self.cfg.WARP_AUG,
-                                                warp_aug_lzu=self.cfg.WARP_AUG_LZU,
-                                                grid_net=self.grid_net,
                                                 use_debug=self.cfg.USE_DEBUG,
                                                 )
             label_data.extend(label_data_aug)
@@ -603,18 +583,6 @@ class TwoPCTrainer(DefaultTrainer):
                 save_normalized_images(label_data, label_data, 'debug_image/no_night_aug')
             sys.exit(1)
 
-        
-        # NOTE: add masking for src images
-        if self.cfg.USE_MASK_SRC:
-            label_mask_data = copy.deepcopy(label_data)
-            for i in range(len(label_data)):
-                label_mask_data[i]['image'] = self.masking(label_data[i]['image'].to('cuda')) # speed up with GPU
-
-            # ########## For visualization with debug purposes ##########
-            if self.cfg.USE_SRC_DEBUG:
-                print("saving USE_SRC_DEBUG")
-                save_normalized_images(label_data, label_mask_data, 'debug_image/src_mask')
-                sys.exit(1)
 
         if self.iter < BURN_UP_STEP:
               
@@ -626,18 +594,6 @@ class TwoPCTrainer(DefaultTrainer):
             
             # sys.exit(1)
 
-            # NOTE: skip this part since no teacher-student in source domain
-            # record_dict, _, roi_stu_src_1, _ = self.model(
-            #     label_data, branch="supervised")
-
-            # record_dict, _, roi_stu_src_2, _ = self.model(
-            #     label_mask_data, branch='supervised'
-            # )
-
-            # if self.cfg.MASKING_CONS_SRC:
-            #     mask_stu_cons_loss = self.consistency_losses.losses(roi_stu_src_1, roi_stu_src_2, use_match=True, prefix='mask_stu_src')
-            #     record_dict.update(mask_stu_cons_loss)
-            
             # weight losses
             loss_dict = {}
             for key in record_dict.keys():
@@ -678,58 +634,6 @@ class TwoPCTrainer(DefaultTrainer):
                                                                     unlabel_dep_data,
                                                                     record_dict,
                                                                     prefix='')
-
-            # NOTE: 2.5. Mask and process unlabeled data
-            # start_time = time.time()
-            if self.cfg.USE_MASK:
-
-                unlabel_mask_data = copy.deepcopy(unlabel_data)
-                for i in range(len(unlabel_data)):
-
-                    if self.cfg.MASKING_SPA:
-                        unlabel_mask_data[i]['image'] = self.masking(unlabel_data[i]['image'].to('cuda'),
-                                                                    unlabel_dep_data[i]['image'].to('cuda'))
-                    else:
-                        unlabel_mask_data[i]['image'] = self.masking(unlabel_data[i]['image'].to('cuda')) # speed up with GPU
-
-
-                _ = self.get_label(unlabel_mask_data)
-                unlabel_mask_data = self.remove_label(unlabel_mask_data)
-
-                record_dict, roi_stu_2, roi_teach_2 = self.process_data(unlabel_mask_data,
-                                                                        unlabel_dep_data,
-                                                                        record_dict,
-                                                                        prefix='mask')
-                
-                # NOTE: add mask consistency here
-                if self.cfg.MASKING_CONS:
-                    
-                    # cal cons loss
-                    mask_stu_cons_loss = self.consistency_losses.losses(roi_stu_1, 
-                                                                        roi_stu_2, 
-                                                                        use_match=True, 
-                                                                        prefix='mask_stu',
-                                                                        wei=self.cfg.MASKING_CONS_WEI)
-                    mask_teach_cons_loss = self.consistency_losses.losses(roi_teach_1, 
-                                                                        roi_teach_2, 
-                                                                        use_match=True, 
-                                                                        prefix='mask_teach',
-                                                                        wei=self.cfg.MASKING_CONS_WEI)
-
-                    # reweight cons loss
-                    # print("self.cfg.MASKING_CONS_WEI is", self.cfg.MASKING_CONS_WEI)
-                    # print("mask_stu_cons_loss is", mask_stu_cons_loss)
-                    # print("mask_teach_cons_loss is", mask_teach_cons_loss)
-
-                    record_dict.update(mask_stu_cons_loss)
-                    record_dict.update(mask_teach_cons_loss)
-
-
-                # ########## For visualization with debug purposes ##########
-                if self.cfg.USE_TGT_DEBUG:
-                    print("saving USE_TGT_DEBUG")
-                    save_normalized_images(unlabel_data, unlabel_mask_data, 'debug_image/tgt_mask')
-                    sys.exit(1)
 
             # weight losses
             loss_dict = {}
@@ -1126,27 +1030,6 @@ class BaselineTrainer(DefaultTrainer):
             self.storage.put_scalar("total_loss", total_losses_reduced)
             if len(metrics_dict) > 1:
                 self.storage.put_scalars(**metrics_dict)
-
-
-# def save_tensors_as_images(tensors):
-#     for i, tensor in enumerate(tensors):
-#         # Ensure the tensor is in CPU
-#         tensor = tensor.cpu()
-
-#         # Normalize the tensor to [0, 1] range
-#         tensor = tensor / 255.0
-        
-#         save_image(tensor, f'image_{i}.png')
-
-
-# def adjust_threshold(depth, default_threshold=0.9, depth_scale=255.0, min_threshold=0.7):
-#     # Normalize the depth to [0, 1]
-#     normalized_depth = depth / depth_scale
-
-#     # Adjust the threshold to be lower for larger depth
-#     adjusted_threshold = default_threshold - (default_threshold - min_threshold) * normalized_depth
-
-#     return adjusted_threshold
 
 
 def save_normalized_images(data, data_aug, out_dir):

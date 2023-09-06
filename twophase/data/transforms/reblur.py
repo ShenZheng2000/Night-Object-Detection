@@ -4,6 +4,9 @@ from reblur_package import FlowBlurrer
 from .flow_utils import flow_to_numpy_rgb
 import torch
 import time
+import random
+from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
+import os
 
 def vp_flow_generator(im, v_pts, T_z, zeta):
     '''
@@ -84,36 +87,53 @@ def make_path_blur_new(im, v_pt, T_z, zeta):
 
     return blur_image
 
-# def make_path_blur_new(im, v_pt, T_z, zeta):
-#     # start_time = time.time()
 
-#     if len(im.shape) < 4:
-#         im = im.unsqueeze(0)
+def apply_path_blur(img, vanishing_point, T_z_values=None, zeta_values=None):
+    '''
+    img: torch.tensor [C, H, W], (min:0, max:255)
+    vanishing_point: [vw, vh]
+    '''        
+    T_z = random.uniform(float(T_z_values[0]), float(T_z_values[1]))
+    zeta = random.uniform(float(zeta_values[0]), float(zeta_values[1]))
+    img = make_path_blur_new(img, vanishing_point, T_z, zeta)
+    img = img * 255.0
 
-#     # Swap height and width for vp here
-#     v_pt = v_pt[::-1]
-
-#     # print("im device", im.device)
-#     im = torch.cat([im, im], dim=0)[:,:3,:,:]
-#     im = im / 255.
+    # reshape 4d to 3d
+    if len(img.shape) == 4:
+        img = img.squeeze(0)
     
-#     # print("v_pt is", v_pt)
-#     # print(f"im min {im.min()} {im.max()}")
-    
-#     # Duplicate the v_pt for the second image
-#     v_pts = torch.tensor([v_pt, v_pt]).cuda()
-#     B, C, H, W = im.size()
+    return img
 
-#     # Iterate over parameter combinations
-#     np_rgb, blur_image = generate_flow_and_blur(im, v_pts, T_z, zeta, B, C, H, W)
-    
-#     # get the first image
-#     blur_image = blur_image[0]
 
-#     # clamp to [0, 1]
-#     blur_image = torch.clamp(blur_image, 0, 1)
+def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=False):
 
-#     # end_time = time.time()
-#     # print(f"spend time {end_time - start_time}")
+    # Get flip and new_width information
+    flip = isinstance(flip_transform, HFlipTransform)
+    if flip:
+        new_width = flip_transform.width
 
-#     return blur_image
+    # Get the vanishing point for the current image
+    image_basename = os.path.basename(image_path)
+    vanishing_point = vanishing_points[image_basename]
+
+    # Scale vanishing_point according to the ratio
+    vanishing_point = [n * ratio for n in vanishing_point]
+
+    # print("flip_transform is", flip_transform)
+    # print(f"vanishing_point Before {vanishing_point}")
+
+    if flip:
+        # Flip x-coordinates of vanishing_point
+        vanishing_point[0] = new_width - vanishing_point[0]
+
+    # print(f"vanishing_point After {vanishing_point}")
+
+    return vanishing_point
+
+def is_out_of_bounds(pt, img_width, img_height):
+    if (pt[0] < 0 and pt[1] < 0) or \
+        (pt[0] > img_width and pt[1] < 0) or \
+            (pt[0] < 0 and pt[1] > img_height) or \
+                (pt[0] > img_width and pt[1] > img_height):
+        return True
+    return False

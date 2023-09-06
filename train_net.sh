@@ -467,9 +467,7 @@
 # TODO: change config after debu
 nohup \
 python train_net.py \
-      --resume \
       --num-gpus 3 \
       --config configs/bdd100k_path_blur_8_23.yaml \
-      MODEL.WEIGHTS outputs/path_blur_8_23/model_0019999.pth \
       OUTPUT_DIR outputs/path_blur_8_23 \
-      > path_blur_8_23.out 2>&1 &
+      > path_blur_8_23_debug.out 2>&1 &

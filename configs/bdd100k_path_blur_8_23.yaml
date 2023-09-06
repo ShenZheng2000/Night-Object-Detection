@@ -22,6 +22,6 @@ zeta_values: [0.4, 0.4]
 
 # TODO_later: log scale the distance or suppress vp OOB cases
 
-# USE_DEBUG: True
-# TWO_PC_AUG: False
-# AUG_PROB: 1.0
+USE_DEBUG: True
+TWO_PC_AUG: False
+AUG_PROB: 1.0
