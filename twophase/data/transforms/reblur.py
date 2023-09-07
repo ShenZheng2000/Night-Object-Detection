@@ -131,6 +131,11 @@ def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=
     return vanishing_point
 
 def is_out_of_bounds(pt, img_width, img_height):
+    '''
+    pt: [pw, ph]
+    img_width: Width
+    img_height: Height
+    '''
     if (pt[0] < 0 and pt[1] < 0) or \
         (pt[0] > img_width and pt[1] < 0) or \
             (pt[0] < 0 and pt[1] > img_height) or \

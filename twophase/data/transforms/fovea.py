@@ -110,9 +110,10 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
 
     img_height, img_width = img.shape[-2:]
 
-    if is_out_of_bounds(vanishing_point, img_width, img_height):
-        return img, ins, grid
-    elif warp_aug:
+    # if is_out_of_bounds(vanishing_point, img_width, img_height):
+    #     print("HERE!!!")
+    #     return img, ins, grid
+    if warp_aug:
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
     elif warp_aug_lzu:
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False)

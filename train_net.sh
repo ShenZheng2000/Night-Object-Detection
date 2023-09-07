@@ -468,6 +468,6 @@
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_path_blur_8_23.yaml \
-      OUTPUT_DIR outputs/path_blur_8_23 \
-      > path_blur_8_23_debug.out 2>&1 &
+      --config configs/bdd100k_warp_aug_debug_9_6.yaml \
+      OUTPUT_DIR outputs/warp_aug_debug_9_6 \
+      > warp_aug_debug_9_6.out 2>&1 &

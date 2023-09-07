@@ -1,9 +1,8 @@
 import torch
 import torchvision.transforms as T
 from numpy import random as R
-from .reblur import get_vanising_points, apply_path_blur
+from .reblur import get_vanising_points, apply_path_blur, is_out_of_bounds
 from .fovea import extract_ratio_and_flip
-
 
 class NightAug:
     def __init__(self):
@@ -118,7 +117,14 @@ class NightAug:
                 new_vanishing_point = get_vanising_points(file_name, vanishing_point, self.ratio, flip)
 
                 if R.random()>aug_prob:
-                    if path_blur_new:
+
+                    img_height, img_width = img.shape[1:]
+                    if is_out_of_bounds(new_vanishing_point, img_width, img_height):
+                        print("Warning: Vanishing point both coords outside. Skipping path blur.")
+
+                    # NOTE: use elif here to use path blur only for inbound cases
+                    elif path_blur_new:
+                        print("Using Path BLur!")
                         # print(f"Before img min {img.min()} shape {img.shape}") # 0, [3,600,1067]
                         # print(f"new_vanishing_point is {new_vanishing_point} and len {len(new_vanishing_point)}")
                         img = apply_path_blur(img, 
