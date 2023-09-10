@@ -3,7 +3,8 @@ import torch.nn.functional as F
 from .invert_grid import invert_grid
 from .reblur import is_out_of_bounds, get_vanising_points
 from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
-    
+from torchvision import utils as vutils
+import sys
 
 def unwarp_bboxes(bboxes, grid, output_shape):
     """Unwarps a tensor of bboxes of shape (n, 4) or (n, 5) according to the grid \
@@ -109,10 +110,12 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     grid = None
 
     img_height, img_width = img.shape[-2:]
-
-    # if is_out_of_bounds(vanishing_point, img_width, img_height):
-    #     print("HERE!!!")
-    #     return img, ins, grid
+    
+    # NOTE: this for debug only
+    if is_out_of_bounds(vanishing_point, img_width, img_height):
+        print("both vp coords OOB. Training Stops!!!!")
+        sys.exit(1)
+        # return img, ins, grid
     if warp_aug:
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
     elif warp_aug_lzu:
@@ -186,7 +189,7 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         ])
         warped_images = torch.stack(warped_images)
 
-        # NOTE: debug visualization
+        # # NOTE: debug visualization
         # for i, img in enumerate(warped_images):
         #     # Save the image
         #     vutils.save_image(img, f'warped_image_{i}.jpg', normalize=True)        

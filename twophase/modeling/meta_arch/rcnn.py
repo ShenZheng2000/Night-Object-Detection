@@ -15,8 +15,8 @@ from detectron2.modeling.roi_heads import build_roi_heads
 from detectron2.utils.events import get_event_storage
 from detectron2.structures import ImageList
 
-import sys
-sys.path.append('/root/autodl-tmp/Methods/Night-Object-Detection')
+# import sys
+# sys.path.append('/root/autodl-tmp/Methods/Night-Object-Detection')
 
 from twophase.data.transforms.fovea import process_and_update_features
 
@@ -177,6 +177,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
                 "pred_boxes", "pred_classes", "scores", "pred_masks", "pred_keypoints"
         """
         if (not self.training) and (not val_mode):  # only conduct when testing mode
+            # NOTE: seems like not using warp-unwarp during inference time, which still make sense
             return self.inference(batched_inputs = batched_inputs,
                                     warp_aug_lzu = warp_aug_lzu,
                                     vp_dict = vp_dict,

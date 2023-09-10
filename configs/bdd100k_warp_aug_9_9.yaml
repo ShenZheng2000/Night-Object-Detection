@@ -1,0 +1,29 @@
+_BASE_: "./faster_rcnn_R50_bdd100k.yaml"
+
+# TODO: adjust so it fits 2 GPUs
+
+SOLVER:
+  STEPS: (108000, 144000, 162000, 648000)
+  MAX_ITER: 180000
+  IMG_PER_BATCH_LABEL: 10 # Set to 10
+  IMG_PER_BATCH_UNLABEL: 10 # Set to 10
+
+SEMISUPNET:
+  BURN_UP_STEP: 90000
+  SCALE_STEPS: (102600, 115200, 127800, 140400, 153000, 165600)
+
+DATASETS:
+  TRAIN_LABEL: ("bdd100k_day_train_valid_vp",) #voc_2012_train
+
+# advanced stuffs => adjust based on your needs
+
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
+WARP_AUG_LZU: True
+
+# PATH_BLUR: True
+
+# TODO_later: log scale the distance or suppress vp OOB cases
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0

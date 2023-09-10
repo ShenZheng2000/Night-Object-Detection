@@ -464,10 +464,29 @@
 #       > path_blur_8_23.out 2>&1 &
 
 
-# TODO: change config after debu
+# # Result not good! Tomorrow: train with skipping both oob cases
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_debug_9_6.yaml \
+#       OUTPUT_DIR outputs/warp_aug_debug_9_6 \
+#       > warp_aug_debug_9_6.out 2>&1 &
+
+
 nohup \
 python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_debug_9_6.yaml \
-      OUTPUT_DIR outputs/warp_aug_debug_9_6 \
-      > warp_aug_debug_9_6.out 2>&1 &
+      --resume \
+      --num-gpus 2 \
+      --config configs/bdd100k_warp_aug_debug_9_9.yaml \
+      MODEL.WEIGHTS outputs/warp_aug_debug_9_9/model_0034999.pth \
+      OUTPUT_DIR outputs/warp_aug_debug_9_9 \
+      > warp_aug_debug_9_9.out 2>&1 &
+
+# # # NOTE: add syn params, and try again (syn not implemented in newer torch versions)
+# nohup \
+# python train_net.py \
+#       --num-gpus 2 \
+#       --config configs/bdd100k_warp_aug_9_9.yaml \
+#       OUTPUT_DIR outputs/warp_aug_9_9 \
+#       > warp_aug_9_9.out 2>&1 &
+
