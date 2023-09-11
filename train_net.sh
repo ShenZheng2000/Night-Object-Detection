@@ -464,7 +464,7 @@
 #       > path_blur_8_23.out 2>&1 &
 
 
-# # Result not good! Tomorrow: train with skipping both oob cases
+# train current warpping with all images
 # nohup \
 # python train_net.py \
 #       --num-gpus 3 \
@@ -472,21 +472,24 @@
 #       OUTPUT_DIR outputs/warp_aug_debug_9_6 \
 #       > warp_aug_debug_9_6.out 2>&1 &
 
-
-nohup \
-python train_net.py \
-      --resume \
-      --num-gpus 2 \
-      --config configs/bdd100k_warp_aug_debug_9_9.yaml \
-      MODEL.WEIGHTS outputs/warp_aug_debug_9_9/model_0034999.pth \
-      OUTPUT_DIR outputs/warp_aug_debug_9_9 \
-      > warp_aug_debug_9_9.out 2>&1 &
-
-# # # NOTE: add syn params, and try again (syn not implemented in newer torch versions)
+# train current warpping with all images (except both vp oob cases)
 # nohup \
 # python train_net.py \
+#       --resume \
 #       --num-gpus 2 \
-#       --config configs/bdd100k_warp_aug_9_9.yaml \
-#       OUTPUT_DIR outputs/warp_aug_9_9 \
-#       > warp_aug_9_9.out 2>&1 &
+#       --config configs/bdd100k_warp_aug_debug_9_9.yaml \
+#       MODEL.WEIGHTS outputs/warp_aug_debug_9_9/model_0104999.pth \
+#       OUTPUT_DIR outputs/warp_aug_debug_9_9 \
+#       > warp_aug_debug_9_9.out 2>&1 &
 
+
+# For WARP_DEBUG visualization 
+CUDA_VISIBLE_DEVICES=2 \
+nohup \
+python train_net.py \
+      --num-gpus 1 \
+      --config configs/bdd100k_warp_aug_9_9.yaml \
+      OUTPUT_DIR outputs/warp_aug_9_9 \
+      > warp_aug_9_9.out 2>&1 &
+
+# TODO: re-add syn params, and try again, perhaps in 3090 machine. 

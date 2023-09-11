@@ -124,3 +124,6 @@ def add_teacher_config(cfg):
 
     # NOTE: add cur learn mix
     _C.DATASETS.CUR_LEARN_MIX = False
+
+    # NOTE: add WARP_DEBUG
+    _C.WARP_DEBUG = False

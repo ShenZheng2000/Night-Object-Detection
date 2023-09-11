@@ -5,6 +5,7 @@ from .reblur import is_out_of_bounds, get_vanising_points
 from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
 from torchvision import utils as vutils
 import sys
+import os
 
 def unwarp_bboxes(bboxes, grid, output_shape):
     """Unwarps a tensor of bboxes of shape (n, 4) or (n, 5) according to the grid \
@@ -142,7 +143,7 @@ def apply_unwarp(warped_x, grid, keep_size=True):
     B = warped_x.shape[0]
     inverse_grid = inverse_grid.expand(B, -1, -1, -1)
 
-    # Perform unzoom
+    # Perform unzoom (TODO: might consider using bicubic)
     unwarped_x = F.grid_sample(
         warped_x, inverse_grid, mode='bilinear',
         align_corners=True, padding_mode='zeros'
@@ -170,7 +171,17 @@ def extract_ratio_and_flip(transform_list):
 
 
 
-def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone):
+def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone, 
+                                warp_debug=True): # TODO: move this debug to configs
+    '''
+    '''
+    # print(f"batched_inputs = {batched_inputs}")   # list: [...]
+    # print(f"images = {images.tensor}")            # detectron2.structures.image_list.ImageList
+    # print(f"warp_aug_lzu = {warp_aug_lzu}")       # bool: True/False
+    # print(f"vp_dict = {vp_dict}")                 # dict: {'xxx.jpg': [vpw, vph], ...}
+    # print(f"grid_net = {grid_net}")               # CuboidGlobalKDEGrid
+    # print(f"backbone = {backbone}")               # ResNet
+
     features = None
     if warp_aug_lzu:
         # Preprocessing
@@ -189,12 +200,8 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         ])
         warped_images = torch.stack(warped_images)
 
-        # # NOTE: debug visualization
-        # for i, img in enumerate(warped_images):
-        #     # Save the image
-        #     vutils.save_image(img, f'warped_image_{i}.jpg', normalize=True)        
-
-        # sys.exit(1)
+        # debug images
+        concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
 
         # Call the backbone
         features = backbone(warped_images)
@@ -210,3 +217,49 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         features[feature_key] = unwarped_features
 
     return features
+
+
+def concat_and_save_images(batched_inputs, warped_images, debug=False):
+    """
+    Concatenate original and warped images side by side and save them.
+
+    Inputs:
+    - batched_inputs: List of dictionaries containing image information, including 'image' for original image.
+    - warped_images: List of warped image tensors.
+    - out_dir: Output directory for saving the images.
+    - debug: Boolean flag to determine whether to save the images or not.
+
+    Outputs:
+    - None. This function saves the concatenated images if debug is True.
+    """
+    if debug:
+        for (input_info, warped_img) in zip(batched_inputs, warped_images):
+            original_img = input_info['image'].cuda()  # Access the original image
+            print("warped_img device", warped_img.device)
+
+            # Switch from BGR to RGB
+            original_img = torch.flip(original_img, [0])
+            warped_img = torch.flip(warped_img, [0])
+
+            # check min and max
+            # TODO: debug this: original_image is from 0 to 255, but warpped images is from -100+ to 100+. 
+            print(f"original_img. Min: {torch.min(original_img).item()}, Max: {torch.max(original_img).item()}")
+            print(f"warped_img. Min: {torch.min(warped_img).item()}, Max: {torch.max(warped_img).item()}")
+
+            # Normalize the images
+            original_img = (original_img - original_img.min()) / (original_img.max() - original_img.min())
+            warped_img = (warped_img - warped_img.min()) / (warped_img.max() - warped_img.min())
+
+            # Concatenate images along width dimension
+            combined_image = torch.cat((original_img, warped_img), dim=2)
+
+            # Save images to output path
+            file_name = os.path.basename(input_info['file_name'])  # Extract the original file name
+
+            warp_out_dir = 'warped_images'
+            os.makedirs(warp_out_dir, exist_ok=True)
+            save_path = os.path.join(warp_out_dir, file_name)  # Create the save path
+
+            vutils.save_image(combined_image, save_path, normalize=True)
+
+        sys.exit(1)

@@ -591,7 +591,8 @@ class TwoPCTrainer(DefaultTrainer):
                                             label_data, branch="supervised", 
                                             warp_aug_lzu=self.cfg.WARP_AUG_LZU,
                                             vp_dict=self.vanishing_point,
-                                            grid_net=self.grid_net)
+                                            grid_net=self.grid_net,
+                                            warp_debug=self.cfg.WARP_DEBUG)
             
             # sys.exit(1)
 

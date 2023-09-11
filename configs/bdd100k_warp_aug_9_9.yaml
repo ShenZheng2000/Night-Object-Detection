@@ -1,12 +1,12 @@
 _BASE_: "./faster_rcnn_R50_bdd100k.yaml"
 
-# TODO: adjust so it fits 2 GPUs
+# TODO: use single gpu sna small bs for debug. need to change other scores
 
 SOLVER:
   STEPS: (108000, 144000, 162000, 648000)
   MAX_ITER: 180000
-  IMG_PER_BATCH_LABEL: 10 # Set to 10
-  IMG_PER_BATCH_UNLABEL: 10 # Set to 10
+  IMG_PER_BATCH_LABEL: 5 # Set to 10
+  IMG_PER_BATCH_UNLABEL: 5 # Set to 10
 
 SEMISUPNET:
   BURN_UP_STEP: 90000
@@ -19,6 +19,8 @@ DATASETS:
 
 VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
 WARP_AUG_LZU: True
+
+WARP_DEBUG: True
 
 # PATH_BLUR: True
 
