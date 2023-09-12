@@ -108,7 +108,8 @@ class NightAug:
             # print("aug_prob is", aug_prob)
 
             if two_pc_aug:
-                self.apply_two_pc_aug(img, aug_prob)
+                # NOTE: return img now to avoid overwrite!
+                img = self.apply_two_pc_aug(img, aug_prob)
                 
             # save_image(img / 255.0, 'before_blur.png')
 

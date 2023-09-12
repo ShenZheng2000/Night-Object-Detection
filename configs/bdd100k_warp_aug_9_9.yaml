@@ -27,5 +27,4 @@ WARP_DEBUG: True
 # TODO_later: log scale the distance or suppress vp OOB cases
 
 # USE_DEBUG: True
-# TWO_PC_AUG: False
-# AUG_PROB: 1.0
+# TWO_PC_AUG: True

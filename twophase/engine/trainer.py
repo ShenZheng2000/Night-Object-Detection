@@ -559,6 +559,7 @@ class TwoPCTrainer(DefaultTrainer):
             pass
         elif self.cfg.NIGHTAUG:
             # print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
+            # print("self.cfg.TWO_PC_AUG is", self.cfg.TWO_PC_AUG)
             label_data_aug = self.night_aug.aug([x.copy() for x in label_data], 
                                                 vanishing_point= self.vanishing_point,
                                                 two_pc_aug=self.cfg.TWO_PC_AUG,

@@ -235,7 +235,7 @@ def concat_and_save_images(batched_inputs, warped_images, debug=False):
     if debug:
         for (input_info, warped_img) in zip(batched_inputs, warped_images):
             original_img = input_info['image'].cuda()  # Access the original image
-            print("warped_img device", warped_img.device)
+            # print("warped_img device", warped_img.device)
 
             # Switch from BGR to RGB
             original_img = torch.flip(original_img, [0])
