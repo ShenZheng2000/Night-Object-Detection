@@ -127,3 +127,6 @@ def add_teacher_config(cfg):
 
     # NOTE: add WARP_DEBUG
     _C.WARP_DEBUG = False
+
+    # NOTE: add WARP_FOVEA
+    _C.WARP_FOVEA = False

@@ -43,7 +43,7 @@ from twophase.solver.build import build_lr_scheduler
 from twophase.evaluation import PascalVOCDetectionEvaluator, COCOEvaluator
 from twophase.modeling.custom_losses import ConsistencyLosses
 from twophase.data.transforms.night_aug import NightAug
-from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid
+from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid
 import copy
 
 # Adaptive Teacher Trainer
@@ -538,13 +538,20 @@ class TwoPCTrainer(DefaultTrainer):
             label_data, unlabel_data = data
 
         # NOTE: build grid_net here
+        my_shape = label_data[0]['image'].shape[1:]
         if self.cfg.WARP_AUG or self.cfg.WARP_AUG_LZU:
-            my_shape = label_data[0]['image'].shape[1:]
             # TODO: replace this with other gridnet (e.g., lzu's) for comparisons
             self.grid_net = CuboidGlobalKDEGrid(separable=True, 
                                                 anti_crop=True, 
                                                 input_shape=my_shape, 
                                                 output_shape=my_shape)
+        elif self.cfg.WARP_FOVEA:
+            saliency_file = 'dataset_saliency.pkl'
+            self.grid_net = FixedKDEGrid(saliency_file,
+                                         separable=True, 
+                                        anti_crop=True, 
+                                        input_shape=my_shape, 
+                                        output_shape=my_shape)
         else:
             self.grid_net = None
 

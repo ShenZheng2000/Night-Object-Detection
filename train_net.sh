@@ -494,9 +494,18 @@
 
 # NOTE: fix night aug non-added error, and train again
 # train current warpping with all images (except both vp oob cases)
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_9_11_4090.yaml \
+#       OUTPUT_DIR outputs/warp_aug_9_11_4090 \
+#       > warp_aug_9_11_4090.out 2>&1 &
+
+
+CUDA_VISIBLE_DEVICES=3 \
 nohup \
 python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_9_11_4090.yaml \
-      OUTPUT_DIR outputs/warp_aug_9_11_4090 \
-      > warp_aug_9_11_4090.out 2>&1 &
+      --num-gpus 1 \
+      --config configs/bdd100k_warp_aug_9_12.yaml \
+      OUTPUT_DIR outputs/warp_aug_9_12 \
+      > warp_aug_9_12.out 2>&1 &

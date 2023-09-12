@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pickle
 # from mmcv.utils import Registry
 # from vis import vis_batched_imgs
 
@@ -186,47 +187,55 @@ class RecasensSaliencyToGridMixin(object):
         grid = F.interpolate(grid, size=self.output_shape, mode='bilinear',
                              align_corners=True)
         return grid.permute(0, 2, 3, 1)
-
-# @GRID_GENERATORS.register_module()
-# class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
-#     """ Grid generator that uses a fixed saliency map -- KDE SD.
+    
+# replace separable and non-separable with this function (NOTE: skip for now)
+def saliency_to_grid(self, imgs, img_metas, x_saliency=None, y_saliency=None, device=None):
+    N = imgs.shape[0]
+    
+    if self.separable:
+        assert x_saliency is not None and y_saliency is not None
+        x_saliency = F.pad(x_saliency, (self.padding_size, self.padding_size), mode=self.padding_mode)
+        y_saliency = F.pad(y_saliency, (self.padding_size, self.padding_size), mode=self.padding_mode)
         
-#         If the vanishing point is fixed, this class can be instead 
-#         used to load saliency during inference.
-#     """
-
-#     def __init__(self, saliency_file, **kwargs):
-#         super(FixedKDEGrid, self).__init__()
-#         RecasensSaliencyToGridMixin.__init__(self, **kwargs)
-#         self.saliency = pickle.load(open(saliency_file, 'rb'))
-
-#     def forward(self, imgs, img_metas, **kwargs):
-#         vis_options = kwargs.get('vis_options', {})
-#         device = imgs.device
-#         self.saliency = self.saliency.to(device)
-
-#         if 'saliency' in vis_options:
-#             h, w, _ = img_metas[0]['pad_shape']
-#             show_saliency = F.interpolate(self.saliency, size=(h, w),
-#                                           mode='bilinear', align_corners=True)
-#             show_saliency = 255*(show_saliency/show_saliency.max())
-#             show_saliency = show_saliency.expand(
-#                 show_saliency.size(0), 3, h, w)
-#             vis_batched_imgs(vis_options['saliency'], show_saliency,
-#                              img_metas, denorm=False)
-#             vis_batched_imgs(vis_options['saliency']+'_no_box', show_saliency,
-#                              img_metas, bboxes=None, denorm=False)
-
-#         if self.separable:
-#             x_saliency = self.saliency.sum(dim=2)
-#             y_saliency = self.saliency.sum(dim=3)
-#             grid = self.separable_saliency_to_grid(imgs, img_metas, x_saliency,
-#                                                    y_saliency, device)
-#         else:
-#             grid = self.nonseparable_saliency_to_grid(imgs, img_metas,
-#                                                       self.saliency, device)
-
-#         return grid
+        P_x = torch.zeros(1, 1, self.total_shape[1], device=device)
+        P_x[0, 0, :] = self.P_basis_x
+        P_x = P_x.expand(N, 1, self.total_shape[1])
+        
+        P_y = torch.zeros(1, 1, self.total_shape[0], device=device)
+        P_y[0, 0, :] = self.P_basis_y
+        P_y = P_y.expand(N, 1, self.total_shape[0])
+        
+        weights_x = F.conv1d(x_saliency, self.filter)
+        weights_y = F.conv1d(y_saliency, self.filter)
+        
+        weighted_offsets_x = F.conv1d(torch.mul(P_x, x_saliency), self.filter)
+        weighted_offsets_y = F.conv1d(torch.mul(P_y, y_saliency), self.filter)
+        
+        xgrid = (weighted_offsets_x / weights_x).clamp(min=-1, max=1) * 2 - 1
+        xgrid = xgrid.view(-1, 1, 1, self.grid_shape[1]).expand(-1, 1, *self.grid_shape)
+        
+        ygrid = (weighted_offsets_y / weights_y).clamp(min=-1, max=1) * 2 - 1
+        ygrid = ygrid.view(-1, 1, self.grid_shape[0], 1).expand(-1, 1, *self.grid_shape)
+    else:
+        assert x_saliency is None and y_saliency is None
+        p = self.padding_size
+        saliency = F.pad(x_saliency, (p, p, p, p), mode=self.padding_mode)
+        
+        P = torch.zeros(1, 2, *self.total_shape, device=device)
+        P[0, :, :, :] = self.P_basis
+        P = P.expand(N, 2, *self.total_shape)
+        
+        saliency_cat = torch.cat((saliency, saliency), 1)
+        weights = F.conv2d(saliency, self.filter)
+        
+        weighted_offsets = F.conv2d(torch.mul(P, saliency_cat), self.filter).view(-1, 2, *self.grid_shape)
+        
+        xgrid = (weighted_offsets[:, 0, :, :].contiguous().view(-1, 1, *self.grid_shape) / weights).clamp(min=-1, max=1) * 2 - 1
+        ygrid = (weighted_offsets[:, 1, :, :].contiguous().view(-1, 1, *self.grid_shape) / weights).clamp(min=-1, max=1) * 2 - 1
+    
+    grid = torch.cat((xgrid, ygrid), 1)
+    grid = F.interpolate(grid, size=self.output_shape, mode='bilinear', align_corners=True)
+    return grid.permute(0, 2, 3, 1)
 
 
 # @GRID_GENERATORS.register_module()
@@ -285,6 +294,52 @@ class RecasensSaliencyToGridMixin(object):
 #             grid = self.nonseparable_saliency_to_grid(imgs, img_metas,
 #                                                       self.saliency, device)
 #         return grid
+
+
+# @GRID_GENERATORS.register_module()
+class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
+    """ Grid generator that uses a fixed saliency map -- KDE SD.
+        
+        If the vanishing point is fixed, this class can be instead 
+        used to load saliency during inference.
+    """
+
+    def __init__(self, saliency_file, **kwargs):
+        super(FixedKDEGrid, self).__init__()
+        RecasensSaliencyToGridMixin.__init__(self, **kwargs)
+        self.saliency = pickle.load(open(saliency_file, 'rb'))
+        # print("saliency is", self.saliency.shape) # [1, 1, 31, 51]
+
+    def forward(self, imgs, 
+                # img_metas, **kwargs
+                ):
+        # vis_options = kwargs.get('vis_options', {})
+        device = imgs.device
+        self.saliency = self.saliency.to(device)
+
+        # if 'saliency' in vis_options:
+        #     h, w, _ = img_metas[0]['pad_shape']
+        #     show_saliency = F.interpolate(self.saliency, size=(h, w),
+        #                                   mode='bilinear', align_corners=True)
+        #     show_saliency = 255*(show_saliency/show_saliency.max())
+        #     show_saliency = show_saliency.expand(
+        #         show_saliency.size(0), 3, h, w)
+        #     vis_batched_imgs(vis_options['saliency'], show_saliency,
+        #                      img_metas, denorm=False)
+        #     vis_batched_imgs(vis_options['saliency']+'_no_box', show_saliency,
+        #                      img_metas, bboxes=None, denorm=False)
+
+        if self.separable:
+            x_saliency = self.saliency.sum(dim=2)
+            y_saliency = self.saliency.sum(dim=3)
+            grid = self.separable_saliency_to_grid(imgs, None, x_saliency,
+                                                   y_saliency, device)
+        else:
+            grid = self.nonseparable_saliency_to_grid(imgs, None,
+                                                      self.saliency, device)
+
+        return grid
+
 
 # @GRID_GENERATORS.register_module()
 class CuboidGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
