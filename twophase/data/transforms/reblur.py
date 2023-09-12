@@ -1,6 +1,5 @@
 # from flow_utils import flow_to_numpy_rgb
 # from reblur_package import FlowBlurrer
-from reblur_package import FlowBlurrer
 from .flow_utils import flow_to_numpy_rgb
 import torch
 import time
@@ -47,7 +46,7 @@ def generate_flow_and_blur(im, v_pts, T_z, zeta, B, C, H, W):
     """
     flow = vp_flow_generator(im, v_pts, T_z, zeta)
     np_rgb = flow_to_numpy_rgb(flow)
-
+    from reblur_package import FlowBlurrer
     flow_blurrer = FlowBlurrer.create_with_implicit_mesh(B, C, H, W, 30)
     blur_image, mask = flow_blurrer(im, flow)
 
