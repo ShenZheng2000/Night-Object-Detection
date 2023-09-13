@@ -540,12 +540,11 @@ class TwoPCTrainer(DefaultTrainer):
         # NOTE: build grid_net here
         my_shape = label_data[0]['image'].shape[1:]
         if self.cfg.WARP_AUG or self.cfg.WARP_AUG_LZU:
-            # TODO: replace this with other gridnet (e.g., lzu's) for comparisons
             self.grid_net = CuboidGlobalKDEGrid(separable=True, 
                                                 anti_crop=True, 
                                                 input_shape=my_shape, 
                                                 output_shape=my_shape)
-        elif self.cfg.WARP_FOVEA:
+        if self.cfg.WARP_FOVEA:
             saliency_file = 'dataset_saliency.pkl'
             self.grid_net = FixedKDEGrid(saliency_file,
                                          separable=True, 

@@ -3,8 +3,8 @@ _BASE_: "./faster_rcnn_R50_bdd100k.yaml"
 SOLVER:
   STEPS: (72000, 96000, 108000, 432000)
   MAX_ITER: 120000
-  IMG_PER_BATCH_LABEL: 5 # 15
-  IMG_PER_BATCH_UNLABEL: 5 # 15
+  IMG_PER_BATCH_LABEL: 15 # 15
+  IMG_PER_BATCH_UNLABEL: 15 # 15
 
 SEMISUPNET:
   BURN_UP_STEP: 60000
@@ -17,15 +17,10 @@ DATASETS:
 
 VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
 
+WARP_AUG_LZU: True
 WARP_FOVEA: True
-WARP_DEBUG: True
-
-# WARP_AUG_LZU: True
-
-# PATH_BLUR: True
 
 # USE_DEBUG: True
 # TWO_PC_AUG: False
 # AUG_PROB: 1.0
 # WARP_DEBUG: True
-

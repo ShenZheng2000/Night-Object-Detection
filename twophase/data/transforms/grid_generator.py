@@ -310,7 +310,7 @@ class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         self.saliency = pickle.load(open(saliency_file, 'rb'))
         # print("saliency is", self.saliency.shape) # [1, 1, 31, 51]
 
-    def forward(self, imgs, 
+    def forward(self, imgs, v_pts, # NOTE: vp no use here
                 # img_metas, **kwargs
                 ):
         # vis_options = kwargs.get('vis_options', {})

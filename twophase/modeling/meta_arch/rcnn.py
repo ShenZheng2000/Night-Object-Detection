@@ -183,10 +183,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
                                     vp_dict = vp_dict,
                                     grid_net = grid_net)
 
-        source_label = 0
-        target_label = 1
 
-        
         images = self.preprocess_image(batched_inputs)
 
         if "instances" in batched_inputs[0]:
@@ -202,7 +199,9 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
         # NOTE: add zoom-unzoom here
         if warp_aug_lzu:
-            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, self.backbone, warp_debug)
+            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
+                                                   vp_dict, grid_net, self.backbone, 
+                                                   warp_debug)
         else:
             features = self.backbone(images.tensor)
         # first_key = next(iter(features))

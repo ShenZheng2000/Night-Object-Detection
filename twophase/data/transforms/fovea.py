@@ -69,7 +69,7 @@ def simple_test(grid_net, imgs, vanishing_point):
 
 
 
-def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True):
+def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
 
     # read image
     img = img.float()
@@ -172,7 +172,7 @@ def extract_ratio_and_flip(transform_list):
 
 
 def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone, 
-                                warp_debug=True): # TODO: move this debug to configs
+                                warp_debug):
     '''
     '''
     # print(f"batched_inputs = {batched_inputs}")   # list: [...]
