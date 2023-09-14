@@ -172,7 +172,7 @@ def extract_ratio_and_flip(transform_list):
 
 
 def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone, 
-                                warp_debug):
+                                warp_debug, warp_image_norm):
     '''
     '''
     # print(f"batched_inputs = {batched_inputs}")   # list: [...]
@@ -199,6 +199,10 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
             for image, vp in zip(images.tensor, vanishing_points)
         ])
         warped_images = torch.stack(warped_images)
+
+        # Normalize warped images
+        if warp_image_norm:
+            warped_images = torch.stack([(img - img.min()) / (img.max() - img.min()) * 255 for img in warped_images])
 
         # debug images
         concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)

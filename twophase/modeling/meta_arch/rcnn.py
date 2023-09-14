@@ -128,7 +128,8 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         # NOTE: add zoom-unzoom here
         if warp_aug_lzu:
             print("Hello! Running model inference with warp_aug_lzu!")
-            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, self.backbone)
+            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
+                                                    vp_dict, grid_net, self.backbone)
         else:
             features = self.backbone(images.tensor)
 
@@ -152,7 +153,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
     def forward(
         self, batched_inputs, branch="supervised", given_proposals=None, val_mode=False, proposal_index = None,
-        warp_aug_lzu=False, vp_dict=None, grid_net=None, warp_debug=False,
+        warp_aug_lzu=False, vp_dict=None, grid_net=None, warp_debug=False, warp_image_norm=False
     ):
         """
         Args:
@@ -201,7 +202,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         if warp_aug_lzu:
             features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
                                                    vp_dict, grid_net, self.backbone, 
-                                                   warp_debug)
+                                                   warp_debug, warp_image_norm)
         else:
             features = self.backbone(images.tensor)
         # first_key = next(iter(features))

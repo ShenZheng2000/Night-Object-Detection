@@ -504,10 +504,20 @@
 #       > warp_aug_9_11_4090_resume.out 2>&1 &
 
 
+# # TODO: train model with fovea grid
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_9_12.yaml \
+#       OUTPUT_DIR outputs/warp_aug_9_12 \
+#       > warp_aug_9_12.out 2>&1 &
+
 # TODO: train model with fovea grid
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_9_12.yaml \
-      OUTPUT_DIR outputs/warp_aug_9_12 \
-      > warp_aug_9_12.out 2>&1 &
+      --config configs/bdd100k_warp_aug_9_14.yaml \
+      OUTPUT_DIR outputs/warp_aug_9_14 \
+      > warp_aug_9_14.out 2>&1 &
+
+# NOTE: modify dataset path in here: twophase/data/datasets/builtin.py

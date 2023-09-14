@@ -551,8 +551,10 @@ class TwoPCTrainer(DefaultTrainer):
                                         anti_crop=True, 
                                         input_shape=my_shape, 
                                         output_shape=my_shape)
-        else:
-            self.grid_net = None
+                                        
+        # NOTE: remove this, otherwise error with grid_net
+        # else:
+        #     self.grid_net = None
 
 
         data_time = time.perf_counter() - start
@@ -599,7 +601,8 @@ class TwoPCTrainer(DefaultTrainer):
                                             warp_aug_lzu=self.cfg.WARP_AUG_LZU,
                                             vp_dict=self.vanishing_point,
                                             grid_net=self.grid_net,
-                                            warp_debug=self.cfg.WARP_DEBUG)
+                                            warp_debug=self.cfg.WARP_DEBUG,
+                                            warp_image_norm=self.cfg.WARP_IMAGE_NORM)
             
             # sys.exit(1)
 

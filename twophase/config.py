@@ -130,3 +130,6 @@ def add_teacher_config(cfg):
 
     # NOTE: add WARP_FOVEA
     _C.WARP_FOVEA = False
+
+    # NOTE: add warp image norm
+    _C.WARP_IMAGE_NORM = False
