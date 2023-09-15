@@ -595,7 +595,7 @@ class TwoPCTrainer(DefaultTrainer):
 
 
         if self.iter < BURN_UP_STEP:
-              
+
             record_dict, _, _, _ = self.model(
                                             label_data, branch="supervised", 
                                             warp_aug_lzu=self.cfg.WARP_AUG_LZU,
@@ -629,7 +629,12 @@ class TwoPCTrainer(DefaultTrainer):
 
             # 1. Input labeled data into student model
             record_all_label_data, _, _, _ = self.model(
-                label_data, branch="supervised"
+                                            label_data, branch="supervised", 
+                                            # warp_aug_lzu=self.cfg.WARP_AUG_LZU,
+                                            # vp_dict=self.vanishing_point,
+                                            # grid_net=self.grid_net,
+                                            # warp_debug=self.cfg.WARP_DEBUG,
+                                            # warp_image_norm=self.cfg.WARP_IMAGE_NORM
             )
             record_dict.update(record_all_label_data)
 

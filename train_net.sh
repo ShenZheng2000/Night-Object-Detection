@@ -520,12 +520,24 @@
 #       OUTPUT_DIR outputs/warp_aug_9_13
 
 
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_9_15.yaml \
+#       MODEL.WEIGHTS outputs/warp_aug_9_11_3090/model_0059999.pth \
+#       OUTPUT_DIR outputs/warp_aug_9_15 \
+#       > warp_aug_9_15.out 2>&1 &
+
+
 nohup \
 python train_net.py \
+      --resume \
       --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_9_15.yaml \
-      OUTPUT_DIR outputs/warp_aug_9_15 \
-      > warp_aug_9_15.out 2>&1 &
+      --config configs/bdd100k_warp_aug_9_15_v2.yaml \
+      MODEL.WEIGHTS outputs/warp_aug_9_11_3090/model_0059999.pth \
+      OUTPUT_DIR outputs/warp_aug_9_15_v2 \
+      > warp_aug_9_15_v2.out 2>&1 &
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py
