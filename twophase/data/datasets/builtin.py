@@ -196,20 +196,6 @@ def register_retinex_model(model_name):
 
 # Register datasets
 
-# register_coco_instances("bdd100k_day_train",
-# {}, 
-# 'datasets/bdd100k/train_day.json', 
-# 'datasets/bdd100k/train')
-# register_coco_instances("bdd100k_night_train", 
-# {}, 
-# 'datasets/bdd100k/train_night.json', 
-# 'datasets/bdd100k/train')
-# register_coco_instances("bdd100k_night_val", 
-# {}, 
-# 'datasets/bdd100k/val_night.json', 
-# 'datasets/bdd100k/val')
-
-
 # NOTE: change to current path
 # TODO: use the correct label and #GPU for training!
 # NOTE: change according to each server
@@ -265,10 +251,14 @@ register_coco_instances("bdd100k_train_ddn",
 f'{data_path}/bdd100k/coco_labels/train_dawn_dusk_night_cur.json', 
 f'{data_path}/bdd100k/images/100k/train')
 
-
 register_coco_instances("bdd100k_night_val", 
 {}, 
 f'{data_path}/bdd100k/coco_labels/val_night.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+register_coco_instances("bdd100k_night_val_valid_vp", 
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_night_valid_vp.json', 
 f'{data_path}/bdd100k/images/100k/val')
 
 # NOTE: add enhanced images

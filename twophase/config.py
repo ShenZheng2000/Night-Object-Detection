@@ -133,3 +133,6 @@ def add_teacher_config(cfg):
 
     # NOTE: add warp image norm
     _C.WARP_IMAGE_NORM = False
+
+    # NOTE: add warp during testing stage
+    _C.WARP_TEST = False
