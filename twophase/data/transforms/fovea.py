@@ -114,9 +114,9 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     
     # NOTE: this for debug only
     if is_out_of_bounds(vanishing_point, img_width, img_height):
-        # TODO: debug why this one fails
         print(f"VP = {vanishing_point}, img_width = {img_width}, img_height = {img_height}")
-        print("both vp coords OOB. Training Stops!!!!")
+        vanishing_point = [img_width/2, img_height/2]
+        print("both vp coords OOB. Force vp to center!!!!")
         sys.exit(1)
         # return img, ins, grid
     if warp_aug:
@@ -191,8 +191,6 @@ def extract_ratio_and_flip(transform_list, actual_width=None):
             if actual_width is not None: 
                 transform.width = actual_width
 
-    # print(f"ratio = {ratio}, flip = {flip}")
-
     return ratio, flip
 
 
@@ -225,16 +223,11 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         ]
 
         # Apply warping
-        try:
-            warped_images, _, grids = zip(*[
-                apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
-                for image, vp in zip(images.tensor, vanishing_points)
-            ])
-            warped_images = torch.stack(warped_images)
-        except SystemExit:
-            for batch_input in batched_inputs:
-                print("name =>", batch_input['file_name'])
-            sys.exit(1)
+        warped_images, _, grids = zip(*[
+            apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
+            for image, vp in zip(images.tensor, vanishing_points)
+        ])
+        warped_images = torch.stack(warped_images)
 
         # Normalize warped images
         if warp_image_norm:

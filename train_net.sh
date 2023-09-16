@@ -553,7 +553,7 @@ python train_net.py \
       --config configs/bdd100k_warp_aug_9_15_v3.yaml \
       MODEL.WEIGHTS outputs/warp_aug_9_11_3090/model_0059999.pth \
       OUTPUT_DIR outputs/warp_aug_9_15_v3 \
-      > warp_aug_9_15_v3.out 2>&1 &
+      > warp_aug_9_15_v3_debug.out 2>&1 &
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py
