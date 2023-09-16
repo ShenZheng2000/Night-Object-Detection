@@ -117,7 +117,6 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
         print(f"VP = {vanishing_point}, img_width = {img_width}, img_height = {img_height}")
         vanishing_point = [img_width/2, img_height/2]
         print("both vp coords OOB. Force vp to center!!!!")
-        sys.exit(1)
         # return img, ins, grid
     if warp_aug:
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
