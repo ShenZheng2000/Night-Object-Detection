@@ -136,3 +136,6 @@ def add_teacher_config(cfg):
 
     # NOTE: add warp during testing stage
     _C.WARP_TEST = False
+
+    # NOTE: add adaptive teacher (AT)
+    _C.AT = False
