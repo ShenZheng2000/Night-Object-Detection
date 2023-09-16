@@ -363,13 +363,20 @@ class TwoPCTrainer(DefaultTrainer):
     def process_data(self, unlabel_data, unlabel_dep_data=None, record_dict=None, prefix=None):
 
         #  3. Generate the easy pseudo-label using teacher model (Phase-1)
+        # print("Running Step 3")
         with torch.no_grad():
             (
                 _,
                 proposals_rpn_unsup,
                 proposals_roih_unsup,
                 _,
-            ) = self.model_teacher(unlabel_data, branch="unsup_data_weak")
+            ) = self.model_teacher(unlabel_data, branch="unsup_data_weak",
+                                            warp_aug_lzu=self.cfg.WARP_AUG_LZU,
+                                            vp_dict=self.vanishing_point,
+                                            grid_net=self.grid_net,
+                                            warp_debug=self.cfg.WARP_DEBUG,
+                                            warp_image_norm=self.cfg.WARP_IMAGE_NORM
+            )
             
         cur_threshold = self.cfg.SEMISUPNET.BBOX_THRESHOLD
         # make a RPN_thres and a ROI_thres
@@ -434,12 +441,18 @@ class TwoPCTrainer(DefaultTrainer):
             scaled_unlabel_data = [x.copy() for x in unlabel_data] 
 
         #7. Input scaled inputs into student
+        # print("Running Step 7")
         (pseudo_losses, 
         proposals_into_roih, 
         rpn_stu,
         roi_stu,
         pred_idx)= self.model(
-            scaled_unlabel_data, branch="consistency_target"
+            scaled_unlabel_data, branch="consistency_target",
+                                            warp_aug_lzu=self.cfg.WARP_AUG_LZU,
+                                            vp_dict=self.vanishing_point,
+                                            grid_net=self.grid_net,
+                                            warp_debug=self.cfg.WARP_DEBUG,
+                                            warp_image_norm=self.cfg.WARP_IMAGE_NORM
         )
         new_pseudo_losses = {}
         for key in pseudo_losses.keys():
@@ -461,6 +474,7 @@ class TwoPCTrainer(DefaultTrainer):
                 proposals_into_roih=stu_resized_proposals
         
         #9. Generate matched pseudo-labels from teacher (Phase-2)
+        # print("Running Step 9")
         with torch.no_grad():
             (_,
             _,
@@ -470,7 +484,12 @@ class TwoPCTrainer(DefaultTrainer):
                 unlabel_data, 
                 branch="unsup_data_consistency", 
                 given_proposals=proposals_into_roih, 
-                proposal_index=pred_idx
+                proposal_index=pred_idx,
+                                            warp_aug_lzu=self.cfg.WARP_AUG_LZU,
+                                            vp_dict=self.vanishing_point,
+                                            grid_net=self.grid_net,
+                                            warp_debug=self.cfg.WARP_DEBUG,
+                                            warp_image_norm=self.cfg.WARP_IMAGE_NORM
             )
         
         # 10. Compute consistency loss
@@ -630,11 +649,11 @@ class TwoPCTrainer(DefaultTrainer):
             # 1. Input labeled data into student model
             record_all_label_data, _, _, _ = self.model(
                                             label_data, branch="supervised", 
-                                            # warp_aug_lzu=self.cfg.WARP_AUG_LZU,
-                                            # vp_dict=self.vanishing_point,
-                                            # grid_net=self.grid_net,
-                                            # warp_debug=self.cfg.WARP_DEBUG,
-                                            # warp_image_norm=self.cfg.WARP_IMAGE_NORM
+                                            warp_aug_lzu=self.cfg.WARP_AUG_LZU,
+                                            vp_dict=self.vanishing_point,
+                                            grid_net=self.grid_net,
+                                            warp_debug=self.cfg.WARP_DEBUG,
+                                            warp_image_norm=self.cfg.WARP_IMAGE_NORM
             )
             record_dict.update(record_all_label_data)
 

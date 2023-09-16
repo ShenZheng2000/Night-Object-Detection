@@ -108,6 +108,7 @@ def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=
 
     # Get flip and new_width information
     flip = isinstance(flip_transform, HFlipTransform)
+    # print("flip_transform", flip_transform)
     if flip:
         new_width = flip_transform.width
 

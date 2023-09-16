@@ -219,6 +219,11 @@ register_coco_instances("bdd100k_night_train",
 f'{data_path}/bdd100k/coco_labels/train_night.json', 
 f'{data_path}/bdd100k/images/100k/train')
 
+register_coco_instances("bdd100k_night_train_valid_vp", 
+{}, 
+f'{data_path}/bdd100k/coco_labels/train_night_valid_vp.json', 
+f'{data_path}/bdd100k/images/100k/train')
+
 register_coco_instances("bdd100k_night_train_TPSeNCE", 
 {}, 
 f'{data_path}/bdd100k/coco_labels/train_day.json', 

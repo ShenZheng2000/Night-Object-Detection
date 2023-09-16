@@ -530,14 +530,30 @@
 #       > warp_aug_9_15.out 2>&1 &
 
 
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_9_15_v2.yaml \
+#       MODEL.WEIGHTS outputs/warp_aug_9_11_3090/model_0059999.pth \
+#       OUTPUT_DIR outputs/warp_aug_9_15_v2 \
+#       > warp_aug_9_15_v2.out 2>&1 &
+
+# TODO: train unsup with warpping
+  # 1. write all_vp file to config (DONE)
+  # 2. make all network include warping (DONE)
+  # 3. debug warpping visualization
+  # 4. train 2nd-stage with previous weights
+  # 5. stop hardcode for all the parameter
+
 nohup \
 python train_net.py \
       --resume \
       --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_9_15_v2.yaml \
+      --config configs/bdd100k_warp_aug_9_15_v3.yaml \
       MODEL.WEIGHTS outputs/warp_aug_9_11_3090/model_0059999.pth \
-      OUTPUT_DIR outputs/warp_aug_9_15_v2 \
-      > warp_aug_9_15_v2.out 2>&1 &
+      OUTPUT_DIR outputs/warp_aug_9_15_v3 \
+      > warp_aug_9_15_v3.out 2>&1 &
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py

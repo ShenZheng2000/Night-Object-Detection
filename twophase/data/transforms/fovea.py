@@ -114,6 +114,8 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     
     # NOTE: this for debug only
     if is_out_of_bounds(vanishing_point, img_width, img_height):
+        # TODO: debug why this one fails
+        print(f"VP = {vanishing_point}, img_width = {img_width}, img_height = {img_height}")
         print("both vp coords OOB. Training Stops!!!!")
         sys.exit(1)
         # return img, ins, grid
@@ -161,14 +163,37 @@ def apply_unwarp(warped_x, grid, keep_size=True):
 
 
 
-def extract_ratio_and_flip(transform_list):
+# def extract_ratio_and_flip(transform_list):
+#     for transform in transform_list:
+#         if isinstance(transform, ResizeTransform):
+#             ratio = transform.new_h / transform.h
+#         elif isinstance(transform, (HFlipTransform, NoOpTransform)):
+#             flip = transform
+#     # print(f"ratio = {ratio}, flip = {flip}")
+#     return ratio, flip
+
+
+def extract_ratio_and_flip(transform_list, actual_width=None):
+
     for transform in transform_list:
+
         if isinstance(transform, ResizeTransform):
-            ratio = transform.new_h / transform.h
+            # If actual dimensions are not provided, use new_w
+            if actual_width is None:
+                ratio = transform.new_w / transform.w
+            else:
+                ratio = actual_width / transform.w
+                # transform.new_w = actual_width
+
         elif isinstance(transform, (HFlipTransform, NoOpTransform)):
             flip = transform
-    return ratio, flip
 
+            if actual_width is not None: 
+                transform.width = actual_width
+
+    # print(f"ratio = {ratio}, flip = {flip}")
+
+    return ratio, flip
 
 
 def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone, 
@@ -179,26 +204,37 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     # print(f"images = {images.tensor}")            # detectron2.structures.image_list.ImageList
     # print(f"warp_aug_lzu = {warp_aug_lzu}")       # bool: True/False
     # print(f"vp_dict = {vp_dict}")                 # dict: {'xxx.jpg': [vpw, vph], ...}
-    # print(f"grid_net = {grid_net}")               # CuboidGlobalKDEGrid
-    # print(f"backbone = {backbone}")               # ResNet
+    # print(f"grid_net = {grid_net}")               # CuboidGlobalKDEGrid()
+    # print(f"backbone = {backbone}")               # ResNet()
+
+    # print(f"batched_inputs = {batched_inputs[0]['transform']}") # TransformList[ResizeTransform(h, w, new_h, new_w, ...)]
+    # print(f"images = {images.tensor.shape}") # [bs, c, h, w]
 
     features = None
+    actual_height, actual_width = images.tensor.shape[-2], images.tensor.shape[-1]
+
     if warp_aug_lzu:
         # Preprocessing
         vanishing_points = [
             get_vanising_points(
                 sample['file_name'], 
                 vp_dict, 
-                *extract_ratio_and_flip(sample['transform'])
+                # *extract_ratio_and_flip(sample['transform'])
+                *extract_ratio_and_flip(sample['transform'], actual_width)
             ) for sample in batched_inputs
         ]
 
         # Apply warping
-        warped_images, _, grids = zip(*[
-            apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
-            for image, vp in zip(images.tensor, vanishing_points)
-        ])
-        warped_images = torch.stack(warped_images)
+        try:
+            warped_images, _, grids = zip(*[
+                apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
+                for image, vp in zip(images.tensor, vanishing_points)
+            ])
+            warped_images = torch.stack(warped_images)
+        except SystemExit:
+            for batch_input in batched_inputs:
+                print("name =>", batch_input['file_name'])
+            sys.exit(1)
 
         # Normalize warped images
         if warp_image_norm:
