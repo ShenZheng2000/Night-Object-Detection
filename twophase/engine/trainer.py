@@ -665,14 +665,19 @@ class TwoPCTrainer(DATrainer):
 
         # TODO: add different data reading schemes for Adaptive Teacher
         if self.cfg.AT:
-            label_data_q, label_data_k, unlabel_data_q, unlabel_data_k = data
+            # print("trainer.py using AT!!!")
+            # print("Number of values in data", len(data))
+            label_data_q, label_data_k, unlabel_data_q, unlabel_data_k = data # strong, weak, strong, weak
         else:
+            # print("Number of values in data", len(data))
             label_data, unlabel_data = data
 
         data_time = time.perf_counter() - start
 
         # NOTE: build grid_net here
-        my_shape = label_data[0]['image'].shape[1:]
+        data_to_use = label_data if 'label_data' in locals() else label_data_q
+        my_shape = data_to_use[0]['image'].shape[1:]
+
         if self.cfg.WARP_AUG_LZU:
             if self.cfg.WARP_FOVEA:
                 saliency_file = 'dataset_saliency.pkl'
@@ -697,7 +702,7 @@ class TwoPCTrainer(DATrainer):
         if self.cfg.NIGHTAUG:
             # print("self.cfg.KEY_POINT", self.cfg.KEY_POINT)
             # print("self.cfg.TWO_PC_AUG is", self.cfg.TWO_PC_AUG)
-            label_data_aug = self.night_aug.aug([x.copy() for x in label_data], 
+            label_data_aug = self.night_aug.aug([x.copy() for x in data_to_use], 
                                                 vanishing_point= self.vanishing_point,
                                                 two_pc_aug=self.cfg.TWO_PC_AUG,
                                                 aug_prob=self.cfg.AUG_PROB,
@@ -706,17 +711,18 @@ class TwoPCTrainer(DATrainer):
                                                 zeta_values=self.cfg.zeta_values,
                                                 use_debug=self.cfg.USE_DEBUG,
                                                 )
-            label_data.extend(label_data_aug)
+            data_to_use.extend(label_data_aug)
 
         if self.cfg.USE_DEBUG:
             print("saving self.cfg.USE_DEBUG")
+            
             if label_data_aug is not None:
                 print('saving night_aug images')
-                save_normalized_images(label_data, label_data_aug, 'debug_image/night_aug')
-            if label_data_mid is not None:
-                save_normalized_images(label_data, label_data_mid, 'debug_image/gen_night_aug')
+                save_normalized_images(data_to_use, label_data_aug, 'debug_image/night_aug')
+            elif label_data_mid is not None:
+                save_normalized_images(data_to_use, label_data_mid, 'debug_image/gen_night_aug')
             else:
-                save_normalized_images(label_data, label_data, 'debug_image/no_night_aug')
+                save_normalized_images(data_to_use, data_to_use, 'debug_image/no_night_aug')
             sys.exit(1)
 
 

@@ -539,7 +539,7 @@
 #       OUTPUT_DIR outputs/warp_aug_9_15_v2 \
 #       > warp_aug_9_15_v2.out 2>&1 &
 
-
+# NOTE: train AT baseline
 nohup \
 python train_net.py \
       --num-gpus 3 \

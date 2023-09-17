@@ -65,6 +65,8 @@ class DatasetMapperTwoCropSeparate(DatasetMapper):
             )
         self.is_train = is_train
 
+        self.AT = cfg.AT
+
     def __call__(self, dataset_dict):
         """
         Args:
@@ -143,9 +145,28 @@ class DatasetMapperTwoCropSeparate(DatasetMapper):
             bboxes_d2_format = utils.filter_empty_instances(instances)
             dataset_dict["instances"] = bboxes_d2_format
             
+        if self.AT:
+            # apply strong augmentation
+            # We use torchvision augmentation, which is not compatiable with
+            # detectron2, which use numpy format for images. Thus, we need to
+            # convert to PIL format first.
+            image_pil = Image.fromarray(image_weak_aug.astype("uint8"), "RGB")
+            image_strong_aug = np.array(self.strong_augmentation(image_pil))
+            dataset_dict["image"] = torch.as_tensor(
+                np.ascontiguousarray(image_strong_aug.transpose(2, 0, 1))
+            )
 
-        dataset_dict["image"] = torch.as_tensor(
-            np.ascontiguousarray(image_weak_aug.transpose(2, 0, 1))
-        )
+            dataset_dict_key = copy.deepcopy(dataset_dict)
+            dataset_dict_key["image"] = torch.as_tensor(
+                np.ascontiguousarray(image_weak_aug.transpose(2, 0, 1))
+            )
+            assert dataset_dict["image"].size(1) == dataset_dict_key["image"].size(1)
+            assert dataset_dict["image"].size(2) == dataset_dict_key["image"].size(2)
+            # print(f"dataset_dict is {dataset_dict}, dataset_dict_key is {dataset_dict_key}")
+            return (dataset_dict, dataset_dict_key)
+        else:
+            dataset_dict["image"] = torch.as_tensor(
+                np.ascontiguousarray(image_weak_aug.transpose(2, 0, 1))
+            )
 
-        return (dataset_dict)
+            return (dataset_dict)
