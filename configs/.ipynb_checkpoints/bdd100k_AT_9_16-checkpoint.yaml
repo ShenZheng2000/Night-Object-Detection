@@ -29,9 +29,3 @@ AT: True
 # AUG_PROB: 1.0
 # WARP_DEBUG: True
 
-# NOTE: this must be False!!!!
-NIGHTAUG: False
-STUDENT_SCALE: False
-CONSISTENCY: False
-
-

@@ -11,14 +11,14 @@ SEMISUPNET:
   SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400)
 
 DATASETS:
-  TRAIN_LABEL: ("bdd100k_day_train",) #voc_2012_train
-  # TRAIN_LABEL: ("bdd100k_day_train_valid_vp",) #voc_2012_train
+  # TRAIN_LABEL: ("bdd100k_day_train",) #voc_2012_train
+  TRAIN_LABEL: ("bdd100k_day_train_valid_vp",) #voc_2012_train
 
 # advanced stuffs => adjust based on your needs
 
 VANISHING_POINT: "/root/autodl-tmp/Datasets/VP/train_day.json"
 
-# WARP_AUG_LZU: True
+WARP_AUG_LZU: True
 
 AT: True
 
@@ -33,5 +33,4 @@ AT: True
 NIGHTAUG: False
 STUDENT_SCALE: False
 CONSISTENCY: False
-
 
