@@ -543,9 +543,9 @@
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_warp_aug_9_16_debug.yaml \
-      OUTPUT_DIR outputs/9_16_debug \
-      > '9_16_debug.out' 2>&1 &
+      --config configs/bdd100k_AT_9_16.yaml \
+      OUTPUT_DIR outputs/9_16 \
+      > '9_16.out' 2>&1 &
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py

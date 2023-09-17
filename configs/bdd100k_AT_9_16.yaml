@@ -16,7 +16,7 @@ DATASETS:
 
 # advanced stuffs => adjust based on your needs
 
-VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
+VANISHING_POINT: "/root/autodl-tmp/Datasets/VP/train_day.json"
 
 # WARP_AUG_LZU: True
 
