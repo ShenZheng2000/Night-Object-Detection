@@ -178,12 +178,13 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         images = self.preprocess_image(batched_inputs)
 
         # NOTE: add zoom-unzoom here
-        if warp_aug_lzu:
-            print("Hello! Running model inference with warp_aug_lzu!")
-            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
-                                                    vp_dict, grid_net, self.backbone)
-        else:
-            features = self.backbone(images.tensor)
+        # if warp_aug_lzu:
+        #     print("Hello! Running model inference with warp_aug_lzu!")
+        #     features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
+        #                                             vp_dict, grid_net, self.backbone)
+        # else:
+        #     features = self.backbone(images.tensor)
+        features = self.backbone(images.tensor)
 
         if detected_instances is None:
             if self.proposal_generator is not None:
@@ -201,6 +202,19 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
             return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
         return results
+
+    def _process_images(self, images, batched_inputs, label, warp_aug_lzu, vp_dict, grid_net, warp_debug, warp_image_norm):
+        if warp_aug_lzu:
+            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
+                                                vp_dict, grid_net, self.backbone, 
+                                                warp_debug, warp_image_norm)
+        else:
+            features = self.backbone(images.tensor)
+
+        features = grad_reverse(features[self.dis_type])
+        D_img_out = self.D_img(features)
+        loss_D_img = F.binary_cross_entropy_with_logits(D_img_out, torch.FloatTensor(D_img_out.data.size()).fill_(label).to(self.device))
+        return loss_D_img
 
     # incorporate AT training in this code (DONE)
     def forward(
@@ -243,35 +257,12 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         target_label = 1
 
         if branch == "domain":
-            # self.D_img.train()
-            # source_label = 0
-            # target_label = 1
-            # images = self.preprocess_image(batched_inputs)
+
+            # Assuming source_label and target_label are defined somewhere or passed as arguments
             images_s, images_t = self.preprocess_image_train(batched_inputs)
 
-            # NOTE: add warpping option with images_s
-            if warp_aug_lzu:
-                features = process_and_update_features(batched_inputs, images_s, warp_aug_lzu, 
-                                                    vp_dict, grid_net, self.backbone, 
-                                                    warp_debug, warp_image_norm)
-            else:
-                features = self.backbone(images_s.tensor)
-
-            # import pdb
-            # pdb.set_trace()
-            features_s = grad_reverse(features[self.dis_type])
-            D_img_out_s = self.D_img(features_s)
-            loss_D_img_s = F.binary_cross_entropy_with_logits(D_img_out_s, torch.FloatTensor(D_img_out_s.data.size()).fill_(source_label).to(self.device))
-
-            features_t = self.backbone(images_t.tensor)
-            
-            features_t = grad_reverse(features_t[self.dis_type])
-            # features_t = grad_reverse(features_t['p2'])
-            D_img_out_t = self.D_img(features_t)
-            loss_D_img_t = F.binary_cross_entropy_with_logits(D_img_out_t, torch.FloatTensor(D_img_out_t.data.size()).fill_(target_label).to(self.device))
-
-            # import pdb
-            # pdb.set_trace()
+            loss_D_img_s = self._process_images(images_s, batched_inputs, source_label, warp_aug_lzu, vp_dict, grid_net, warp_debug, warp_image_norm)
+            loss_D_img_t = self._process_images(images_t, batched_inputs, target_label, warp_aug_lzu, vp_dict, grid_net, warp_debug, warp_image_norm)
 
             losses = {}
             losses["loss_D_img_s"] = loss_D_img_s
