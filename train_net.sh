@@ -539,21 +539,35 @@
 #       OUTPUT_DIR outputs/warp_aug_9_15_v2 \
 #       > warp_aug_9_15_v2.out 2>&1 &
 
-# NOTE: train AT baseline
-nohup \
-python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_AT_9_16.yaml \
-      OUTPUT_DIR outputs/9_16 \
-      > '9_16.out' 2>&1 &
+# # NOTE: train AT baseline
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_AT_9_16.yaml \
+#       OUTPUT_DIR outputs/9_16 \
+#       > '9_16.out' 2>&1 &
 
 
 # nohup \
 # python train_net.py \
 #       --num-gpus 3 \
-#       --config configs/bdd100k_AT_9_17_warp.yaml \
+#       --config configs/bdd100k_AT_9_17.yaml \
 #       OUTPUT_DIR outputs/9_17 \
 #       > '9_17.out' 2>&1 &
+
+nohup \
+python train_net.py \
+      --num-gpus 3 \
+      --config configs/bdd100k_9_18_v1.yaml \
+      OUTPUT_DIR outputs/9_18_v1 \
+      > '9_18_v1.out' 2>&1 &
+
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_9_11_3090.yaml \
+#       OUTPUT_DIR outputs/9_18_v2 \
+#       > '9_18_v2.out' 2>&1 &
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py
