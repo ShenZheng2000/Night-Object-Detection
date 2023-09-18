@@ -205,6 +205,8 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
             warped_images = torch.stack([(img - img.min()) / (img.max() - img.min()) * 255 for img in warped_images])
 
         # debug images
+        # print("len batched_inputs", len(batched_inputs)) # BS
+        # print("warped_images", warped_images.shape) # [BS, C, H, W]
         concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
 
         # Call the backbone
@@ -230,25 +232,19 @@ def concat_and_save_images(batched_inputs, warped_images, debug=False):
     Inputs:
     - batched_inputs: List of dictionaries containing image information, including 'image' for original image.
     - warped_images: List of warped image tensors.
-    - out_dir: Output directory for saving the images.
     - debug: Boolean flag to determine whether to save the images or not.
 
     Outputs:
     - None. This function saves the concatenated images if debug is True.
     """
+    cnt = 0
     if debug:
         for (input_info, warped_img) in zip(batched_inputs, warped_images):
             original_img = input_info['image'].cuda()  # Access the original image
-            # print("warped_img device", warped_img.device)
 
             # Switch from BGR to RGB
             original_img = torch.flip(original_img, [0])
             warped_img = torch.flip(warped_img, [0])
-
-            # check min and max
-            # TODO: debug this: original_image is from 0 to 255, but warpped images is from -100+ to 100+. 
-            print(f"original_img. Min: {torch.min(original_img).item()}, Max: {torch.max(original_img).item()}")
-            print(f"warped_img. Min: {torch.min(warped_img).item()}, Max: {torch.max(warped_img).item()}")
 
             # Normalize the images
             original_img = (original_img - original_img.min()) / (original_img.max() - original_img.min())
@@ -259,11 +255,17 @@ def concat_and_save_images(batched_inputs, warped_images, debug=False):
 
             # Save images to output path
             file_name = os.path.basename(input_info['file_name'])  # Extract the original file name
+            file_name_without_extension, file_extension = os.path.splitext(file_name)
 
             warp_out_dir = 'warped_images'
             os.makedirs(warp_out_dir, exist_ok=True)
-            save_path = os.path.join(warp_out_dir, file_name)  # Create the save path
+
+            # Append cnt to the file name before the extension
+            save_path = os.path.join(warp_out_dir, f"{cnt}_{file_name_without_extension}{file_extension}")
 
             vutils.save_image(combined_image, save_path, normalize=True)
+            cnt += 1
+        
+        print(f"Saved {cnt} images!")
 
         sys.exit(1)

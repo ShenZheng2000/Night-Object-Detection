@@ -738,9 +738,12 @@ class TwoPCTrainer(DATrainer):
             }
 
             if self.cfg.AT:
+                # print("Before: label_data_q len", len(label_data_q))
                 label_data_q.extend(label_data_k)
+                # print("After: label_data_q len", len(label_data_q))
                 record_dict, _, _, _ = self.model(label_data_q, **common_args)
             else:
+                # print("After: label_data len", len(label_data))
                 record_dict, _, _, _ = self.model(label_data, **common_args)            
 
             # weight losses
