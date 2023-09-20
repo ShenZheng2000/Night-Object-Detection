@@ -784,6 +784,9 @@ class TwoPCTrainer(DATrainer):
                         loss_dict[key] = record_dict[key] * self.cfg.SEMISUPNET.UNSUP_LOSS_WEIGHT
                     elif key.endswith('loss_rpn_cls_pseudo'):
                         loss_dict[key] = record_dict[key] 
+                    # NOTE: add AT disriminator loss
+                    elif key == "loss_D_img_s" or key == "loss_D_img_t":
+                        loss_dict[key] = record_dict[key] * self.cfg.SEMISUPNET.DIS_LOSS_WEIGHT
                     else: 
                         loss_dict[key] = record_dict[key] * 1
 

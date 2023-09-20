@@ -540,12 +540,14 @@
 #       > warp_aug_9_15_v2.out 2>&1 &
 
 # # NOTE: train AT baseline
-# nohup \
-# python train_net.py \
-#       --num-gpus 3 \
-#       --config configs/bdd100k_AT_9_16.yaml \
-#       OUTPUT_DIR outputs/9_16 \
-#       > '9_16.out' 2>&1 &
+nohup \
+python train_net.py \
+      --resume \
+      --num-gpus 3 \
+      --config configs/bdd100k_AT_9_16.yaml \
+      MODEL.WEIGHTS outputs/9_16/model_0059999.pth \
+      OUTPUT_DIR outputs/9_16 \
+      > '9_16.out' 2>&1 &
 
 
 # nohup \
@@ -555,12 +557,12 @@
 #       OUTPUT_DIR outputs/9_17 \
 #       > '9_17.out' 2>&1 &
 
-nohup \
-python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_9_18_v1.yaml \
-      OUTPUT_DIR outputs/9_18_v1 \
-      > '9_18_v1.out' 2>&1 &
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_9_18_v1.yaml \
+#       OUTPUT_DIR outputs/9_18_v1 \
+#       > '9_18_v1.out' 2>&1 &
 
 # nohup \
 # python train_net.py \

@@ -10,6 +10,8 @@ SEMISUPNET:
   BURN_UP_STEP: 60000
   SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400)
   DIS_TYPE: "res5"
+  # Maybe: reduce dis weight. Stop hardcode and retrain all later
+  DIS_LOSS_WEIGHT: 0.1
 
 DATASETS:
   TRAIN_LABEL: ("bdd100k_day_train",) #voc_2012_train

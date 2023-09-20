@@ -107,7 +107,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
         self.AT = AT
         self.dis_type = dis_type
-
+        self.D_img = None
     def build_discriminator(self):
         self.D_img = FCDiscriminator_img(self.backbone._out_feature_channels[self.dis_type]).to(self.device) # Need to know the channel
 
@@ -177,8 +177,6 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         #     print("Hello! Running model inference with warp_aug_lzu!")
         #     features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
         #                                             vp_dict, grid_net, self.backbone)
-        # else:
-        #     features = self.backbone(images.tensor)
         features = self.backbone(images.tensor)
 
         if detected_instances is None:
