@@ -545,3 +545,142 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
                                                       saliency, device)
 
         return grid
+    
+
+class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
+
+    def __init__(
+        self,
+        attraction_fwhm=4,
+        bandwidth_scale=64,
+        amplitude_scale=1,
+        **kwargs
+    ):
+        
+        # Setting up all required attributes
+        self.separable = kwargs.get('separable', True)
+        self.anti_crop = kwargs.get('anti_crop', True)
+        self.input_shape = kwargs.get('input_shape', (1200, 1920))
+        self.output_shape = kwargs.get('output_shape', (600, 960))
+
+        super(MixKDEGrid, self).__init__()
+        RecasensSaliencyToGridMixin.__init__(self, **kwargs)
+        self.attraction_fwhm = attraction_fwhm
+        self.bandwidth_scale = bandwidth_scale
+        self.amplitude_scale = amplitude_scale
+
+        self.homo = CuboidLayerGlobal(self.input_shape)
+        
+    def bbox2sal(self, batch_bboxes, img_shape, jitter=None):
+        device = batch_bboxes[0].device
+        h_out, w_out = self.grid_shape
+        sals = []
+        
+        # Assuming all bboxes in batch_bboxes are for a single image with shape img_shape
+        h, w = img_shape[-2:]  # img_shape should be a tuple (h, w)
+        
+        if len(batch_bboxes) == 0:  # zero detections case
+            sal = torch.ones(h_out, w_out, device=device).unsqueeze(0)
+            sal /= sal.sum()
+            sals.append(sal)
+            return torch.stack(sals)  # Return early if no bboxes
+        
+        bboxes = batch_bboxes  # All bboxes are for the same image
+        bboxes[:, 2:] -= bboxes[:, :2]  # ltrb -> ltwh
+        cxy = bboxes[:, :2] + 0.5 * bboxes[:, 2:]
+        
+        if jitter is not None:
+            cxy += 2 * jitter * (torch.randn(cxy.shape, device=device) - 0.5)
+        
+        widths = (bboxes[:, 2] * self.bandwidth_scale).unsqueeze(1)
+        heights = (bboxes[:, 3] * self.bandwidth_scale).unsqueeze(1)
+        
+        X, Y = torch.meshgrid(
+            torch.linspace(0, w, w_out, dtype=torch.float, device=device),
+            torch.linspace(0, h, h_out, dtype=torch.float, device=device),
+        )
+        
+        grids = torch.stack((X.flatten(), Y.flatten()), dim=1).t()
+        m, n = cxy.shape[0], grids.shape[1]
+
+        norm1 = (cxy[:, 0:1] ** 2 / widths + cxy[:, 1:2] ** 2 / heights).expand(m, n)
+        norm2 = grids[0:1, :] ** 2 / widths + grids[1:2, :] ** 2 / heights
+        norms = norm1 + norm2
+
+        cxy_norm = cxy
+        cxy_norm[:, 0:1] /= widths
+        cxy_norm[:, 1:2] /= heights
+
+        distances = norms - 2 * cxy_norm.mm(grids)
+
+        sal = (-0.5 * distances).exp()
+        sal = self.amplitude_scale * (sal / (0.00001 + sal.sum(dim=1, keepdim=True))) 
+        sal += 1 / ((2 * self.padding_size + 1) ** 2)
+        sal = sal.sum(dim=0)
+        sal /= sal.sum()
+        sal = sal.reshape(w_out, h_out).t().unsqueeze(0)
+        sals.append(sal)
+        
+        return torch.stack(sals)  # MODIFICATION: sals will have only one element, sal for the image
+
+    def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
+        # saliency from image-level
+        device = imgs.device
+        v_pts = torch.tensor(v_pts, device=device)
+        v_pts = v_pts.unsqueeze(0)
+        self.saliency = self.homo.forward(imgs, v_pts)
+        self.saliency = F.interpolate(self.saliency, (31, 51))
+
+        # saliency from bbox-level
+        img_shape = imgs.shape
+        
+        if isinstance(gt_bboxes, torch.Tensor):
+            batch_bboxes = gt_bboxes
+        else:
+            if len(gt_bboxes[0].shape) == 3:
+                batch_bboxes = gt_bboxes[0].clone()  # noqa: E501, removing the augmentation dimension
+            else:
+                batch_bboxes = [bboxes.clone() for bboxes in gt_bboxes]
+        device = batch_bboxes[0].device
+        saliency = self.bbox2sal(batch_bboxes, img_shape, jitter)
+
+        # average image-level and bbox-level saliency
+        assert saliency.shape == self.saliency.shape, print(f"saliency {saliency.shape} mismatches self.saliency {self.saliency.shape}")
+        # print("saliency mean", saliency.mean())
+        # print("self.saliency mean", self.saliency.mean())
+        saliency = (saliency + self.saliency) / 2.0
+
+        # # ################# For debug only #################
+
+        # # # Extract the vanishing point and saliency map
+        # v_pts_original = v_pts[0].cpu().numpy()  # Assuming v_pts is like [[x, y]]
+        # # print("saliency shape", saliency.shape)
+        # saliency_np = saliency.squeeze(0).squeeze(0).cpu().detach().numpy()
+        # # print("saliency_np shape", saliency_np.shape)
+
+        # # Convert saliency map to 3 channel image
+        # saliency_np_with_vp = cv2.cvtColor(saliency_np, cv2.COLOR_GRAY2BGR)
+
+        # # Draw a circle at the vanishing point on the saliency map
+        # vanishing_point_color = (0, 0, 255)  # BGR color format (red)
+        # cv2.circle(saliency_np_with_vp, 
+        #             (int(v_pts_original[0]), int(v_pts_original[1])), 
+        #             5, 
+        #             vanishing_point_color, 
+        #             -1)  # Draw a filled circle
+
+        # # Save the modified saliency map
+        # # print("saliency_np_with_vp shape", saliency_np_with_vp.shape)
+        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_with_vp_instance.png")
+        # ################# For debug only #################
+
+        if self.separable:
+            x_saliency = saliency.sum(dim=2)
+            y_saliency = saliency.sum(dim=3)
+            grid = self.separable_saliency_to_grid(imgs, None, x_saliency,
+                                                   y_saliency, device)
+        else:
+            grid = self.nonseparable_saliency_to_grid(imgs, None,
+                                                      saliency, device)
+
+        return grid

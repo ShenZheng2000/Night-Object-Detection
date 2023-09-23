@@ -43,7 +43,7 @@ from twophase.solver.build import build_lr_scheduler
 from twophase.evaluation import PascalVOCDetectionEvaluator, COCOEvaluator
 from twophase.modeling.custom_losses import ConsistencyLosses
 from twophase.data.transforms.night_aug import NightAug
-from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid
+from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid
 import copy
 
 
@@ -694,6 +694,11 @@ class TwoPCTrainer(DATrainer):
                                                 anti_crop=True, 
                                                 input_shape=my_shape, 
                                                 output_shape=my_shape)
+            elif self.cfg.WARP_FOVEA_MIX:
+                self.grid_net = MixKDEGrid(separable=True, 
+                                                anti_crop=True, 
+                                                input_shape=my_shape, 
+                                                output_shape=my_shape)                
             else:
                 self.grid_net = CuboidGlobalKDEGrid(separable=True, 
                                                 anti_crop=True, 

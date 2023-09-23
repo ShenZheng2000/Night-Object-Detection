@@ -142,3 +142,6 @@ def add_teacher_config(cfg):
 
     # NOTE: add fovea warp at instance level
     _C.WARP_FOVEA_INST = False
+
+    # NOTE: add fovea warp at instance & image level
+    _C.WARP_FOVEA_MIX = False
