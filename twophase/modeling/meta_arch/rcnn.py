@@ -272,7 +272,8 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         # print(f"batched_inputs len is {len(batched_inputs)}, [0].keys() is {batched_inputs[0].keys()}") 
             # 12, dict_keys(['file_name', 'height', 'width', 'image_id', 'transform', 'instances', 'image'])
         # print("images.tensor shape", images.tensor.shape) # [10, 3, 600, 1067]
-        # print("images is", images) # <detectron2.structures.image_list.ImageList object at 0x7fc5ab256fd0>
+        # print("batched_inputs[0]['instances'].gt_boxes.tensor.shape is", \
+        #       batched_inputs[0]['instances'].gt_boxes.tensor.shape) # [N, 4]: x1, y1, x2, y2
         # .to(self.device)
 
         # NOTE: add zoom-unzoom here

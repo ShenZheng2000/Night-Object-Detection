@@ -43,7 +43,7 @@ def warp_bboxes(bboxes, grid, separable=True):
     return bboxes
 
 
-def simple_test(grid_net, imgs, vanishing_point):
+def simple_test(grid_net, imgs, vanishing_point, bboxes=None):
     """Test function without test time augmentation.
     Args:
         grid_net (CuboidGlobalKDEGrid): An instance of CuboidGlobalKDEGrid.
@@ -60,7 +60,7 @@ def simple_test(grid_net, imgs, vanishing_point):
     imgs = torch.stack(tuple(imgs), dim=0)
     # print("imgs shape", imgs.shape)
 
-    grid = grid_net(imgs, vanishing_point)
+    grid = grid_net(imgs, vanishing_point, bboxes)
     # print("grid shape", grid.shape)
 
     warped_imgs = F.grid_sample(imgs, grid, align_corners=True)
@@ -77,14 +77,17 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
     my_shape = img.shape[-2:]
     imgs = img.unsqueeze(0) 
 
+    # read bboxes
+    bboxes = ins.gt_boxes.tensor
+    bboxes = bboxes.to(device)
+
+    # print("img.shape", img.shape) # [3, 600, 1067]
+    # print("bboxes shape", bboxes.shape) # [N, 4]: x1, y1, x2, y2
+    # print("vanishing_point", vanishing_point)
+
+    grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point, bboxes)
+
     if use_ins:
-
-        # read bboxes
-        bboxes = ins.gt_boxes.tensor
-        bboxes = bboxes.to(device)
-
-        # warp image
-        grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point)
 
         # warp bboxes
         warped_bboxes = warp_bboxes(bboxes, grid, separable=True)
@@ -95,13 +98,7 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
         # update ins
         ins.gt_boxes.tensor = warped_bboxes
 
-        return warped_imgs, ins, grid
-    
-    else:
-        # warp image
-        grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point)
-
-        return warped_imgs, ins, grid
+    return warped_imgs, ins, grid
     
 
 
@@ -194,9 +191,13 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         ]
 
         # Apply warping
+        # warped_images, _, grids = zip(*[
+        #     apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
+        #     for image, vp in zip(images.tensor, vanishing_points)
+        # ])
         warped_images, _, grids = zip(*[
-            apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
-            for image, vp in zip(images.tensor, vanishing_points)
+            apply_warp_aug(image, sample['instances'], vp, False, warp_aug_lzu, grid_net) 
+            for image, vp, sample in zip(images.tensor, vanishing_points, batched_inputs)
         ])
         warped_images = torch.stack(warped_images)
 

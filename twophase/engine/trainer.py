@@ -43,7 +43,7 @@ from twophase.solver.build import build_lr_scheduler
 from twophase.evaluation import PascalVOCDetectionEvaluator, COCOEvaluator
 from twophase.modeling.custom_losses import ConsistencyLosses
 from twophase.data.transforms.night_aug import NightAug
-from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid
+from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid
 import copy
 
 
@@ -646,7 +646,10 @@ class TwoPCTrainer(DATrainer):
         else:
             cons_loss = self.consistency_losses.losses(roi_stu,roi_teach,prefix=prefix)
         # print("cons_loss is", cons_loss)
-        record_dict.update(cons_loss)
+
+        # NOTE: use cons_loss only if True
+        if self.cfg.CONSISTENCY:
+            record_dict.update(cons_loss)
 
         return record_dict
 
@@ -686,6 +689,11 @@ class TwoPCTrainer(DATrainer):
                                             anti_crop=True, 
                                             input_shape=my_shape, 
                                             output_shape=my_shape)
+            elif self.cfg.WARP_FOVEA_INST:
+                self.grid_net = PlainKDEGrid(separable=True, 
+                                                anti_crop=True, 
+                                                input_shape=my_shape, 
+                                                output_shape=my_shape)
             else:
                 self.grid_net = CuboidGlobalKDEGrid(separable=True, 
                                                 anti_crop=True, 
@@ -727,7 +735,6 @@ class TwoPCTrainer(DATrainer):
 
 
         if self.iter < self.cfg.SEMISUPNET.BURN_UP_STEP:
-
             common_args = {
                 "branch": "supervised",
                 "warp_aug_lzu": self.cfg.WARP_AUG_LZU,

@@ -7,6 +7,10 @@ import torch.nn.functional as F
 
 import kornia as K
 
+import sys
+from torchvision.utils import save_image
+import cv2
+
 class HomographySaliencyParamsNet(nn.Module):
     def __init__(self, 
             backbone='resnet18', 
@@ -250,5 +254,24 @@ class CuboidLayerGlobal(nn.Module):
 
         lambd = (1.0 - self.lambd).to(self.device)
         map_warp = bottom + lambd * top 
+
+        # print("v_pts: ", v_pts)
+        # print("bottom: ", bottom.shape)
+        # print("top: ", top.shape)
+
+        # v_pts_original = v_pts[0].cpu().numpy()
+        # saliency_bottom = bottom.squeeze(0).squeeze(0).cpu().detach().numpy()
+        # saliency_top = top.squeeze(0).squeeze(0).cpu().detach().numpy()
+        # saliency_final = saliency_bottom + saliency_top
+
+        # # Draw a circle at the vanishing point on the saliency map
+        # vanishing_point_color = (0, 0, 255)  # BGR color format (red)
+        # cv2.circle(saliency_final, 
+        #             (int(v_pts_original[0]), int(v_pts_original[1])), 
+        #             5, 
+        #             vanishing_point_color, 
+        #             -1)  # Draw a filled circle
+
+        # save_image(saliency_final, "saliency_final.png")
 
         return map_warp

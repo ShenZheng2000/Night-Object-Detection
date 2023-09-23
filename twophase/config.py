@@ -139,3 +139,6 @@ def add_teacher_config(cfg):
 
     # NOTE: add adaptive teacher (AT)
     _C.AT = False
+
+    # NOTE: add fovea warp at instance level
+    _C.WARP_FOVEA_INST = False
