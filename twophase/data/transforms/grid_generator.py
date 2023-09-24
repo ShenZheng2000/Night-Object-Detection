@@ -417,7 +417,7 @@ class CuboidGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 # DONE: add bbox-level saliency
 # DONE: debug visualization of image
 # DONE: debug visualization of saliency
-# TODO: average image-level (CuboidGlobalKDEGrid) and bbox-level (PlainKDEGrid) saliency
+# DONE: average image-level (CuboidGlobalKDEGrid) and bbox-level (PlainKDEGrid) saliency
 # grid_generator = dict(
 #     type='PlainKDEGrid',
 #     output_shape=(600, 960),
@@ -428,51 +428,37 @@ class CuboidGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 #     anti_crop=True
 # )
 
-class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
-    """Image adaptive grid generator with fixed hyperparameters -- KDE SI"""
-
-    def __init__(
-        self,
-        attraction_fwhm=4,
-        bandwidth_scale=64,
-        amplitude_scale=1,
-        **kwargs
-    ):
-        super(PlainKDEGrid, self).__init__()
-        RecasensSaliencyToGridMixin.__init__(self, **kwargs)
-        self.attraction_fwhm = attraction_fwhm
-        self.bandwidth_scale = bandwidth_scale
-        self.amplitude_scale = amplitude_scale
-        
+# NOTE: write this as separate class to reduce code duplication
+class SaliencyMixin:
     def bbox2sal(self, batch_bboxes, img_shape, jitter=None):
         device = batch_bboxes[0].device
         h_out, w_out = self.grid_shape
         sals = []
-        
+
         # Assuming all bboxes in batch_bboxes are for a single image with shape img_shape
         h, w = img_shape[-2:]  # img_shape should be a tuple (h, w)
-        
+
         if len(batch_bboxes) == 0:  # zero detections case
             sal = torch.ones(h_out, w_out, device=device).unsqueeze(0)
             sal /= sal.sum()
             sals.append(sal)
             return torch.stack(sals)  # Return early if no bboxes
-        
+
         bboxes = batch_bboxes  # All bboxes are for the same image
         bboxes[:, 2:] -= bboxes[:, :2]  # ltrb -> ltwh
         cxy = bboxes[:, :2] + 0.5 * bboxes[:, 2:]
-        
+
         if jitter is not None:
             cxy += 2 * jitter * (torch.randn(cxy.shape, device=device) - 0.5)
-        
+
         widths = (bboxes[:, 2] * self.bandwidth_scale).unsqueeze(1)
         heights = (bboxes[:, 3] * self.bandwidth_scale).unsqueeze(1)
-        
+
         X, Y = torch.meshgrid(
             torch.linspace(0, w, w_out, dtype=torch.float, device=device),
             torch.linspace(0, h, h_out, dtype=torch.float, device=device),
         )
-        
+
         grids = torch.stack((X.flatten(), Y.flatten()), dim=1).t()
         m, n = cxy.shape[0], grids.shape[1]
 
@@ -487,14 +473,32 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         distances = norms - 2 * cxy_norm.mm(grids)
 
         sal = (-0.5 * distances).exp()
-        sal = self.amplitude_scale * (sal / (0.00001 + sal.sum(dim=1, keepdim=True))) 
+        sal = self.amplitude_scale * (sal / (0.00001 + sal.sum(dim=1, keepdim=True)))
         sal += 1 / ((2 * self.padding_size + 1) ** 2)
         sal = sal.sum(dim=0)
         sal /= sal.sum()
         sal = sal.reshape(w_out, h_out).t().unsqueeze(0)
         sals.append(sal)
-        
-        return torch.stack(sals)  # MODIFICATION: sals will have only one element, sal for the image
+
+        return torch.stack(sals)
+
+
+
+class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
+    """Image adaptive grid generator with fixed hyperparameters -- KDE SI"""
+
+    def __init__(
+        self,
+        attraction_fwhm=4,
+        bandwidth_scale=64,
+        amplitude_scale=1,
+        **kwargs
+    ):
+        super(PlainKDEGrid, self).__init__()
+        RecasensSaliencyToGridMixin.__init__(self, **kwargs)
+        self.attraction_fwhm = attraction_fwhm
+        self.bandwidth_scale = bandwidth_scale
+        self.amplitude_scale = amplitude_scale
 
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
         img_shape = imgs.shape
@@ -547,7 +551,7 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         return grid
     
 
-class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
+class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
 
     def __init__(
         self,
@@ -571,58 +575,6 @@ class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 
         self.homo = CuboidLayerGlobal(self.input_shape)
         
-    def bbox2sal(self, batch_bboxes, img_shape, jitter=None):
-        device = batch_bboxes[0].device
-        h_out, w_out = self.grid_shape
-        sals = []
-        
-        # Assuming all bboxes in batch_bboxes are for a single image with shape img_shape
-        h, w = img_shape[-2:]  # img_shape should be a tuple (h, w)
-        
-        if len(batch_bboxes) == 0:  # zero detections case
-            sal = torch.ones(h_out, w_out, device=device).unsqueeze(0)
-            sal /= sal.sum()
-            sals.append(sal)
-            return torch.stack(sals)  # Return early if no bboxes
-        
-        bboxes = batch_bboxes  # All bboxes are for the same image
-        bboxes[:, 2:] -= bboxes[:, :2]  # ltrb -> ltwh
-        cxy = bboxes[:, :2] + 0.5 * bboxes[:, 2:]
-        
-        if jitter is not None:
-            cxy += 2 * jitter * (torch.randn(cxy.shape, device=device) - 0.5)
-        
-        widths = (bboxes[:, 2] * self.bandwidth_scale).unsqueeze(1)
-        heights = (bboxes[:, 3] * self.bandwidth_scale).unsqueeze(1)
-        
-        X, Y = torch.meshgrid(
-            torch.linspace(0, w, w_out, dtype=torch.float, device=device),
-            torch.linspace(0, h, h_out, dtype=torch.float, device=device),
-        )
-        
-        grids = torch.stack((X.flatten(), Y.flatten()), dim=1).t()
-        m, n = cxy.shape[0], grids.shape[1]
-
-        norm1 = (cxy[:, 0:1] ** 2 / widths + cxy[:, 1:2] ** 2 / heights).expand(m, n)
-        norm2 = grids[0:1, :] ** 2 / widths + grids[1:2, :] ** 2 / heights
-        norms = norm1 + norm2
-
-        cxy_norm = cxy
-        cxy_norm[:, 0:1] /= widths
-        cxy_norm[:, 1:2] /= heights
-
-        distances = norms - 2 * cxy_norm.mm(grids)
-
-        sal = (-0.5 * distances).exp()
-        sal = self.amplitude_scale * (sal / (0.00001 + sal.sum(dim=1, keepdim=True))) 
-        sal += 1 / ((2 * self.padding_size + 1) ** 2)
-        sal = sal.sum(dim=0)
-        sal /= sal.sum()
-        sal = sal.reshape(w_out, h_out).t().unsqueeze(0)
-        sals.append(sal)
-        
-        return torch.stack(sals)  # MODIFICATION: sals will have only one element, sal for the image
-
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
         # saliency from image-level
         device = imgs.device
