@@ -572,14 +572,14 @@
 #       > '9_18_v2_debug.out' 2>&1 &
 
 # # TODO: resume later
-nohup \
-python train_net.py \
-      --resume \
-      --num-gpus 3 \
-      --config configs/bdd100k_9_21_v1.yaml \
-      MODEL.WEIGHTS outputs/bdd100k_9_21_v1/model_0074999.pth \
-      OUTPUT_DIR outputs/bdd100k_9_21_v1 \
-      > bdd100k_9_21_v1_resume.out 2>&1 &
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_9_21_v1.yaml \
+#       MODEL.WEIGHTS outputs/bdd100k_9_21_v1/model_0074999.pth \
+#       OUTPUT_DIR outputs/bdd100k_9_21_v1 \
+#       > bdd100k_9_21_v1_resume.out 2>&1 &
 
 # NOTE: training with instance-level warp
 # nohup \
@@ -596,6 +596,20 @@ python train_net.py \
 #       --config configs/bdd100k_9_22_v2.yaml \
 #       OUTPUT_DIR outputs/bdd100k_9_22_v2 \
 #       > bdd100k_9_22_v2.out 2>&1 &
+
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_9_23_v1.yaml \
+#       OUTPUT_DIR outputs/bdd100k_9_23_v1 \
+#       > bdd100k_9_23_v1.out 2>&1 &
+
+nohup \
+python train_net.py \
+      --num-gpus 3 \
+      --config configs/bdd100k_9_23_v2.yaml \
+      OUTPUT_DIR outputs/bdd100k_9_23_v2 \
+      > bdd100k_9_23_v2.out 2>&1 &
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py
