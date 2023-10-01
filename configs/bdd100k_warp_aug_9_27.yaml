@@ -1,0 +1,34 @@
+_BASE_: "./faster_rcnn_R50_bdd100k.yaml"
+
+SOLVER:
+  STEPS: (72000, 96000, 108000, 432000)
+  MAX_ITER: 120000
+  IMG_PER_BATCH_LABEL: 15 # 15
+  IMG_PER_BATCH_UNLABEL: 15 # 15
+
+SEMISUPNET:
+  BURN_UP_STEP: 60000
+  SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400)
+
+DATASETS:
+  TRAIN_LABEL: ("bdd100k_day_train_valid_vp",) #voc_2012_train
+  TEST: ("bdd100k_night_val_valid_vp",)
+
+# advanced stuffs => adjust based on your needs
+
+# TODO: choose all vp
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/bdd100k_all_vp.json"
+WARP_AUG_LZU: True
+
+# NOTE: use bbox-level saliency map => Add this later
+WARP_FOVEA_INST: True
+
+WARP_TEST: True
+
+# PATH_BLUR: True
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+

@@ -604,12 +604,26 @@
 #       OUTPUT_DIR outputs/bdd100k_9_23_v1 \
 #       > bdd100k_9_23_v1.out 2>&1 &
 
-nohup \
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_9_23_v2.yaml \
+#       OUTPUT_DIR outputs/bdd100k_9_23_v2 \
+#       > bdd100k_9_23_v2.out 2>&1 &
+
+# # test with warp (instance-level)
+# python train_net.py \
+#       --eval-only \
+#       --config configs/bdd100k_warp_aug_9_27.yaml \
+#       OUTPUT_DIR outputs/9_27_v1 \
+#       MODEL.WEIGHTS outputs/pretrained/model_final.pth
+
+# test with warp (instance-level)
 python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_9_23_v2.yaml \
-      OUTPUT_DIR outputs/bdd100k_9_23_v2 \
-      > bdd100k_9_23_v2.out 2>&1 &
+      --eval-only \
+      --config configs/bdd100k_warp_aug_9_27.yaml \
+      OUTPUT_DIR outputs/9_27_v2 \
+      MODEL.WEIGHTS outputs/bdd100k_9_23_v1/model_final.pth
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py

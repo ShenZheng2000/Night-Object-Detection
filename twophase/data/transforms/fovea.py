@@ -78,8 +78,11 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
     imgs = img.unsqueeze(0) 
 
     # read bboxes
-    bboxes = ins.gt_boxes.tensor
-    bboxes = bboxes.to(device)
+    try:
+        bboxes = ins.gt_boxes.tensor
+        bboxes = bboxes.to(device)
+    except:
+        bboxes = None
 
     # print("img.shape", img.shape) # [3, 600, 1067]
     # print("bboxes shape", bboxes.shape) # [N, 4]: x1, y1, x2, y2
@@ -87,16 +90,16 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
 
     grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point, bboxes)
 
-    if use_ins:
+    # if use_ins:
 
-        # warp bboxes
-        warped_bboxes = warp_bboxes(bboxes, grid, separable=True)
+    #     # warp bboxes
+    #     warped_bboxes = warp_bboxes(bboxes, grid, separable=True)
 
-        # # NOTE: hardcode for debug only. Delete later
-        # warped_bboxes = unwarp_bboxes(warped_bboxes, grid.squeeze(0), [600, 1067])
+    #     # # NOTE: hardcode for debug only. Delete later
+    #     # warped_bboxes = unwarp_bboxes(warped_bboxes, grid.squeeze(0), [600, 1067])
 
-        # update ins
-        ins.gt_boxes.tensor = warped_bboxes
+    #     # update ins
+    #     ins.gt_boxes.tensor = warped_bboxes
 
     return warped_imgs, ins, grid
     
@@ -182,13 +185,16 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     features = None
     if warp_aug_lzu:
         # Preprocessing
-        vanishing_points = [
-            get_vanising_points(
-                sample['file_name'], 
-                vp_dict, 
-                *extract_ratio_and_flip(sample['transform'])
-            ) for sample in batched_inputs
-        ]
+        vanishing_points = []
+        for sample in batched_inputs:
+            if 'transform' in sample:
+                ratio, flip = extract_ratio_and_flip(sample['transform'])
+            else:
+                # Handle the absence of 'transform' key
+                ratio, flip = 75/72, False  # Or any default value suitable for your case
+                
+            vp = get_vanising_points(sample['file_name'], vp_dict, ratio, flip)
+            vanishing_points.append(vp)
 
         # Apply warping
         # warped_images, _, grids = zip(*[
@@ -196,7 +202,7 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         #     for image, vp in zip(images.tensor, vanishing_points)
         # ])
         warped_images, _, grids = zip(*[
-            apply_warp_aug(image, sample['instances'], vp, False, warp_aug_lzu, grid_net) 
+            apply_warp_aug(image, sample.get('instances', None), vp, False, warp_aug_lzu, grid_net)
             for image, vp, sample in zip(images.tensor, vanishing_points, batched_inputs)
         ])
         warped_images = torch.stack(warped_images)
