@@ -1,0 +1,31 @@
+_BASE_: "./faster_rcnn_R50_bdd100k.yaml"
+
+# NOTE: this must be 9 to fit current model
+MODEL:
+  ROI_HEADS:
+    NUM_CLASSES: 9
+
+SOLVER:
+  STEPS: (72000, 96000, 108000, 432000)
+  MAX_ITER: 120000 # NOTE: should be same as BURN_UP_STEP
+  IMG_PER_BATCH_LABEL: 15 # 15
+  IMG_PER_BATCH_UNLABEL: 15 # 15
+
+SEMISUPNET:
+  BURN_UP_STEP: 120000
+  SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400)
+
+DATASETS:
+  TRAIN_LABEL: ("bdd100k_train",)  # NOTE: all train
+  TEST: ("bdd100k_val",)  # NOTE: all val
+
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/bdd100k_all_vp.json" # NOTE: all vps
+
+NIGHTAUG: False
+STUDENT_SCALE: False
+CONSISTENCY: False
+
+# USE_DEBUG: True
+
+
+

@@ -604,12 +604,19 @@
 #       OUTPUT_DIR outputs/bdd100k_9_23_v1 \
 #       > bdd100k_9_23_v1.out 2>&1 &
 
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_9_23_v2.yaml \
+#       OUTPUT_DIR outputs/bdd100k_9_23_v2 \
+#       > bdd100k_9_23_v2.out 2>&1 &
+
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_9_23_v2.yaml \
-      OUTPUT_DIR outputs/bdd100k_9_23_v2 \
-      > bdd100k_9_23_v2.out 2>&1 &
+      --config configs/bdd100k_10_1.yaml \
+      OUTPUT_DIR outputs/bdd100k_10_1 \
+      > bdd100k_10_1.out 2>&1 &
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py

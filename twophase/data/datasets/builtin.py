@@ -199,6 +199,21 @@ def register_retinex_model(model_name):
 # NOTE: change to current path
 # TODO: use the correct label and #GPU for training!
 # NOTE: change according to each server
+
+
+# NOTE: add complete bdd train and test
+register_coco_instances("bdd100k_train",
+{}, 
+f'{data_path}/bdd100k/coco_labels/bdd100k_labels_images_train.json', 
+f'{data_path}/bdd100k/images/100k/train')
+
+register_coco_instances("bdd100k_val",
+{}, 
+f'{data_path}/bdd100k/coco_labels/bdd100k_labels_images_val.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+
+
 register_coco_instances("bdd100k_day_train",
 {}, 
 f'{data_path}/bdd100k/coco_labels/train_day.json', 
