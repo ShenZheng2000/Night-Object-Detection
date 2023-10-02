@@ -260,22 +260,22 @@ class CuboidLayerGlobal(nn.Module):
         # print("bottom: ", bottom.shape)
         # print("top: ", top.shape)
 
-        v_pts_original = v_pts[0].cpu().numpy()
-        saliency_bottom = bottom.squeeze(0).squeeze(0).cpu().detach().numpy()
-        saliency_top = top.squeeze(0).squeeze(0).cpu().detach().numpy()
-        saliency_final = saliency_bottom + saliency_top
+        # v_pts_original = v_pts[0].cpu().numpy()
+        # saliency_bottom = bottom.squeeze(0).squeeze(0).cpu().detach().numpy()
+        # saliency_top = top.squeeze(0).squeeze(0).cpu().detach().numpy()
+        # saliency_final = saliency_bottom + saliency_top
 
-        # Draw a circle at the vanishing point on the saliency map
-        vanishing_point_color = (0, 0, 255)  # BGR color format (red)
-        cv2.circle(saliency_final, 
-                    (int(v_pts_original[0]), int(v_pts_original[1])), 
-                    5, 
-                    vanishing_point_color, 
-                    -1)  # Draw a filled circle
+        # # Draw a circle at the vanishing point on the saliency map
+        # vanishing_point_color = (0, 0, 255)  # BGR color format (red)
+        # cv2.circle(saliency_final, 
+        #             (int(v_pts_original[0]), int(v_pts_original[1])), 
+        #             5, 
+        #             vanishing_point_color, 
+        #             -1)  # Draw a filled circle
         
-        saliency_final = torch.tensor(saliency_final)[None, None, ...]
+        # saliency_final = torch.tensor(saliency_final)[None, None, ...]
 
-        save_image(saliency_final, "saliency_final.png")
+        # save_image(saliency_final, "saliency_final.png")
 
         return map_warp
 
