@@ -255,23 +255,53 @@ class CuboidLayerGlobal(nn.Module):
         lambd = (1.0 - self.lambd).to(self.device)
         map_warp = bottom + lambd * top 
 
+        # NOTE: for debug only
         # print("v_pts: ", v_pts)
         # print("bottom: ", bottom.shape)
         # print("top: ", top.shape)
 
-        # v_pts_original = v_pts[0].cpu().numpy()
-        # saliency_bottom = bottom.squeeze(0).squeeze(0).cpu().detach().numpy()
-        # saliency_top = top.squeeze(0).squeeze(0).cpu().detach().numpy()
-        # saliency_final = saliency_bottom + saliency_top
+        v_pts_original = v_pts[0].cpu().numpy()
+        saliency_bottom = bottom.squeeze(0).squeeze(0).cpu().detach().numpy()
+        saliency_top = top.squeeze(0).squeeze(0).cpu().detach().numpy()
+        saliency_final = saliency_bottom + saliency_top
 
-        # # Draw a circle at the vanishing point on the saliency map
-        # vanishing_point_color = (0, 0, 255)  # BGR color format (red)
-        # cv2.circle(saliency_final, 
-        #             (int(v_pts_original[0]), int(v_pts_original[1])), 
-        #             5, 
-        #             vanishing_point_color, 
-        #             -1)  # Draw a filled circle
+        # Draw a circle at the vanishing point on the saliency map
+        vanishing_point_color = (0, 0, 255)  # BGR color format (red)
+        cv2.circle(saliency_final, 
+                    (int(v_pts_original[0]), int(v_pts_original[1])), 
+                    5, 
+                    vanishing_point_color, 
+                    -1)  # Draw a filled circle
+        
+        saliency_final = torch.tensor(saliency_final)[None, None, ...]
 
-        # save_image(saliency_final, "saliency_final.png")
+        save_image(saliency_final, "saliency_final.png")
 
         return map_warp
+    
+
+if __name__ == '__main__':
+    # TODO: make the third plane appears here
+    from PIL import Image
+    import torchvision.transforms as transforms
+
+    img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_debug/0a0a0b1a-7c39d841.jpg"
+    v_pts = torch.tensor([560.4213953681794, 315.3206647347985])
+
+    input_shape = (720, 1280)
+    homo = CuboidLayerGlobal(input_shape)
+
+    # Load the image as a torch tensor
+    img = Image.open(img_path).convert("RGB")
+    transform = transforms.Compose([transforms.ToTensor()])
+    img_tensor = transform(img)
+
+    # Unsqueeze to correct dimension
+    img_tensor = img_tensor.unsqueeze(0)
+    v_pts = v_pts.unsqueeze(0)
+
+    # print("img_tensor shape", img_tensor.shape) # 1, 3, 720, 1280
+    # print("v_pts shape", v_pts.shape) # 1, 2
+
+    # Perform operations on the image tensor
+    saliency = homo.forward(img_tensor, v_pts)

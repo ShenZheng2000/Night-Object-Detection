@@ -740,6 +740,7 @@ class TwoPCTrainer(DATrainer):
 
 
         if self.iter < self.cfg.SEMISUPNET.BURN_UP_STEP:
+            # TODO: make grid_net part of model or save its weight in separate places
             common_args = {
                 "branch": "supervised",
                 "warp_aug_lzu": self.cfg.WARP_AUG_LZU,
