@@ -1,0 +1,8 @@
+_BASE_: "./bdd100k_10_1.yaml"
+
+VANISHING_POINT: "/root/autodl-tmp/Datasets/VP/bdd100k_all_vp.json" # NOTE: all vps
+
+WARP_AUG_LZU: True
+
+# USE_DEBUG: True
+# WARP_DEBUG: True

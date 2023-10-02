@@ -567,6 +567,10 @@ class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         self.input_shape = kwargs.get('input_shape', (1200, 1920))
         self.output_shape = kwargs.get('output_shape', (600, 960))
 
+        # Initialize alpha and beta as a learnable parameter
+        self.alpha = nn.Parameter(torch.tensor(0.5), requires_grad=True)
+        self.beta = nn.Parameter(torch.tensor(0.5), requires_grad=True)
+
         super(MixKDEGrid, self).__init__()
         RecasensSaliencyToGridMixin.__init__(self, **kwargs)
         self.attraction_fwhm = attraction_fwhm
@@ -600,7 +604,11 @@ class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         assert saliency.shape == self.saliency.shape, print(f"saliency {saliency.shape} mismatches self.saliency {self.saliency.shape}")
         # print("saliency mean", saliency.mean())
         # print("self.saliency mean", self.saliency.mean())
-        saliency = (saliency + self.saliency) / 2.0
+
+        # saliency = (saliency + self.saliency) / 2.0
+        # Mix saliencies with the learnable alpha parameter
+        print(f"alpha = {self.alpha}; beta = {self.beta}")
+        saliency = self.alpha * saliency + self.beta * self.saliency
 
         # # ################# For debug only #################
 
