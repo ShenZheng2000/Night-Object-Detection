@@ -666,7 +666,6 @@ class TwoPCTrainer(DATrainer):
         # data_q and data_k from different augmentations (q:strong, k:weak)
         # label_strong, label_weak, unlabed_strong, unlabled_weak
 
-        # TODO: add different data reading schemes for Adaptive Teacher
         if self.cfg.AT:
             # print("trainer.py using AT!!!")
             # print("Number of values in data", len(data))
@@ -681,6 +680,7 @@ class TwoPCTrainer(DATrainer):
         data_to_use = label_data if 'label_data' in locals() else label_data_q
         my_shape = data_to_use[0]['image'].shape[1:]
 
+        # TODO: move this part to rcnn.py
         if self.cfg.WARP_AUG_LZU:
             if self.cfg.WARP_FOVEA:
                 saliency_file = 'dataset_saliency.pkl'
@@ -740,7 +740,6 @@ class TwoPCTrainer(DATrainer):
 
 
         if self.iter < self.cfg.SEMISUPNET.BURN_UP_STEP:
-            # TODO: make grid_net part of model or save its weight in separate places
             common_args = {
                 "branch": "supervised",
                 "warp_aug_lzu": self.cfg.WARP_AUG_LZU,

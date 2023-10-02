@@ -14,7 +14,7 @@ import cv2
 # GRID_GENERATORS = Registry('models', parent=MMCV_MODELS)
 
 import os, json
-from .homography_layers import HomographyLayer, HomographySaliencyParamsNet, HomographyLayerGlobal, CuboidLayerGlobal
+from .homography_layers import CuboidLayerGlobal
 
 # def build_grid_generator(cfg):
 #     """Build grid generator."""
