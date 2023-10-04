@@ -81,11 +81,26 @@ class RecasensSaliencyToGridMixin(object):
     """Grid generator based on 'Learning to Zoom: a Saliency-Based Sampling \
     Layer for Neural Networks' [https://arxiv.org/pdf/1809.03355.pdf]."""
 
-    def __init__(self, output_shape, grid_shape=(31, 51), separable=True,
+    # NOTE: add this to update output_shape
+    def update_output_shape(self, output_shape):
+        """Update attributes that are dependent on the output shape."""
+        self.output_shape = output_shape
+
+    def saliency_to_grid(self, imgs, saliency, device):
+        """Convert saliency map to grid."""
+        saliency = saliency.to(device)
+        if self.separable:
+            x_saliency = saliency.sum(dim=2)
+            y_saliency = saliency.sum(dim=3)
+            return self.separable_saliency_to_grid(imgs, None, x_saliency, y_saliency, device)
+        else:
+            return self.nonseparable_saliency_to_grid(imgs, None, saliency, device)
+
+    def __init__(self, output_shape=None, grid_shape=(31, 51), separable=True,
                  attraction_fwhm=13, anti_crop=True, **kwargs):
         super(RecasensSaliencyToGridMixin, self).__init__()
-        self.output_shape = output_shape
-        self.output_height, self.output_width = output_shape
+        # self.output_shape = output_shape
+        # self.output_height, self.output_width = output_shape
         self.grid_shape = grid_shape
         self.padding_size = min(self.grid_shape)-1
         self.total_shape = tuple(
@@ -94,6 +109,9 @@ class RecasensSaliencyToGridMixin(object):
         )
         self.padding_mode = 'reflect' if anti_crop else 'replicate'
         self.separable = separable
+
+        # Initialize attributes dependent on output_shape
+        self.update_output_shape(output_shape)
 
         if self.separable:
             self.filter = make1DGaussian(
@@ -191,112 +209,6 @@ class RecasensSaliencyToGridMixin(object):
                              align_corners=True)
         return grid.permute(0, 2, 3, 1)
     
-# replace separable and non-separable with this function (NOTE: skip for now)
-# def saliency_to_grid(self, imgs, img_metas, x_saliency=None, y_saliency=None, device=None):
-#     N = imgs.shape[0]
-    
-#     if self.separable:
-#         assert self.separable
-#         x_saliency = F.pad(x_saliency, (self.padding_size, self.padding_size), mode=self.padding_mode)
-#         y_saliency = F.pad(y_saliency, (self.padding_size, self.padding_size), mode=self.padding_mode)
-        
-#         P_x = torch.zeros(1, 1, self.total_shape[1], device=device)
-#         P_x[0, 0, :] = self.P_basis_x
-#         P_x = P_x.expand(N, 1, self.total_shape[1])
-        
-#         P_y = torch.zeros(1, 1, self.total_shape[0], device=device)
-#         P_y[0, 0, :] = self.P_basis_y
-#         P_y = P_y.expand(N, 1, self.total_shape[0])
-        
-#         weights_x = F.conv1d(x_saliency, self.filter)
-#         weights_y = F.conv1d(y_saliency, self.filter)
-        
-#         weighted_offsets_x = F.conv1d(torch.mul(P_x, x_saliency), self.filter)
-#         weighted_offsets_y = F.conv1d(torch.mul(P_y, y_saliency), self.filter)
-        
-#         xgrid = (weighted_offsets_x / weights_x).clamp(min=-1, max=1) * 2 - 1
-#         xgrid = xgrid.view(-1, 1, 1, self.grid_shape[1]).expand(-1, 1, *self.grid_shape)
-        
-#         ygrid = (weighted_offsets_y / weights_y).clamp(min=-1, max=1) * 2 - 1
-#         ygrid = ygrid.view(-1, 1, self.grid_shape[0], 1).expand(-1, 1, *self.grid_shape)
-#     else:
-#         assert not self.separable
-#         p = self.padding_size
-#         saliency = F.pad(x_saliency, (p, p, p, p), mode=self.padding_mode)
-        
-#         P = torch.zeros(1, 2, *self.total_shape, device=device)
-#         P[0, :, :, :] = self.P_basis
-#         P = P.expand(N, 2, *self.total_shape)
-        
-#         saliency_cat = torch.cat((saliency, saliency), 1)
-#         weights = F.conv2d(saliency, self.filter)
-        
-#         weighted_offsets = F.conv2d(torch.mul(P, saliency_cat), self.filter).view(-1, 2, *self.grid_shape)
-        
-#         xgrid = (weighted_offsets[:, 0, :, :].contiguous().view(-1, 1, *self.grid_shape) / weights).clamp(min=-1, max=1) * 2 - 1
-#         ygrid = (weighted_offsets[:, 1, :, :].contiguous().view(-1, 1, *self.grid_shape) / weights).clamp(min=-1, max=1) * 2 - 1
-    
-#     grid = torch.cat((xgrid, ygrid), 1)
-#     grid = F.interpolate(grid, size=self.output_shape, mode='bilinear', align_corners=True)
-#     return grid.permute(0, 2, 3, 1)
-
-
-# @GRID_GENERATORS.register_module()
-# class HomographyGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
-#     """
-#         Grid generator that uses a homography based saliency map 
-#         which has a fixed parameter set we learn.
-#     """
-
-#     def __init__(self, **kwargs):
-#         super(HomographyGlobalKDEGrid, self).__init__()
-#         RecasensSaliencyToGridMixin.__init__(self, **kwargs)
-#         self.im_shape = kwargs.get('input_shape')
-#         self.homo = HomographyLayerGlobal(self.im_shape)
-
-#         ### Injecting VP from file
-#         bdir = "data/vps/" 
-#         with open(os.path.join(bdir, "vanishing_pts_argoverse_train.json"), "r") as f:
-#             x = json.load(f)
-#         with open(os.path.join(bdir + "vanishing_pts_argoverse_val.json"), "r") as f:
-#             y = json.load(f)
-#         self.v_pts_dict = {**x, **y}
-
-#     def forward(self, imgs, img_metas,
-#                 **kwargs):
-#         vis_options = kwargs.get('vis_options', {})
-#         device = imgs.device
-#         v_pts_arr = [ self.v_pts_dict[x['ori_filename']] for x in img_metas ]
-
-#         for i, x in enumerate(img_metas):
-#             if x['flip'] == True:
-#                 v_pts_arr[i][0] = x['img_shape'][2] - v_pts_arr[i][0]
-#         v_pts = torch.tensor(v_pts_arr, device=device)
-
-#         self.saliency = self.homo.forward(imgs, v_pts)
-#         self.saliency = F.interpolate(self.saliency, (31, 51))
-
-#         if 'saliency' in vis_options:
-#             h, w, _ = img_metas[0]['pad_shape']
-#             show_saliency = F.interpolate(self.saliency, size=(h, w),
-#                                           mode='bilinear', align_corners=True)
-#             show_saliency = 255*(show_saliency/show_saliency.max())
-#             show_saliency = show_saliency.expand(
-#                 show_saliency.size(0), 3, h, w)
-#             vis_batched_imgs(vis_options['saliency'], show_saliency,
-#                              img_metas, denorm=False)
-#             vis_batched_imgs(vis_options['saliency']+'_no_box', show_saliency,
-#                              img_metas, bboxes=None, denorm=False)
-
-#         if self.separable:
-#             x_saliency = self.saliency.sum(dim=2)
-#             y_saliency = self.saliency.sum(dim=3)
-#             grid = self.separable_saliency_to_grid(imgs, img_metas, x_saliency,
-#                                                    y_saliency, device)
-#         else:
-#             grid = self.nonseparable_saliency_to_grid(imgs, img_metas,
-#                                                       self.saliency, device)
-#         return grid
 
 
 # @GRID_GENERATORS.register_module()
@@ -316,18 +228,16 @@ class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
     def forward(self, imgs, v_pts, gt_bboxes # NOTE: vp no use here
                 # img_metas, **kwargs
                 ):
+        
+        # Check if imgs is in BCHW format
+        assert len(imgs.shape) == 4, "Expected imgs to be in BCHW format"
+        
+        # Extract the shape of the input images
+        self.update_output_shape(imgs.shape[2:4])
+
         # vis_options = kwargs.get('vis_options', {})
         device = imgs.device
-        self.saliency = self.saliency.to(device)
-
-        if self.separable:
-            x_saliency = self.saliency.sum(dim=2)
-            y_saliency = self.saliency.sum(dim=3)
-            grid = self.separable_saliency_to_grid(imgs, None, x_saliency,
-                                                   y_saliency, device)
-        else:
-            grid = self.nonseparable_saliency_to_grid(imgs, None,
-                                                      self.saliency, device)
+        grid = self.saliency_to_grid(imgs, self.saliency, device)
 
         return grid
 
@@ -335,31 +245,25 @@ class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 # @GRID_GENERATORS.register_module()
 class CuboidGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
     """
-        Grid generator that uses a two-plane based saliency map 
-        which has a fixed parameter set we learn.
+    Grid generator that uses a two-plane based saliency map 
+    which has a fixed parameter set we learn.
     """
 
     def __init__(self, **kwargs):
-        # Setting up all required attributes
-        self.separable = kwargs.get('separable', True)
-        self.anti_crop = kwargs.get('anti_crop', True)
-        self.input_shape = kwargs.get('input_shape', (1200, 1920))
-        self.output_shape = kwargs.get('output_shape', (600, 960))
-
-        # Now you can call parent class constructors
+        
+        # Call parent class constructors
         super(CuboidGlobalKDEGrid, self).__init__()
         RecasensSaliencyToGridMixin.__init__(self, **kwargs)
 
-        self.homo = CuboidLayerGlobal(self.input_shape)
-        
-        # ### Injecting VP from file
-        # bdir = "/home/aghosh/Projects/2PCNet/Datasets/VP/" 
-        # with open(os.path.join(bdir, "train_day.json"), "r") as f:
-        #     self.v_pts_dict = json.load(f)
+        self.homo = CuboidLayerGlobal()
 
-    def forward(self, imgs, v_pts, gt_bboxes
-                # **kwargs
-                ):
+    def forward(self, imgs, v_pts, gt_bboxes):
+        # Check if imgs is in BCHW format
+        assert len(imgs.shape) == 4, "Expected imgs to be in BCHW format"
+        
+        # Extract the shape of the input images
+        self.update_output_shape(imgs.shape[2:4])
+
         # vis_options = kwargs.get('vis_options', {})
         device = imgs.device
 
@@ -397,20 +301,8 @@ class CuboidGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 
         self.saliency = F.interpolate(self.saliency, (31, 51))
 
-        if self.separable:
-            x_saliency = self.saliency.sum(dim=2)
-            y_saliency = self.saliency.sum(dim=3)
-            grid = self.separable_saliency_to_grid(imgs, None, x_saliency,
-                                                   y_saliency, device)
-            # print("grid is", grid.shape) # [1, 600, 1067, 2]
-            # grid_x = grid[:, :, :, 0:1].permute(0, 3, 1, 2)
-            # grid_y = grid[:, :, :, 1:2].permute(0, 3, 1, 2)
-            # save_image(grid_x, "grid_x.png")
-            # save_image(grid_y, "grid_y.png")
-            # sys.exit(1)
-        else:
-            grid = self.nonseparable_saliency_to_grid(imgs, None,
-                                                      self.saliency, device)
+        grid = self.saliency_to_grid(imgs, self.saliency, device)
+
         return grid
     
 
@@ -501,6 +393,12 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         self.amplitude_scale = amplitude_scale
 
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
+        # Check if imgs is in BCHW format
+        assert len(imgs.shape) == 4, "Expected imgs to be in BCHW format"
+        
+        # Extract the shape of the input images
+        self.update_output_shape(imgs.shape[2:4])
+
         img_shape = imgs.shape
         
         if isinstance(gt_bboxes, torch.Tensor):
@@ -539,14 +437,7 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_with_vp_instance.png")
         # ################# For debug only #################
 
-        if self.separable:
-            x_saliency = saliency.sum(dim=2)
-            y_saliency = saliency.sum(dim=3)
-            grid = self.separable_saliency_to_grid(imgs, None, x_saliency,
-                                                   y_saliency, device)
-        else:
-            grid = self.nonseparable_saliency_to_grid(imgs, None,
-                                                      saliency, device)
+        grid = self.saliency_to_grid(imgs, saliency, device)
 
         return grid
     
@@ -564,8 +455,8 @@ class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         # Setting up all required attributes
         self.separable = kwargs.get('separable', True)
         self.anti_crop = kwargs.get('anti_crop', True)
-        self.input_shape = kwargs.get('input_shape', (1200, 1920))
-        self.output_shape = kwargs.get('output_shape', (600, 960))
+        # self.input_shape = kwargs.get('input_shape', (1200, 1920))
+        # self.output_shape = kwargs.get('output_shape', (600, 960))
 
         # Initialize alpha and beta as a learnable parameter
         self.alpha = nn.Parameter(torch.tensor(0.5), requires_grad=True)
@@ -577,7 +468,8 @@ class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         self.bandwidth_scale = bandwidth_scale
         self.amplitude_scale = amplitude_scale
 
-        self.homo = CuboidLayerGlobal(self.input_shape)
+        # self.homo = CuboidLayerGlobal(self.input_shape)
+        self.homo = CuboidLayerGlobal()
         
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
         # saliency from image-level
@@ -634,13 +526,9 @@ class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_with_vp_instance.png")
         # ################# For debug only #################
 
-        if self.separable:
-            x_saliency = saliency.sum(dim=2)
-            y_saliency = saliency.sum(dim=3)
-            grid = self.separable_saliency_to_grid(imgs, None, x_saliency,
-                                                   y_saliency, device)
-        else:
-            grid = self.nonseparable_saliency_to_grid(imgs, None,
-                                                      saliency, device)
+        grid = self.saliency_to_grid(imgs, saliency, device)
 
         return grid
+    
+
+# TODO: write debug code here with sample images, vps, and bboxes

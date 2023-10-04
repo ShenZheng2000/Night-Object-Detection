@@ -1,0 +1,11 @@
+_BASE_: "./bdd100k_10_1.yaml"
+
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/bdd100k_all_vp.json" # NOTE: all vps
+
+WARP_AUG_LZU: True
+WARP_FOVEA: True
+
+# WARP_LEARN: True # no use for now
+
+# USE_DEBUG: True
+# WARP_DEBUG: True

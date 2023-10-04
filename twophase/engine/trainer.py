@@ -65,6 +65,7 @@ class DATrainer(DefaultTrainer):
 
         # create an student model
         model = self.build_model(cfg)
+        # TODO: change model to warp-model-unwarp   
         optimizer = self.build_optimizer(cfg, model)
 
         # create an teacher model
@@ -678,34 +679,33 @@ class TwoPCTrainer(DATrainer):
 
         # NOTE: build grid_net here
         data_to_use = label_data if 'label_data' in locals() else label_data_q
-        my_shape = data_to_use[0]['image'].shape[1:]
+        # my_shape = data_to_use[0]['image'].shape[1:]
 
-        # TODO: move this part to rcnn.py
-        if self.cfg.WARP_AUG_LZU:
-            if self.cfg.WARP_FOVEA:
-                saliency_file = 'dataset_saliency.pkl'
-                self.grid_net = FixedKDEGrid(saliency_file,
-                                            separable=True, 
-                                            anti_crop=True, 
-                                            input_shape=my_shape, 
-                                            output_shape=my_shape)
-            elif self.cfg.WARP_FOVEA_INST:
-                self.grid_net = PlainKDEGrid(separable=True, 
-                                                anti_crop=True, 
-                                                input_shape=my_shape, 
-                                                output_shape=my_shape)
-            elif self.cfg.WARP_FOVEA_MIX:
-                self.grid_net = MixKDEGrid(separable=True, 
-                                                anti_crop=True, 
-                                                input_shape=my_shape, 
-                                                output_shape=my_shape)                
-            else:
-                self.grid_net = CuboidGlobalKDEGrid(separable=True, 
-                                                anti_crop=True, 
-                                                input_shape=my_shape, 
-                                                output_shape=my_shape)
-        else:
-            self.grid_net = None
+        # if self.cfg.WARP_AUG_LZU:
+        #     if self.cfg.WARP_FOVEA:
+        #         saliency_file = 'dataset_saliency.pkl'
+        #         self.grid_net = FixedKDEGrid(saliency_file,
+        #                                     separable=True, 
+        #                                     anti_crop=True, 
+        #                                     input_shape=my_shape, 
+        #                                     output_shape=my_shape)
+        #     elif self.cfg.WARP_FOVEA_INST:
+        #         self.grid_net = PlainKDEGrid(separable=True, 
+        #                                         anti_crop=True, 
+        #                                         input_shape=my_shape, 
+        #                                         output_shape=my_shape)
+        #     elif self.cfg.WARP_FOVEA_MIX:
+        #         self.grid_net = MixKDEGrid(separable=True, 
+        #                                         anti_crop=True, 
+        #                                         input_shape=my_shape, 
+        #                                         output_shape=my_shape)                
+        #     else:
+        #         self.grid_net = CuboidGlobalKDEGrid(separable=True, 
+        #                                         anti_crop=True, 
+        #                                         input_shape=my_shape, 
+        #                                         output_shape=my_shape)
+        # else:
+        #     self.grid_net = None
                       
         # Add NightAug images into supervised batch
         # NOTE: do not use nightaug for label_data_mid!!!!
@@ -744,7 +744,7 @@ class TwoPCTrainer(DATrainer):
                 "branch": "supervised",
                 "warp_aug_lzu": self.cfg.WARP_AUG_LZU,
                 "vp_dict": self.vanishing_point,
-                "grid_net": self.grid_net,
+                # "grid_net": self.grid_net,
                 "warp_debug": self.cfg.WARP_DEBUG,
                 "warp_image_norm": self.cfg.WARP_IMAGE_NORM,
             }

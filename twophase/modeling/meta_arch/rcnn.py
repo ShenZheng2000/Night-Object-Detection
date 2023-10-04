@@ -15,6 +15,8 @@ from detectron2.modeling.roi_heads import build_roi_heads
 from detectron2.utils.events import get_event_storage
 from detectron2.structures import ImageList
 
+from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid
+
 # import sys
 # sys.path.append('/root/autodl-tmp/Methods/Night-Object-Detection')
 
@@ -78,6 +80,11 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         vis_period: int = 0,
         AT: bool = False,
         dis_type: str,
+        # NOTE: add this for building grid net
+        warp_aug_lzu: bool = False,
+        warp_fovea: bool = False,
+        warp_fovea_inst: bool = False,
+        warp_fovea_mix: bool = False,
     ):
         """
         Args:
@@ -105,11 +112,27 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             self.pixel_mean.shape == self.pixel_std.shape
         ), f"{self.pixel_mean} and {self.pixel_std} have different shapes!"
 
-        # TODO: define grid_net here (instead of in train.py)
-
         self.AT = AT
         self.dis_type = dis_type
         self.D_img = None
+
+        # NOTE: define grid_net here (instead of in train.py)
+        self.grid_net = self.build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix)
+
+    def build_grid_net(self, warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix):
+        if warp_aug_lzu:
+            if warp_fovea:
+                saliency_file = 'dataset_saliency.pkl'
+                return FixedKDEGrid(saliency_file,)
+            elif warp_fovea_inst:
+                return PlainKDEGrid()
+            elif warp_fovea_mix:
+                return MixKDEGrid()
+            else:
+                return CuboidGlobalKDEGrid()
+        else:
+            return None
+
     def build_discriminator(self):
         self.D_img = FCDiscriminator_img(self.backbone._out_feature_channels[self.dis_type]).to(self.device) # Need to know the channel
 
@@ -126,7 +149,11 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             "pixel_std": cfg.MODEL.PIXEL_STD,
             "AT": cfg.AT,
             "dis_type": cfg.SEMISUPNET.DIS_TYPE,
-
+            # NOTE: add this for building grid net
+            "warp_aug_lzu": cfg.WARP_AUG_LZU,
+            "warp_fovea": cfg.WARP_FOVEA,
+            "warp_fovea_inst": cfg.WARP_FOVEA_INST,
+            "warp_fovea_mix": cfg.WARP_FOVEA_MIX,
         }
 
     def preprocess_image_train(self, batched_inputs: List[Dict[str, torch.Tensor]]):
@@ -150,8 +177,6 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         do_postprocess: bool = True,
         warp_aug_lzu = False,
         vp_dict = None,
-        grid_net = None,
-
     ):
         """
         Run inference on the given inputs.
@@ -175,10 +200,10 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         images = self.preprocess_image(batched_inputs)
 
         # NOTE: add zoom-unzoom here
-        # if warp_aug_lzu:
-        #     print("Hello! Running model inference with warp_aug_lzu!")
-        #     features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
-        #                                             vp_dict, grid_net, self.backbone)
+        if warp_aug_lzu:
+            print("Hello! Running model inference with warp_aug_lzu!")
+            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
+                                                    vp_dict, self.grid_net, self.backbone)
         features = self.backbone(images.tensor)
 
         if detected_instances is None:
@@ -198,10 +223,10 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
         return results
 
-    def _process_images(self, images, batched_inputs, label, warp_aug_lzu, vp_dict, grid_net, warp_debug, warp_image_norm):
+    def _process_images(self, images, batched_inputs, label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm):
         if warp_aug_lzu:
             features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
-                                                vp_dict, grid_net, self.backbone, 
+                                                vp_dict, self.grid_net, self.backbone, 
                                                 warp_debug, warp_image_norm)
         else:
             features = self.backbone(images.tensor)
@@ -214,7 +239,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
     # incorporate AT training in this code (DONE)
     def forward(
         self, batched_inputs, branch="supervised", given_proposals=None, val_mode=False, proposal_index = None,
-        warp_aug_lzu=False, vp_dict=None, grid_net=None, warp_debug=False, warp_image_norm=False
+        warp_aug_lzu=False, vp_dict=None, warp_debug=False, warp_image_norm=False
     ):
         """
         Args:
@@ -245,8 +270,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             # NOTE: seems like not using warp-unwarp during inference time, which still make sense
             return self.inference(batched_inputs = batched_inputs,
                                     warp_aug_lzu = warp_aug_lzu,
-                                    vp_dict = vp_dict,
-                                    grid_net = grid_net)
+                                    vp_dict = vp_dict)
 
         source_label = 0
         target_label = 1
@@ -256,8 +280,8 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             # Assuming source_label and target_label are defined somewhere or passed as arguments
             images_s, images_t = self.preprocess_image_train(batched_inputs)
 
-            loss_D_img_s = self._process_images(images_s, batched_inputs, source_label, warp_aug_lzu, vp_dict, grid_net, warp_debug, warp_image_norm)
-            loss_D_img_t = self._process_images(images_t, batched_inputs, target_label, warp_aug_lzu, vp_dict, grid_net, warp_debug, warp_image_norm)
+            loss_D_img_s = self._process_images(images_s, batched_inputs, source_label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm)
+            loss_D_img_t = self._process_images(images_t, batched_inputs, target_label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm)
 
             losses = {}
             losses["loss_D_img_s"] = loss_D_img_s
@@ -281,7 +305,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         # NOTE: add zoom-unzoom here
         if warp_aug_lzu:
             features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
-                                                   vp_dict, grid_net, self.backbone, 
+                                                   vp_dict, self.grid_net, self.backbone, 
                                                    warp_debug, warp_image_norm)
         else:
             features = self.backbone(images.tensor)
@@ -457,78 +481,4 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
 class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
     pass
-
-# @META_ARCH_REGISTRY.register()
-# class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
-#     def forward(
-#         self, batched_inputs, branch="supervised", given_proposals=None, val_mode=False
-#     ):
-#         if (not self.training) and (not val_mode):
-#             return self.inference(batched_inputs)
-
-#         images = self.preprocess_image(batched_inputs)
-
-#         if "instances" in batched_inputs[0]:
-#             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-#         else:
-#             gt_instances = None
-
-#         features = self.backbone(images.tensor)
-
-#         if branch == "supervised":
-#             # Region proposal network
-#             proposals_rpn, proposal_losses = self.proposal_generator(
-#                 images, features, gt_instances
-#             )
-
-#             # # roi_head lower branch
-#             _, detector_losses = self.roi_heads(
-#                 images, features, proposals_rpn, gt_instances, branch=branch
-#             )
-
-#             losses = {}
-#             losses.update(detector_losses)
-#             losses.update(proposal_losses)
-#             return losses, [], [], None
-
-#         elif branch == "unsup_data_weak":
-#             # Region proposal network
-#             proposals_rpn, _ = self.proposal_generator(
-#                 images, features, None, compute_loss=False
-#             )
-
-#             # roi_head lower branch (keep this for further production)  # notice that we do not use any target in ROI head to do inference !
-#             proposals_roih, ROI_predictions = self.roi_heads(
-#                 images,
-#                 features,
-#                 proposals_rpn,
-#                 targets=None,
-#                 compute_loss=False,
-#                 branch=branch,
-#             )
-
-#             return {}, proposals_rpn, proposals_roih, ROI_predictions
-
-#         elif branch == "val_loss":
-
-#             # Region proposal network
-#             proposals_rpn, proposal_losses = self.proposal_generator(
-#                 images, features, gt_instances, compute_val_loss=True
-#             )
-
-#             # roi_head lower branch
-#             _, detector_losses = self.roi_heads(
-#                 images,
-#                 features,
-#                 proposals_rpn,
-#                 gt_instances,
-#                 branch=branch,
-#                 compute_val_loss=True,
-#             )
-
-#             losses = {}
-#             losses.update(detector_losses)
-#             losses.update(proposal_losses)
-#             return losses, [], [], None
-
 

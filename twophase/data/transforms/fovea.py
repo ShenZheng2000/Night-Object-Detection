@@ -178,64 +178,64 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     # print(f"vp_dict = {vp_dict}")                 # dict: {'xxx.jpg': [vpw, vph], ...}
     # print(f"grid_net = {grid_net}")               # CuboidGlobalKDEGrid
     # print(f"backbone = {backbone}")               # ResNet
+    # print(f"warp_debug = {warp_debug}")           # bool: True/False
+    # print(f"warp_image_norm = {warp_image_norm}") # bool: True/False
+    
+    # Preprocessing
+    vanishing_points = [
+        get_vanising_points(
+            sample['file_name'], 
+            vp_dict, 
+            *extract_ratio_and_flip(sample['transform'])
+        ) for sample in batched_inputs
+    ]
 
-    features = None
-    if warp_aug_lzu:
-        # Preprocessing
-        vanishing_points = [
-            get_vanising_points(
-                sample['file_name'], 
-                vp_dict, 
-                *extract_ratio_and_flip(sample['transform'])
-            ) for sample in batched_inputs
-        ]
+    # Correcting vanishing_points if they are out of bounds
+    img_height, img_width = images.tensor.shape[-2:]
+    corrected_vanishing_points = []
+    for vp in vanishing_points:
+        if is_out_of_bounds(vp, img_width, img_height):
+            vp_x = min(max(1, vp[0]), img_width - 2)
+            vp_y = min(max(1, vp[1]), img_height - 2)
+            print(f"Vanishing point {vp} was out of bounds and has been clipped to {[vp_x, vp_y]}")
+            corrected_vanishing_points.append([vp_x, vp_y])
+        else:
+            corrected_vanishing_points.append(vp)
+    
+    vanishing_points = corrected_vanishing_points  # Update the vanishing_points list
 
-        # Correcting vanishing_points if they are out of bounds
-        img_height, img_width = images.tensor.shape[-2:]
-        corrected_vanishing_points = []
-        for vp in vanishing_points:
-            if is_out_of_bounds(vp, img_width, img_height):
-                vp_x = min(max(1, vp[0]), img_width - 2)
-                vp_y = min(max(1, vp[1]), img_height - 2)
-                print(f"Vanishing point {vp} was out of bounds and has been clipped to {[vp_x, vp_y]}")
-                corrected_vanishing_points.append([vp_x, vp_y])
-            else:
-                corrected_vanishing_points.append(vp)
-        
-        vanishing_points = corrected_vanishing_points  # Update the vanishing_points list
+    # Apply warping
+    # warped_images, _, grids = zip(*[
+    #     apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
+    #     for image, vp in zip(images.tensor, vanishing_points)
+    # ])
+    warped_images, _, grids = zip(*[
+        apply_warp_aug(image, sample['instances'], vp, False, warp_aug_lzu, grid_net) 
+        for image, vp, sample in zip(images.tensor, vanishing_points, batched_inputs)
+    ])
+    warped_images = torch.stack(warped_images)
 
-        # Apply warping
-        # warped_images, _, grids = zip(*[
-        #     apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
-        #     for image, vp in zip(images.tensor, vanishing_points)
-        # ])
-        warped_images, _, grids = zip(*[
-            apply_warp_aug(image, sample['instances'], vp, False, warp_aug_lzu, grid_net) 
-            for image, vp, sample in zip(images.tensor, vanishing_points, batched_inputs)
-        ])
-        warped_images = torch.stack(warped_images)
+    # Normalize warped images
+    if warp_image_norm:
+        warped_images = torch.stack([(img - img.min()) / (img.max() - img.min()) * 255 for img in warped_images])
 
-        # Normalize warped images
-        if warp_image_norm:
-            warped_images = torch.stack([(img - img.min()) / (img.max() - img.min()) * 255 for img in warped_images])
+    # debug images
+    # print("len batched_inputs", len(batched_inputs)) # BS
+    # print("warped_images", warped_images.shape) # [BS, C, H, W]
+    concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
 
-        # debug images
-        # print("len batched_inputs", len(batched_inputs)) # BS
-        # print("warped_images", warped_images.shape) # [BS, C, H, W]
-        concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
+    # Call the backbone
+    features = backbone(warped_images)
 
-        # Call the backbone
-        features = backbone(warped_images)
+    # Apply unwarping
+    feature_key = next(iter(features))
+    unwarped_features = torch.stack([
+        apply_unwarp(feature, grid)
+        for feature, grid in zip(features[feature_key], grids)
+    ])
 
-        # Apply unwarping
-        feature_key = next(iter(features))
-        unwarped_features = torch.stack([
-            apply_unwarp(feature, grid)
-            for feature, grid in zip(features[feature_key], grids)
-        ])
-
-        # Replace the original features with unwarped ones
-        features[feature_key] = unwarped_features
+    # Replace the original features with unwarped ones
+    features[feature_key] = unwarped_features
 
     return features
 
