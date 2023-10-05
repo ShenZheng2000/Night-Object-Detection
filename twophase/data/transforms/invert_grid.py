@@ -13,6 +13,8 @@ def invert_grid(grid, input_shape, separable=False):
 def invert_separable_grid(grid, input_shape: List[int]):
     grid = grid.clone()
     # print(f"input_shape is {input_shape} grid is {grid.shape}")
+    # print(f"torch.isnan is {torch.isnan(grid).any()}")
+    # print(f"grid.min is {grid.min()} grid.max is {grid.max()}")
     device = grid.device
     H: int = input_shape[2]
     W: int = input_shape[3]

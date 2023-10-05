@@ -25,6 +25,19 @@ from twophase.data.transforms.fovea import process_and_update_features
 import torchvision.utils as vutils
 import matplotlib.pyplot as plt
 import time
+import json
+import os
+
+def build_vp_dict(cfg):
+    # If the VANISHING_POINT is set in the configuration, load it.
+    if cfg.VANISHING_POINT:
+        with open(cfg.VANISHING_POINT, 'r') as f:
+            vp_dict = json.load(f)
+        vp_dict = {os.path.basename(k): v for k, v in vp_dict.items()}
+    else:
+        vp_dict = None
+        
+    return vp_dict
 
 ############### Image discriminator ##############
 class FCDiscriminator_img(nn.Module):
@@ -81,6 +94,8 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         AT: bool = False,
         dis_type: str,
         # NOTE: add this for building grid net
+        vp_dict: Optional[dict] = None,     # Added this line
+        warp_aug: bool = False,
         warp_aug_lzu: bool = False,
         warp_fovea: bool = False,
         warp_fovea_inst: bool = False,
@@ -116,6 +131,10 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         self.dis_type = dis_type
         self.D_img = None
 
+        self.vp_dict = vp_dict
+        self.warp_aug_lzu = warp_aug_lzu
+        self.warp_aug = warp_aug
+
         # NOTE: define grid_net here (instead of in train.py)
         self.grid_net = self.build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix)
 
@@ -139,6 +158,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
     @classmethod
     def from_config(cls, cfg):
         backbone = build_backbone(cfg)
+        vp_dict = build_vp_dict(cfg)                 # Call the function to build vp_dict
         return {
             "backbone": backbone,
             "proposal_generator": build_proposal_generator(cfg, backbone.output_shape()),
@@ -150,6 +170,8 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             "AT": cfg.AT,
             "dis_type": cfg.SEMISUPNET.DIS_TYPE,
             # NOTE: add this for building grid net
+            "vp_dict": vp_dict,                        # Include it in the returned dict
+            "warp_aug": cfg.WARP_AUG,
             "warp_aug_lzu": cfg.WARP_AUG_LZU,
             "warp_fovea": cfg.WARP_FOVEA,
             "warp_fovea_inst": cfg.WARP_FOVEA_INST,
@@ -175,8 +197,6 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         batched_inputs: List[Dict[str, torch.Tensor]],
         detected_instances = None,
         do_postprocess: bool = True,
-        warp_aug_lzu = False,
-        vp_dict = None,
     ):
         """
         Run inference on the given inputs.
@@ -200,10 +220,10 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         images = self.preprocess_image(batched_inputs)
 
         # NOTE: add zoom-unzoom here
-        if warp_aug_lzu:
-            print("Hello! Running model inference with warp_aug_lzu!")
-            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
-                                                    vp_dict, self.grid_net, self.backbone)
+        if self.warp_aug_lzu:
+            # print("Hello! Running model inference with warp_aug_lzu!")
+            features = process_and_update_features(batched_inputs, images, self.warp_aug_lzu, 
+                                                    self.vp_dict, self.grid_net, self.backbone, warp_aug=self.warp_aug)
         features = self.backbone(images.tensor)
 
         if detected_instances is None:
@@ -227,7 +247,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         if warp_aug_lzu:
             features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
                                                 vp_dict, self.grid_net, self.backbone, 
-                                                warp_debug, warp_image_norm)
+                                                warp_debug, warp_image_norm, warp_aug=self.warp_aug)
         else:
             features = self.backbone(images.tensor)
 
@@ -265,12 +285,9 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         """
         if self.AT and self.D_img == None:
             self.build_discriminator()
-
+        
         if (not self.training) and (not val_mode):  # only conduct when testing mode
-            # NOTE: seems like not using warp-unwarp during inference time, which still make sense
-            return self.inference(batched_inputs = batched_inputs,
-                                    warp_aug_lzu = warp_aug_lzu,
-                                    vp_dict = vp_dict)
+            return self.inference(batched_inputs = batched_inputs)
 
         source_label = 0
         target_label = 1
@@ -294,6 +311,8 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
+        
+        # print("before", batched_inputs[0]["instances"])
 
         # print(f"batched_inputs len is {len(batched_inputs)}, [0].keys() is {batched_inputs[0].keys()}") 
             # 12, dict_keys(['file_name', 'height', 'width', 'image_id', 'transform', 'instances', 'image'])
@@ -306,7 +325,10 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         if warp_aug_lzu:
             features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
                                                    vp_dict, self.grid_net, self.backbone, 
-                                                   warp_debug, warp_image_norm)
+                                                   warp_debug, warp_image_norm, warp_aug=self.warp_aug)
+        
+            # print("after batched_inputs", batched_inputs[0]["instances"])
+
         else:
             features = self.backbone(images.tensor)
         # first_key = next(iter(features))

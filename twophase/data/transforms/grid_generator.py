@@ -295,13 +295,18 @@ class CuboidGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         #             vanishing_point_color, 
         #             -1)  # Draw a filled circle
 
-        # Save the modified saliency map
+        # # Save the modified saliency map
         # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_with_vp.png")
         # save_image(self.saliency, "saliency_before.png")
+        # sys.exit(1)
 
         self.saliency = F.interpolate(self.saliency, (31, 51))
 
+        # print("self.saliency is nan", torch.isnan(self.saliency).any())
+
         grid = self.saliency_to_grid(imgs, self.saliency, device)
+
+        # print("grid is nan", torch.isnan(grid).any())
 
         return grid
     

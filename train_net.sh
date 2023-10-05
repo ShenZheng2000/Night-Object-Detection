@@ -625,15 +625,42 @@
 #       OUTPUT_DIR outputs/bdd100k_10_4 \
 #       > bdd100k_10_4.out 2>&1 &
 
-# TODO: later needs to import correct gt_bbox for testing
+# # TODO: resume training later
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_10_4_v2.yaml \
+#       OUTPUT_DIR outputs/bdd100k_10_4_v2 \
+#       MODEL.WEIGHTS outputs/bdd100k_10_4_v2/model_0004999.pth \
+#       > bdd100k_10_4_v2.out 2>&1 &
+
+# train fovea (no lzu!)
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_10_4_v2.yaml \
-      OUTPUT_DIR outputs/bdd100k_10_4_v2 \
-      > bdd100k_10_4_v2.out 2>&1 &
+      --config configs/bdd100k_10_5_fovea.yaml \
+      OUTPUT_DIR outputs/bdd100k_10_5_fovea \
+      > bdd100k_10_5_fovea.out 2>&1 &
 
-# TODO: debug testing on warped images
+# TODO: have to make sure test (inference) also works well
+# nohup \
+# python train_net.py \
+#       --resume \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_10_2_v2.yaml \
+#       OUTPUT_DIR outputs/bdd100k_10_2_v2 \
+#       MODEL.WEIGHTS outputs/bdd100k_10_2_v2/model_0064999.pth \
+#       > bdd100k_10_2_v2.out 2>&1 &
+
+# TODO: train on (day and night), and test on (night)
+  # lower bound: train on day, test on night
+  # middle bound: train on night, test on night
+  # upper bound: train on (day + night), test on night
+
+# TODO: check category-wise numbers
+
+# TODO: later needs to import correct gt_bbox for testing with bbox-level saliency
 
 # NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
 # NOTE: modify basic configs in here: twophase/config.py

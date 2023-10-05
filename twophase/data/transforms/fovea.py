@@ -78,8 +78,11 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
     imgs = img.unsqueeze(0) 
 
     # read bboxes
-    bboxes = ins.gt_boxes.tensor
-    bboxes = bboxes.to(device)
+    try:
+        bboxes = ins.gt_boxes.tensor
+        bboxes = bboxes.to(device)
+    except:
+        bboxes = None
 
     # print("img.shape", img.shape) # [3, 600, 1067]
     # print("bboxes shape", bboxes.shape) # [N, 4]: x1, y1, x2, y2
@@ -96,7 +99,9 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
         # warped_bboxes = unwarp_bboxes(warped_bboxes, grid.squeeze(0), [600, 1067])
 
         # update ins
+        # print("before ins.gt_boxes.tensor", ins.gt_boxes.tensor)
         ins.gt_boxes.tensor = warped_bboxes
+        # print("after ins.gt_boxes.tensor", ins.gt_boxes.tensor)
 
     return warped_imgs, ins, grid
     
@@ -169,7 +174,7 @@ def extract_ratio_and_flip(transform_list):
 
 
 def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone, 
-                                warp_debug, warp_image_norm):
+                                warp_debug=False, warp_image_norm=False, warp_aug=False):
     '''
     '''
     # print(f"batched_inputs = {batched_inputs}")   # list: [...]
@@ -182,16 +187,28 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     # print(f"warp_image_norm = {warp_image_norm}") # bool: True/False
     
     # Preprocessing
-    vanishing_points = [
-        get_vanising_points(
-            sample['file_name'], 
-            vp_dict, 
-            *extract_ratio_and_flip(sample['transform'])
-        ) for sample in batched_inputs
-    ]
+    img_height, img_width = images.tensor.shape[-2:]
+    ori_height, ori_width = batched_inputs[0]['height'], batched_inputs[0]['width']
+    # vanishing_points = [
+    #     get_vanising_points(
+    #         sample['file_name'], 
+    #         vp_dict, 
+    #         *extract_ratio_and_flip(sample['transform'])
+    #     ) for sample in batched_inputs
+    # ]
+    vanishing_points = []
+    for sample in batched_inputs:
+        if 'transform' in sample:
+            ratio, flip = extract_ratio_and_flip(sample['transform'])
+        else:
+            # Handle the absence of 'transform' key in test case
+            ratio, flip = img_height/ori_height, False  # Or any default value suitable for your case
+        # print("ratio is ", ratio)
+            
+        vp = get_vanising_points(sample['file_name'], vp_dict, ratio, flip)
+        vanishing_points.append(vp)
 
     # Correcting vanishing_points if they are out of bounds
-    img_height, img_width = images.tensor.shape[-2:]
     corrected_vanishing_points = []
     for vp in vanishing_points:
         if is_out_of_bounds(vp, img_width, img_height):
@@ -209,8 +226,9 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     #     apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
     #     for image, vp in zip(images.tensor, vanishing_points)
     # ])
+    # NOTE: gt bboxes already updated in apply_warp_aug => no need to return
     warped_images, _, grids = zip(*[
-        apply_warp_aug(image, sample['instances'], vp, False, warp_aug_lzu, grid_net) 
+        apply_warp_aug(image, sample.get('instances', None), vp, warp_aug, warp_aug_lzu, grid_net) 
         for image, vp, sample in zip(images.tensor, vanishing_points, batched_inputs)
     ])
     warped_images = torch.stack(warped_images)
@@ -228,14 +246,15 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     features = backbone(warped_images)
 
     # Apply unwarping
-    feature_key = next(iter(features))
-    unwarped_features = torch.stack([
-        apply_unwarp(feature, grid)
-        for feature, grid in zip(features[feature_key], grids)
-    ])
+    if not warp_aug:
+        feature_key = next(iter(features))
+        unwarped_features = torch.stack([
+            apply_unwarp(feature, grid)
+            for feature, grid in zip(features[feature_key], grids)
+        ])
 
-    # Replace the original features with unwarped ones
-    features[feature_key] = unwarped_features
+        # Replace the original features with unwarped ones
+        features[feature_key] = unwarped_features
 
     return features
 

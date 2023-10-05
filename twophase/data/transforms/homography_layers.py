@@ -11,6 +11,10 @@ import sys
 from torchvision.utils import save_image
 import cv2
 
+# # TODO: for debug now, remove later
+# import logging
+# logging.basicConfig(filename="parameter_updates.log", level=logging.INFO, format='%(message)s')
+
 # class HomographySaliencyParamsNet(nn.Module):
 #     def __init__(self, 
 #             backbone='resnet18', 
@@ -161,7 +165,7 @@ import cv2
 #         map_warp: torch.tensor = K.geometry.warp_perspective(init_map.float(), M, 
 #                                     dsize=( round(self.im_shape[0]), round(self.im_shape[1]) ))
 #         return map_warp
-    
+
 class CuboidLayerGlobal(nn.Module):
     def __init__(self, 
                 #  im_shape,
@@ -171,7 +175,8 @@ class CuboidLayerGlobal(nn.Module):
             max_alpha=0.4,            
             min_p=1, 
             max_p=5,
-            lambd=0.97
+            lambd=0.97,
+            requires_grad=False, # NOTE: hardcode here, change later
     ):
         super(CuboidLayerGlobal, self).__init__()
         # NOTE: Move to forward() to handle different shapes
@@ -185,19 +190,22 @@ class CuboidLayerGlobal(nn.Module):
         min_theta = np.deg2rad(min_theta)
         max_theta = np.deg2rad(max_theta)
 
-        self.theta_l = nn.Parameter(torch.Tensor([1])*(min_theta + max_theta)/2, requires_grad=True)
-        self.theta_r = nn.Parameter(torch.Tensor([1])*(min_theta + max_theta)/2, requires_grad=True)
-        self.alpha_1 = nn.Parameter(torch.Tensor([1])*(min_alpha + max_alpha)/2, requires_grad=True)
-        self.alpha_2 = nn.Parameter(torch.Tensor([1])*(min_alpha + max_alpha)/2, requires_grad=True)
-        self.p = nn.Parameter(torch.Tensor([1])*(min_p + max_p)/2, requires_grad=True)
+        self.theta_l = nn.Parameter(torch.Tensor([1])*(min_theta + max_theta)/2)
+        self.theta_r = nn.Parameter(torch.Tensor([1])*(min_theta + max_theta)/2)
+        self.alpha_1 = nn.Parameter(torch.Tensor([1])*(min_alpha + max_alpha)/2)
+        self.alpha_2 = nn.Parameter(torch.Tensor([1])*(min_alpha + max_alpha)/2)
+        self.p = nn.Parameter(torch.Tensor([1])*(min_p + max_p)/2)
 
-        self.lambd = nn.Parameter(torch.Tensor([1])*lambd, requires_grad=True)
+        self.lambd = nn.Parameter(torch.Tensor([1])*lambd)
 
-        # self.theta_top_l = nn.Parameter(torch.Tensor([1])*(min_theta + max_theta)/2, requires_grad=True)
-        # self.theta_top_r = nn.Parameter(torch.Tensor([1])*(min_theta + max_theta)/2, requires_grad=True)
-        self.alpha_top_1 = nn.Parameter(torch.Tensor([1])*(min_alpha + max_alpha)/2, requires_grad=True)
-        self.alpha_top_2 = nn.Parameter(torch.Tensor([1])*(min_alpha + max_alpha)/2, requires_grad=True)
-        self.p_top = nn.Parameter(torch.Tensor([1])*(min_p + max_p)/2, requires_grad=True)
+        # self.theta_top_l = nn.Parameter(torch.Tensor([1])*(min_theta + max_theta)/2)
+        # self.theta_top_r = nn.Parameter(torch.Tensor([1])*(min_theta + max_theta)/2)
+        self.alpha_top_1 = nn.Parameter(torch.Tensor([1])*(min_alpha + max_alpha)/2)
+        self.alpha_top_2 = nn.Parameter(torch.Tensor([1])*(min_alpha + max_alpha)/2)
+        self.p_top = nn.Parameter(torch.Tensor([1])*(min_p + max_p)/2)
+
+        for param in self.parameters():
+            param.requires_grad = requires_grad        
 
         self.cached_maps = {}
 
@@ -253,12 +261,19 @@ class CuboidLayerGlobal(nn.Module):
         # print("self.im_shape is", self.im_shape)
         # print("self.init_map.shape is", self.init_map.shape)
 
-        # NOTE: debug this parameters
-        # print(f"theta_l: {self.theta_l}, theta_r: {self.theta_r}, "
-        #     f"alpha_1: {self.alpha_1}, alpha_2: {self.alpha_2}, "
-        #     f"p: {self.p}, lambd: {self.lambd}, "
-        #     f"alpha_top_1: {self.alpha_top_1}, alpha_top_2: {self.alpha_top_2}, "
-        #     f"p_top: {self.p_top}")
+        # # NOTE: debug this parameters
+        # logging.info(f"theta_l: {self.theta_l}, theta_l.grad: {self.theta_l.grad}, "
+        #             f"theta_r: {self.theta_r}, theta_r.grad: {self.theta_r.grad}, "
+        #             f"alpha_1: {self.alpha_1}, alpha_1.grad: {self.alpha_1.grad}, "
+        #             f"alpha_2: {self.alpha_2}, alpha_2.grad: {self.alpha_2.grad}, "
+        #             f"p: {self.p}, p.grad: {self.p.grad}, "
+        #             f"lambd: {self.lambd}, lambd.grad: {self.lambd.grad}, "
+        #             f"alpha_top_1: {self.alpha_top_1}, alpha_top_1.grad: {self.alpha_top_1.grad}, "
+        #             f"alpha_top_2: {self.alpha_top_2}, alpha_top_2.grad: {self.alpha_top_2.grad}, "
+        #             f"p_top: {self.p_top}, p_top.grad: {self.p_top.grad}")
+                
+        # if self.theta_l.grad is not None and torch.isnan(self.theta_l.grad).any():
+        #     print("NaN gradient detected for theta_l")
 
         self.device = imgs.device
         B = imgs.shape[0]
@@ -303,6 +318,10 @@ class CuboidLayerGlobal(nn.Module):
         # saliency_final = torch.tensor(saliency_final)[None, None, ...]
 
         # save_image(saliency_final, "saliency_final.png")
+
+        # print("bottom is nan", torch.isnan(bottom).any())
+        # print("top is nan", torch.isnan(top).any())
+        # print("map_warp is nan", torch.isnan(map_warp).any())
 
         return map_warp
 
