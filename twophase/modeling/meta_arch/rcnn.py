@@ -216,7 +216,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             Otherwise, a list[Instances] containing raw network outputs.
         """
         assert not self.training
-        print("Inference: batched_inputs", batched_inputs[0]['instances'])
+        # print("Inference: batched_inputs", batched_inputs[0]['instances'])
         images = self.preprocess_image(batched_inputs)
 
         # NOTE: add zoom-unzoom here
