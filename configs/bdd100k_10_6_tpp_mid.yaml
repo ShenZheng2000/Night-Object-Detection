@@ -9,4 +9,4 @@ WARP_MIDDLE: True
 # USE_DEBUG: True
 # TWO_PC_AUG: False
 # AUG_PROB: 1.0
-# WARP_DEBUG: True
+WARP_DEBUG: True

@@ -253,7 +253,6 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
             apply_unwarp(feature, grid)
             for feature, grid in zip(features[feature_key], grids)
         ])
-
         # Replace the original features with unwarped ones
         features[feature_key] = unwarped_features
 

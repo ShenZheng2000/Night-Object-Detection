@@ -633,6 +633,8 @@
 #       OUTPUT_DIR outputs/bdd100k_10_4_v2 \
 #       > bdd100k_10_4_v2.out 2>&1 &
 
+# TODO: why inverse rendering not working for middle plane?
+
 nohup \
 python train_net.py \
       --num-gpus 3 \
@@ -640,7 +642,9 @@ python train_net.py \
       OUTPUT_DIR outputs/bdd100k_10_6_tpp_mid \
       > bdd100k_10_6_tpp_mid.out 2>&1 &
 
-# TODO: try middle-plane stuffs here
+# TODO: mix bbox-level and image-level saliency, and makes it learnabe!
+# TODO: train the above experiments in 3090 to reproduce results
+# TODO: record all results in a separate table!
 
 # # train fovea (no lzu!)
 # nohup \

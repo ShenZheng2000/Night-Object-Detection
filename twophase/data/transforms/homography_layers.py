@@ -15,7 +15,7 @@ import cv2
 class BaseLayerGlobal(nn.Module):
     def __init__(self, 
                  min_theta=110, max_theta=120, min_alpha=0.2, max_alpha=0.4,
-                 min_p=1, max_p=5, lambd=0.97, requires_grad=False):
+                 min_p=1, max_p=5, lambd=0.97):
         super(BaseLayerGlobal, self).__init__()
         
         min_theta = np.deg2rad(min_theta)
@@ -32,12 +32,19 @@ class BaseLayerGlobal(nn.Module):
         self.alpha_top_1 = self.init_param(min_alpha, max_alpha)
         self.alpha_top_2 = self.init_param(min_alpha, max_alpha)
 
-        self.lambd = nn.Parameter(torch.Tensor([1])*lambd)
-        
-        for param in self.parameters():
-            param.requires_grad = requires_grad 
+        self.lambd = nn.Parameter(torch.Tensor([1])*lambd, requires_grad=False)
 
         self.cached_maps = {}
+
+    def init_param(self, value1, value2):
+        return nn.Parameter(torch.Tensor([1]) * (value1 + value2) / 2, requires_grad=False)
+
+    def update_cache_map(self, imgs):
+        self.im_shape = imgs.shape[-2:]
+        if self.im_shape not in self.cached_maps:
+            self.cached_maps[self.im_shape] = self.compute_init_map(self.im_shape)
+        self.init_map = self.cached_maps[self.im_shape]
+        self.device = imgs.device
 
     def compute_init_map(self, im_shape):
         init_map = torch.zeros(im_shape)
@@ -46,9 +53,6 @@ class BaseLayerGlobal(nn.Module):
         init_map = init_map.unsqueeze(0).unsqueeze(0)
         init_map = init_map - 1
         return init_map
-
-    def init_param(self, value1, value2):
-        return nn.Parameter(torch.Tensor([1]) * (value1 + value2) / 2)
 
     def parametric_homography(self, v_pts, thetas_l, thetas_r, alphas_1, alphas_2, bottom):
         h, w = self.im_shape
@@ -113,17 +117,30 @@ class BaseLayerGlobal(nn.Module):
         saliency_final = torch.tensor(saliency_final)[None, None, ...]
         save_image(saliency_final, f"{filename}")
 
+        # print("bottom mean: ", bottom.mean())
+        # print("top mean", top.mean())
+
     def forward(self, imgs, v_pts, vis_flag=False):
         raise NotImplementedError("This is a base class, forward method should be defined in the child class.")
 
 
 class CuboidLayerGlobal(BaseLayerGlobal):
+
+    # def __init__(self, 
+    #              min_theta=50, max_theta=60,
+    #              **kwargs):
+        
+    #     # Pass the required arguments to the base class.
+    #     super(CuboidLayerGlobal, self).__init__(min_theta=min_theta, max_theta=max_theta,
+    #                                             **kwargs)
+
     def forward(self, imgs, v_pts, vis_flag=False):
         # NOTE: use cache map to save computation
-        self.im_shape = imgs.shape[-2:]
-        if self.im_shape not in self.cached_maps:
-            self.cached_maps[self.im_shape] = self.compute_init_map(self.im_shape)
-        self.init_map = self.cached_maps[self.im_shape]     
+        # self.im_shape = imgs.shape[-2:]
+        # if self.im_shape not in self.cached_maps:
+        #     self.cached_maps[self.im_shape] = self.compute_init_map(self.im_shape)
+        # self.init_map = self.cached_maps[self.im_shape]
+        self.update_cache_map(imgs)  
 
         self.device = imgs.device
         B = imgs.shape[0]
@@ -135,20 +152,27 @@ class CuboidLayerGlobal(BaseLayerGlobal):
         map_warp = bottom + lambd * top 
 
         if vis_flag:
-            self.visualize(v_pts, bottom, top, filename='cuboid_layer_global.png')
+            save_image(map_warp, f"cuboid_layer_global.png")
+            # self.visualize(v_pts, bottom, top, filename='cuboid_layer_global.png')
 
         return map_warp
 
 
 # NOTE: add a middle plane in between the top and bottom planes => uncomment and train later
 class TripetLayerGlobal(BaseLayerGlobal):
-    # TODO: find images to tune the hyperparameters
     def __init__(self, 
-            min_theta_top=70, max_theta_top=60,
-            min_alpha_top=0.2, max_alpha_top=0.4,
-            **kwargs):
-        super(TripetLayerGlobal, self).__init__(**kwargs)
-
+                 # TODO: experiment with this hyperparameters
+                #  min_theta=110, max_theta=120, min_alpha=0.2, max_alpha=0.4,
+                #  min_p=1, max_p=5, lambd=0.97, requires_grad=False,
+                #  min_theta_top=70, max_theta_top=60,
+                min_theta=50, max_theta=60,
+                min_theta_top=70, max_theta_top=60,
+                min_alpha_top=0.2, max_alpha_top=0.4,
+                 **kwargs):
+        
+        # Pass the required arguments to the base class.
+        super(TripetLayerGlobal, self).__init__(min_theta=min_theta, max_theta=max_theta,
+                                                **kwargs)
         # NOTE: 
         min_theta_top = np.deg2rad(min_theta_top)
         max_theta_top = np.deg2rad(max_theta_top)
@@ -158,20 +182,7 @@ class TripetLayerGlobal(BaseLayerGlobal):
         self.alpha_top_1 = self.init_param(min_alpha_top, max_alpha_top)
         self.alpha_top_2 = self.init_param(min_alpha_top, max_alpha_top)
 
-    def forward(self, imgs, v_pts, vis_flag=False):
-        # NOTE: use cache map to save computation
-        self.im_shape = imgs.shape[-2:]
-        if self.im_shape not in self.cached_maps:
-            self.cached_maps[self.im_shape] = self.compute_init_map(self.im_shape)
-        self.init_map = self.cached_maps[self.im_shape]     
-
-        self.device = imgs.device
-        B = imgs.shape[0]
-        h, w = self.im_shape
-
-        points_bt, bottom = self.process_warp(B, v_pts, self.theta_l, self.theta_r, self.alpha_1, self.alpha_2, self.p, bottom_flag=True)
-        points_tp, top = self.process_warp(B, v_pts, self.theta_top_l, self.theta_top_r, self.alpha_top_1, self.alpha_top_2, self.p_top, bottom_flag=False)
-
+    def compute_mid_plane(self, B, points_bt, points_tp, bottom, w, h):
         ## I want to create an array of the top plane bottom points 
         ## and the bottom plane top points in a clockwise manner
         ## See paper for details of the values
@@ -180,6 +191,11 @@ class TripetLayerGlobal(BaseLayerGlobal):
         points_mid[:, 1, :] = points_tp[:, 2, :] # q2
         points_mid[:, 2, :] = points_bt[:, 1, :] # u2
         points_mid[:, 3, :] = points_bt[:, 0, :] # u1
+
+        # print("T3", points_mid[:, 0, :])
+        # print("T2", points_mid[:, 1, :])
+        # print("B1", points_mid[:, 2, :])
+        # print("B0", points_mid[:, 3, :])
 
         ## let's compute the homography of the mid plane
         pt_dst = torch.tensor([[
@@ -193,11 +209,39 @@ class TripetLayerGlobal(BaseLayerGlobal):
         init_middle_map = init_middle_map.to(self.device).repeat(B, 1, 1, 1)
         ## project it to the image viewpoint
         mid_plane = K.geometry.warp_perspective(init_middle_map.float(), M_mid_plane, 
-                                    dsize=( round(self.im_shape[0]), round(self.im_shape[1]) ))        
+                                    dsize=( round(self.im_shape[0]), round(self.im_shape[1]) ))    
+        return mid_plane
 
+    def forward(self, imgs, v_pts, vis_flag=False):
+        # NOTE: use cache map to save computation
+        # self.im_shape = imgs.shape[-2:]
+        # if self.im_shape not in self.cached_maps:
+        #     self.cached_maps[self.im_shape] = self.compute_init_map(self.im_shape)
+        # self.init_map = self.cached_maps[self.im_shape]
+        self.update_cache_map(imgs)
+
+        self.device = imgs.device
+        B = imgs.shape[0]
+        h, w = self.im_shape
+
+        points_bt, bottom = self.process_warp(B, v_pts, self.theta_l, self.theta_r, self.alpha_1, self.alpha_2, self.p, bottom_flag=True)
+        points_tp, top = self.process_warp(B, v_pts, self.theta_top_l, self.theta_top_r, self.alpha_top_1, self.alpha_top_2, self.p_top, bottom_flag=False)
+
+        mid_plane = self.compute_mid_plane(B, points_bt, points_tp, bottom, w, h)
+
+        # Create a mask where mid_plane has valid values
+        mid_plane_mask = mid_plane > 0
+
+        # Convert mid_plane_mask to float for arithmetic operations
+        mid_plane_mask_float = mid_plane_mask.float()
+
+        # Merge bottom and mid_plane according to the mask
+        merged_plane = mid_plane_mask_float * mid_plane + (1.0 - mid_plane_mask_float) * bottom
 
         lambd = (1.0 - self.lambd).to(self.device)
-        map_warp = bottom + mid_plane + lambd * top 
+        map_warp = merged_plane + lambd * top
+        # print("map_warp min: ", map_warp.min())
+        # print("map_warp max: ", map_warp.max())
 
         # NOTE: below debug only
         # print("v_pts: ", v_pts)
@@ -205,21 +249,25 @@ class TripetLayerGlobal(BaseLayerGlobal):
         # print("top: ", top.shape)
 
         if vis_flag:
-            self.visualize(v_pts, bottom, top, filename='triplet_layer_global.png')
+            save_image(map_warp, f"triplet_layer_global.png")
+            # self.visualize(v_pts, bottom, top, filename='triplet_layer_global.png')
 
         return map_warp
-    
 
 if __name__ == '__main__':
+    # 
     from PIL import Image
     import torchvision.transforms as transforms
 
     img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_debug/0a0a0b1a-7c39d841.jpg"
     v_pts = torch.tensor([560.4213953681794, 315.3206647347985])
 
+    # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_day/5250cae5-14dc826a.jpg"
+    # v_pts = torch.tensor([-235.50865750631317, 340.43002132438045])
+
     # input_shape = (720, 1280)
-    # homo = CuboidLayerGlobal()
-    homo = TripetLayerGlobal()
+    cuboid_layer = CuboidLayerGlobal()
+    tripet_layer  = TripetLayerGlobal()
 
     # Load the image as a torch tensor
     img = Image.open(img_path).convert("RGB")
@@ -234,4 +282,5 @@ if __name__ == '__main__':
     # print("v_pts shape", v_pts.shape) # 1, 2
 
     # Perform operations on the image tensor
-    saliency = homo.forward(img_tensor, v_pts, vis_flag=True)
+    saliency = cuboid_layer.forward(img_tensor, v_pts, vis_flag=True)
+    saliency = tripet_layer.forward(img_tensor, v_pts, vis_flag=True)
