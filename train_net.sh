@@ -626,22 +626,20 @@
 #       > bdd100k_10_4.out 2>&1 &
 
 # # TODO: resume training later
-# nohup \
-# python train_net.py \
-#       --resume \
-#       --num-gpus 3 \
-#       --config configs/bdd100k_10_4_v2.yaml \
-#       OUTPUT_DIR outputs/bdd100k_10_4_v2 \
-#       MODEL.WEIGHTS outputs/bdd100k_10_4_v2/model_0004999.pth \
-#       > bdd100k_10_4_v2.out 2>&1 &
-
-# train fovea (no lzu!)
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_10_5_fovea.yaml \
-      OUTPUT_DIR outputs/bdd100k_10_5_fovea \
-      > bdd100k_10_5_fovea.out 2>&1 &
+      --config configs/bdd100k_10_4_v2.yaml \
+      OUTPUT_DIR outputs/bdd100k_10_4_v2 \
+      > bdd100k_10_4_v2.out 2>&1 &
+
+# # train fovea (no lzu!)
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_10_5_fovea.yaml \
+#       OUTPUT_DIR outputs/bdd100k_10_5_fovea \
+#       > bdd100k_10_5_fovea.out 2>&1 &
 
 # TODO: have to make sure test (inference) also works well
 # nohup \

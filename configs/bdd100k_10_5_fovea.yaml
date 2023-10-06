@@ -5,7 +5,7 @@ VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/bdd100k_all_vp.json"
 WARP_AUG_LZU: True
 WARP_FOVEA: True
 
-WARP_AUG: True
+# WARP_AUG: True # TODO: uncomment it later
 
 # USE_DEBUG: True
 # WARP_DEBUG: True
