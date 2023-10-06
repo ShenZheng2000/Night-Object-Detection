@@ -55,6 +55,28 @@ def make2DGaussian(size, fwhm=3, center=None):
     return np.exp(-4*np.log(2) * ((x-x0)**2 + (y-y0)**2) / fwhm**2)
 
 
+# def unwarp_bboxes(bboxes, grid, output_shape):
+#     """Unwarps a tensor of bboxes of shape (n, 4) or (n, 5) according to the grid \
+#     of shape (h, w, 2) used to warp the corresponding image and the \
+#     output_shape (H, W, ...)."""
+#     bboxes = bboxes.clone()
+#     # image map of unwarped (x,y) coordinates
+#     img = grid.permute(2, 0, 1).unsqueeze(0)
+
+#     warped_height, warped_width = grid.shape[0:2]
+#     xgrid = 2 * (bboxes[:, 0:4:2] / warped_width) - 1
+#     ygrid = 2 * (bboxes[:, 1:4:2] / warped_height) - 1
+#     grid = torch.stack((xgrid, ygrid), dim=2).unsqueeze(0)
+
+#     # warped_bboxes has shape (2, num_bboxes, 2)
+#     warped_bboxes = F.grid_sample(
+#         img, grid, align_corners=True, padding_mode="border").squeeze(0)
+#     bboxes[:, 0:4:2] = (warped_bboxes[0] + 1) / 2 * output_shape[1]
+#     bboxes[:, 1:4:2] = (warped_bboxes[1] + 1) / 2 * output_shape[0]
+
+#     return bboxes
+
+
 class RecasensSaliencyToGridMixin(object):
     """Grid generator based on 'Learning to Zoom: a Saliency-Based Sampling \
     Layer for Neural Networks' [https://arxiv.org/pdf/1809.03355.pdf]."""
@@ -218,21 +240,24 @@ class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         grid = self.saliency_to_grid(imgs, self.saliency, device)
 
         return grid
-    
 
-class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
+
+# @GRID_GENERATORS.register_module()
+class CuboidGlobalKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
     """
-    Base grid generator that uses a two-plane based saliency map 
+    Grid generator that uses a two-plane based saliency map 
     which has a fixed parameter set we learn.
     """
 
-    def __init__(self, homo_layer, **kwargs):
+    def __init__(self, **kwargs):
         
         # Call parent class constructors
-        super(BaseKDEGrid, self).__init__()
+        super(CuboidGlobalKDEGrid, self).__init__()
         RecasensSaliencyToGridMixin.__init__(self, **kwargs)
 
-        self.homo = homo_layer
+        # TODO: write a config to load the corresponding class
+        # self.homo = TripetLayerGlobal()
+        self.homo = CuboidLayerGlobal()
 
     def forward(self, imgs, v_pts, gt_bboxes):
         # Check if imgs is in BCHW format
@@ -241,28 +266,66 @@ class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         # Extract the shape of the input images
         self.update_output_shape(imgs.shape[2:4])
 
+        # vis_options = kwargs.get('vis_options', {})
         device = imgs.device
 
+        # v_pts_arr = [ self.v_pts_dict[x['ori_filename']] for x in img_metas ]
+
+        # for i, x in enumerate(img_metas):
+        #     if x['flip'] == True:
+        #         v_pts_arr[i][0] = x['img_shape'][2] - v_pts_arr[i][0]
+        # v_pts = torch.tensor(v_pts_arr, device=device)
         v_pts = torch.tensor(v_pts, device=device)
         v_pts = v_pts.unsqueeze(0)
+        # print("v_pts is", v_pts)
 
         self.saliency = self.homo.forward(imgs, v_pts)
+        # # print(f"Before: self.saliency {self.saliency.shape}") # torch.Size([1, 1, 600, 1067])
+
+        # # Extract the vanishing point and saliency map
+        # v_pts_original = v_pts[0].cpu().numpy()  # Assuming v_pts is like [[x, y]]
+        # saliency_np = self.saliency.squeeze(0).squeeze(0).cpu().detach().numpy()
+
+        # # Convert saliency map to 3 channel image
+        # saliency_np_with_vp = cv2.cvtColor(saliency_np, cv2.COLOR_GRAY2BGR)
+
+        # # Draw a circle at the vanishing point on the saliency map
+        # vanishing_point_color = (0, 0, 255)  # BGR color format (red)
+        # cv2.circle(saliency_np_with_vp, 
+        #             (int(v_pts_original[0]), int(v_pts_original[1])), 
+        #             5, 
+        #             vanishing_point_color, 
+        #             -1)  # Draw a filled circle
+
+        # # Save the modified saliency map
+        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_with_vp.png")
+        # save_image(self.saliency, "saliency_before.png")
+        # sys.exit(1)
 
         self.saliency = F.interpolate(self.saliency, (31, 51))
 
+        # print("self.saliency is nan", torch.isnan(self.saliency).any())
+
         grid = self.saliency_to_grid(imgs, self.saliency, device)
 
+        # print("grid is nan", torch.isnan(grid).any())
+
         return grid
+    
 
-
-class CuboidGlobalKDEGrid(BaseKDEGrid):
-    def __init__(self, **kwargs):
-        super(CuboidGlobalKDEGrid, self).__init__(homo_layer=CuboidLayerGlobal(), **kwargs)
-
-class MidKDEGrid(BaseKDEGrid):
-    def __init__(self, **kwargs):
-        super(MidKDEGrid, self).__init__(homo_layer=TripetLayerGlobal(), **kwargs)
-
+# DONE: add bbox-level saliency
+# DONE: debug visualization of image
+# DONE: debug visualization of saliency
+# DONE: average image-level (CuboidGlobalKDEGrid) and bbox-level (PlainKDEGrid) saliency
+# grid_generator = dict(
+#     type='PlainKDEGrid',
+#     output_shape=(600, 960),
+#     separable=True,
+#     attraction_fwhm=4,
+#     amplitude_scale=1,
+#     bandwidth_scale=64,
+#     anti_crop=True
+# )
 
 # NOTE: write this as separate class to reduce code duplication
 class SaliencyMixin:

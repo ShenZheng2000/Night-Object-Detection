@@ -208,18 +208,19 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         vp = get_vanising_points(sample['file_name'], vp_dict, ratio, flip)
         vanishing_points.append(vp)
 
-    # Correcting vanishing_points if they are out of bounds
-    corrected_vanishing_points = []
-    for vp in vanishing_points:
-        if is_out_of_bounds(vp, img_width, img_height):
-            vp_x = min(max(1, vp[0]), img_width - 2)
-            vp_y = min(max(1, vp[1]), img_height - 2)
-            print(f"Vanishing point {vp} was out of bounds and has been clipped to {[vp_x, vp_y]}")
-            corrected_vanishing_points.append([vp_x, vp_y])
-        else:
-            corrected_vanishing_points.append(vp)
+    # NOTE: skip for for now, since all vps are valid
+    # # Correcting vanishing_points if they are out of bounds
+    # corrected_vanishing_points = []
+    # for vp in vanishing_points:
+    #     if is_out_of_bounds(vp, img_width, img_height):
+    #         vp_x = min(max(1, vp[0]), img_width - 2)
+    #         vp_y = min(max(1, vp[1]), img_height - 2)
+    #         print(f"Vanishing point {vp} was out of bounds and has been clipped to {[vp_x, vp_y]}")
+    #         corrected_vanishing_points.append([vp_x, vp_y])
+    #     else:
+    #         corrected_vanishing_points.append(vp)
     
-    vanishing_points = corrected_vanishing_points  # Update the vanishing_points list
+    # vanishing_points = corrected_vanishing_points  # Update the vanishing_points list
 
     # Apply warping
     # warped_images, _, grids = zip(*[

@@ -148,3 +148,6 @@ def add_teacher_config(cfg):
 
     # NOTE: make warping learnable
     _C.WARP_LEARN = False
+
+    # NOTE: add middle plane saliency to tpp
+    _C.WARP_MIDDLE = False

@@ -15,7 +15,7 @@ from detectron2.modeling.roi_heads import build_roi_heads
 from detectron2.utils.events import get_event_storage
 from detectron2.structures import ImageList
 
-from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid
+from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid
 
 # import sys
 # sys.path.append('/root/autodl-tmp/Methods/Night-Object-Detection')
@@ -100,6 +100,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         warp_fovea: bool = False,
         warp_fovea_inst: bool = False,
         warp_fovea_mix: bool = False,
+        warp_middle: bool = False,
     ):
         """
         Args:
@@ -132,21 +133,28 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         self.D_img = None
 
         self.vp_dict = vp_dict
+
         self.warp_aug_lzu = warp_aug_lzu
         self.warp_aug = warp_aug
+        self.warp_fovea = warp_fovea
+        self.warp_fovea_inst = warp_fovea_inst
+        self.warp_fovea_mix = warp_fovea_mix
+        self.warp_middle = warp_middle
 
         # NOTE: define grid_net here (instead of in train.py)
-        self.grid_net = self.build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix)
+        self.grid_net = self.build_grid_net()
 
-    def build_grid_net(self, warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix):
-        if warp_aug_lzu:
-            if warp_fovea:
+    def build_grid_net(self):
+        if self.warp_aug_lzu:
+            if self.warp_fovea:
                 saliency_file = 'dataset_saliency.pkl'
                 return FixedKDEGrid(saliency_file,)
-            elif warp_fovea_inst:
+            elif self.warp_fovea_inst:
                 return PlainKDEGrid()
-            elif warp_fovea_mix:
+            elif self.warp_fovea_mix:
                 return MixKDEGrid()
+            elif self.warp_middle:
+                return MidKDEGrid()
             else:
                 return CuboidGlobalKDEGrid()
         else:
@@ -176,6 +184,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             "warp_fovea": cfg.WARP_FOVEA,
             "warp_fovea_inst": cfg.WARP_FOVEA_INST,
             "warp_fovea_mix": cfg.WARP_FOVEA_MIX,
+            "warp_middle": cfg.WARP_MIDDLE,
         }
 
     def preprocess_image_train(self, batched_inputs: List[Dict[str, torch.Tensor]]):
@@ -220,10 +229,11 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         images = self.preprocess_image(batched_inputs)
 
         # NOTE: add zoom-unzoom here
-        if self.warp_aug_lzu:
-            # print("Hello! Running model inference with warp_aug_lzu!")
-            features = process_and_update_features(batched_inputs, images, self.warp_aug_lzu, 
-                                                    self.vp_dict, self.grid_net, self.backbone, warp_aug=self.warp_aug)
+        # if self.warp_aug_lzu:
+        #     # print("Hello! Running model inference with warp_aug_lzu!")
+        #     features = process_and_update_features(batched_inputs, images, self.warp_aug_lzu, 
+        #                                             self.vp_dict, self.grid_net, self.backbone, warp_aug=self.warp_aug)
+        # NOTE: hardcode non-warping during testing stage for now
         features = self.backbone(images.tensor)
 
         if detected_instances is None:

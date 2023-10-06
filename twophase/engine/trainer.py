@@ -43,7 +43,6 @@ from twophase.solver.build import build_lr_scheduler
 from twophase.evaluation import PascalVOCDetectionEvaluator, COCOEvaluator
 from twophase.modeling.custom_losses import ConsistencyLosses
 from twophase.data.transforms.night_aug import NightAug
-from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid
 import copy
 
 

@@ -625,13 +625,22 @@
 #       OUTPUT_DIR outputs/bdd100k_10_4 \
 #       > bdd100k_10_4.out 2>&1 &
 
-# # TODO: resume training later
+# # # TODO: resume training later
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_10_4_v2.yaml \
+#       OUTPUT_DIR outputs/bdd100k_10_4_v2 \
+#       > bdd100k_10_4_v2.out 2>&1 &
+
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_10_4_v2.yaml \
-      OUTPUT_DIR outputs/bdd100k_10_4_v2 \
-      > bdd100k_10_4_v2.out 2>&1 &
+      --config configs/bdd100k_10_6_tpp_mid.yaml \
+      OUTPUT_DIR outputs/bdd100k_10_6_tpp_mid \
+      > bdd100k_10_6_tpp_mid.out 2>&1 &
+
+# TODO: try middle-plane stuffs here
 
 # # train fovea (no lzu!)
 # nohup \
