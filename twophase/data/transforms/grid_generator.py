@@ -236,7 +236,7 @@ class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 
     def forward(self, imgs, v_pts, gt_bboxes):
         # Check if imgs is in BCHW format
-        assert len(imgs.shape) == 4, "Expected imgs to be in BCHW format"
+        assert len(imgs.shape) == 4, f"Expected imgs to be in BCHW format. Now imgs.shape = {imgs.shape}"
         
         # Extract the shape of the input images
         self.update_output_shape(imgs.shape[2:4])
@@ -260,8 +260,21 @@ class CuboidGlobalKDEGrid(BaseKDEGrid):
         super(CuboidGlobalKDEGrid, self).__init__(homo_layer=CuboidLayerGlobal(), **kwargs)
 
 class MidKDEGrid(BaseKDEGrid):
-    def __init__(self, **kwargs):
-        super(MidKDEGrid, self).__init__(homo_layer=TripetLayerGlobal(), **kwargs)
+    def __init__(self, 
+                 min_theta=TripetLayerGlobal.DEFAULTS['min_theta'], 
+                 max_theta=TripetLayerGlobal.DEFAULTS['max_theta'],
+                 min_theta_top=TripetLayerGlobal.DEFAULTS['min_theta_top'], 
+                 max_theta_top=TripetLayerGlobal.DEFAULTS['max_theta_top'],
+                 min_alpha_top=TripetLayerGlobal.DEFAULTS['min_alpha_top'], 
+                 max_alpha_top=TripetLayerGlobal.DEFAULTS['max_alpha_top'],
+                 **kwargs):
+        super(MidKDEGrid, self).__init__(homo_layer=TripetLayerGlobal(min_theta=min_theta, 
+                                                                      max_theta=max_theta,
+                                                                      min_theta_top=min_theta_top, 
+                                                                      max_theta_top=max_theta_top,
+                                                                      min_alpha_top=min_alpha_top, 
+                                                                      max_alpha_top=max_alpha_top), 
+                                         **kwargs)
 
 
 # NOTE: write this as separate class to reduce code duplication

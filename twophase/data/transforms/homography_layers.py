@@ -15,7 +15,9 @@ import cv2
 class BaseLayerGlobal(nn.Module):
     def __init__(self, 
                  min_theta=110, max_theta=120, min_alpha=0.2, max_alpha=0.4,
+                 min_theta_top=None, max_theta_top=None, min_alpha_top=None, max_alpha_top=None, 
                  min_p=1, max_p=5, lambd=0.97):
+        
         super(BaseLayerGlobal, self).__init__()
         
         min_theta = np.deg2rad(min_theta)
@@ -125,9 +127,10 @@ class BaseLayerGlobal(nn.Module):
 
 
 class CuboidLayerGlobal(BaseLayerGlobal):
-
+    
+    # # NOTE NOTE: for debug only!!!
     # def __init__(self, 
-    #              min_theta=50, max_theta=60,
+    #              min_theta=0, max_theta=150,
     #              **kwargs):
         
     #     # Pass the required arguments to the base class.
@@ -158,21 +161,44 @@ class CuboidLayerGlobal(BaseLayerGlobal):
         return map_warp
 
 
-# NOTE: add a middle plane in between the top and bottom planes => uncomment and train later
+# NOTE: add a middle plane in between the top and bottom planes
 class TripetLayerGlobal(BaseLayerGlobal):
-    def __init__(self, 
-                 # TODO: experiment with this hyperparameters
-                #  min_theta=110, max_theta=120, min_alpha=0.2, max_alpha=0.4,
-                #  min_p=1, max_p=5, lambd=0.97, requires_grad=False,
-                #  min_theta_top=70, max_theta_top=60,
-                min_theta=50, max_theta=60,
-                min_theta_top=70, max_theta_top=60,
-                min_alpha_top=0.2, max_alpha_top=0.4,
-                 **kwargs):
-        
-        # Pass the required arguments to the base class.
+    # TODO: play with the hyperparameters
+    #  min_theta=110, max_theta=120, min_alpha=0.2, max_alpha=0.4,
+    #  min_p=1, max_p=5, lambd=0.97, requires_grad=False,
+    #  min_theta_top=70, max_theta_top=60,
+
+    DEFAULTS = {
+        'min_theta': 0,
+        'max_theta': 150, # NOTE: tune it later
+        'min_theta_top': 0, 
+        'max_theta_top': 240, # NOTE: tune it later
+        'min_alpha_top': 0.2,
+        'max_alpha_top': 0.4
+    }
+
+    def __init__(self, **kwargs):
+        # Use the provided kwargs, or fallback to the defaults
+        min_theta = kwargs.get('min_theta', self.DEFAULTS['min_theta'])
+        max_theta = kwargs.get('max_theta', self.DEFAULTS['max_theta'])
+        min_theta_top = kwargs.get('min_theta_top', self.DEFAULTS['min_theta_top'])
+        max_theta_top = kwargs.get('max_theta_top', self.DEFAULTS['max_theta_top'])
+        min_alpha_top = kwargs.get('min_alpha_top', self.DEFAULTS['min_alpha_top'])
+        max_alpha_top = kwargs.get('max_alpha_top', self.DEFAULTS['max_alpha_top'])
+
+        # print("min_theta: ", min_theta)
+        # print("max_theta: ", max_theta)
+        # print("min_theta_top: ", min_theta_top)
+        # print("max_theta_top: ", max_theta_top)
+        # print("min_alpha_top: ", min_alpha_top)
+        # print("max_alpha_top: ", max_alpha_top)
+
+        # Pass the arguments to the base class.
+        # I'm assuming the base class's __init__ method accepts these parameters. 
+        # If it doesn't, you might need to adjust this part.
         super(TripetLayerGlobal, self).__init__(min_theta=min_theta, max_theta=max_theta,
-                                                **kwargs)
+                                                min_theta_top=min_theta_top, max_theta_top=max_theta_top,
+                                                min_alpha_top=min_alpha_top, max_alpha_top=max_alpha_top)
         # NOTE: 
         min_theta_top = np.deg2rad(min_theta_top)
         max_theta_top = np.deg2rad(max_theta_top)
@@ -253,6 +279,9 @@ class TripetLayerGlobal(BaseLayerGlobal):
             # self.visualize(v_pts, bottom, top, filename='triplet_layer_global.png')
 
         return map_warp
+    
+def has_learnable_parameters(module):
+    return any(param.requires_grad for param in module.parameters())
 
 if __name__ == '__main__':
     # 
@@ -268,6 +297,17 @@ if __name__ == '__main__':
     # input_shape = (720, 1280)
     cuboid_layer = CuboidLayerGlobal()
     tripet_layer  = TripetLayerGlobal()
+
+    # # Check if parameters in cuboid_layer and tripet_layer are learnable => DONE, none are learnable
+    # if has_learnable_parameters(cuboid_layer):
+    #     print("CuboidLayerGlobal has learnable parameters.")
+    # else:
+    #     print("CuboidLayerGlobal does not have any learnable parameters.")
+
+    # if has_learnable_parameters(tripet_layer):
+    #     print("TripetLayerGlobal has learnable parameters.")
+    # else:
+    #     print("TripetLayerGlobal does not have any learnable parameters.")
 
     # Load the image as a torch tensor
     img = Image.open(img_path).convert("RGB")

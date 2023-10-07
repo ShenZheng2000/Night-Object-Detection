@@ -58,7 +58,6 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None):
         imgs = imgs.unsqueeze(0)
 
     imgs = torch.stack(tuple(imgs), dim=0)
-    # print("imgs shape", imgs.shape)
 
     grid = grid_net(imgs, vanishing_point, bboxes)
     # print("grid shape", grid.shape)
@@ -75,7 +74,11 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
     img = img.float()
     device = img.device
     my_shape = img.shape[-2:]
-    imgs = img.unsqueeze(0) 
+
+    if len(img.shape) == 3:
+        imgs = img.unsqueeze(0)
+    else:
+        imgs = img
 
     # read bboxes
     try:
