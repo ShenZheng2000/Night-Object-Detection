@@ -81,11 +81,11 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
         imgs = img
 
     # read bboxes
-    try:
+    if isinstance(ins, torch.Tensor):
+        bboxes = ins.to(device)
+    else:
         bboxes = ins.gt_boxes.tensor
         bboxes = bboxes.to(device)
-    except:
-        bboxes = None
 
     # print("img.shape", img.shape) # [3, 600, 1067]
     # print("bboxes shape", bboxes.shape) # [N, 4]: x1, y1, x2, y2

@@ -168,11 +168,20 @@ class TripetLayerGlobal(BaseLayerGlobal):
     #  min_p=1, max_p=5, lambd=0.97, requires_grad=False,
     #  min_theta_top=70, max_theta_top=60,
 
+    # DEFAULTS = {
+    #     'min_theta': 0,
+    #     'max_theta': 150, # NOTE: tune it later
+    #     'min_theta_top': 0, 
+    #     'max_theta_top': 240, # NOTE: tune it later
+    #     'min_alpha_top': 0.2,
+    #     'max_alpha_top': 0.4
+    # }
+
     DEFAULTS = {
         'min_theta': 0,
-        'max_theta': 150, # NOTE: tune it later
+        'max_theta': 170, # NOTE: tune it later
         'min_theta_top': 0, 
-        'max_theta_top': 240, # NOTE: tune it later
+        'max_theta_top': 230, # NOTE: tune it later
         'min_alpha_top': 0.2,
         'max_alpha_top': 0.4
     }

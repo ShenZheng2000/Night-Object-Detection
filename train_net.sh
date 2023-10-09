@@ -633,14 +633,21 @@
 #       OUTPUT_DIR outputs/bdd100k_10_4_v2 \
 #       > bdd100k_10_4_v2.out 2>&1 &
 
-# TODO: why inverse rendering not working for middle plane?
+# NOTE: train with (max_theta=150, max_theta_top=240)
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_10_6_tpp_mid.yaml \
+#       OUTPUT_DIR outputs/bdd100k_10_6_tpp_mid \
+#       > bdd100k_10_6_tpp_mid.out 2>&1 &
 
+# NOTE: train with (max_theta=170, max_theta_top=230)
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_10_6_tpp_mid.yaml \
-      OUTPUT_DIR outputs/bdd100k_10_6_tpp_mid \
-      > bdd100k_10_6_tpp_mid.out 2>&1 &
+      --config configs/bdd100k_10_7_tpp_mid.yaml \
+      OUTPUT_DIR outputs/bdd100k_10_7_tpp_mid \
+      > bdd100k_10_7_tpp_mid.out 2>&1 &
 
 # TODO: mix bbox-level and image-level saliency, and makes it learnabe!
 # TODO: train the above experiments in 3090 to reproduce results

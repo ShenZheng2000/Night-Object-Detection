@@ -234,6 +234,17 @@ class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 
         self.homo = homo_layer
 
+    def get_saliency(self, imgs, v_pts):
+        device = imgs.device
+        v_pts = torch.tensor(v_pts, device=device)
+        v_pts = v_pts.unsqueeze(0)
+
+        self.saliency = self.homo.forward(imgs, v_pts)
+
+        self.saliency = F.interpolate(self.saliency, (31, 51))
+
+        return self.saliency        
+
     def forward(self, imgs, v_pts, gt_bboxes):
         # Check if imgs is in BCHW format
         assert len(imgs.shape) == 4, f"Expected imgs to be in BCHW format. Now imgs.shape = {imgs.shape}"
@@ -243,12 +254,7 @@ class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 
         device = imgs.device
 
-        v_pts = torch.tensor(v_pts, device=device)
-        v_pts = v_pts.unsqueeze(0)
-
-        self.saliency = self.homo.forward(imgs, v_pts)
-
-        self.saliency = F.interpolate(self.saliency, (31, 51))
+        self.saliency = self.get_saliency(imgs, v_pts)
 
         grid = self.saliency_to_grid(imgs, self.saliency, device)
 
@@ -279,7 +285,9 @@ class MidKDEGrid(BaseKDEGrid):
 
 # NOTE: write this as separate class to reduce code duplication
 class SaliencyMixin:
-    def bbox2sal(self, batch_bboxes, img_shape, jitter=None):
+    # NOTE: single bboxes always symmetric, but multiple bboxes are not
+    # TODO: combine saliency map wisely (instead of simple adding them together)
+    def bbox2sal(self, batch_bboxes, img_shape, jitter=None, symmetry=False):
         device = batch_bboxes[0].device
         h_out, w_out = self.grid_shape
         sals = []
@@ -296,6 +304,8 @@ class SaliencyMixin:
         bboxes = batch_bboxes  # All bboxes are for the same image
         bboxes[:, 2:] -= bboxes[:, :2]  # ltrb -> ltwh
         cxy = bboxes[:, :2] + 0.5 * bboxes[:, 2:]
+        # print("bboxes shape", bboxes.shape) # # [N, 4]
+        # print("cxy.shape", cxy.shape) # [N, 2]
 
         if jitter is not None:
             cxy += 2 * jitter * (torch.randn(cxy.shape, device=device) - 0.5)
@@ -309,17 +319,20 @@ class SaliencyMixin:
         )
 
         grids = torch.stack((X.flatten(), Y.flatten()), dim=1).t()
+        # print("grids.shape", grids.shape) # [2, 31*51]
         m, n = cxy.shape[0], grids.shape[1]
 
         norm1 = (cxy[:, 0:1] ** 2 / widths + cxy[:, 1:2] ** 2 / heights).expand(m, n)
         norm2 = grids[0:1, :] ** 2 / widths + grids[1:2, :] ** 2 / heights
         norms = norm1 + norm2
+        # print("norms.shape", norms.shape) # [N, 31*51]
 
         cxy_norm = cxy
         cxy_norm[:, 0:1] /= widths
         cxy_norm[:, 1:2] /= heights
 
         distances = norms - 2 * cxy_norm.mm(grids)
+        # print("distances shape", distances.shape) # [N, 31*51]
 
         sal = (-0.5 * distances).exp()
         sal = self.amplitude_scale * (sal / (0.00001 + sal.sum(dim=1, keepdim=True)))
@@ -328,10 +341,38 @@ class SaliencyMixin:
         sal /= sal.sum()
         sal = sal.reshape(w_out, h_out).t().unsqueeze(0)
         sals.append(sal)
+        # print("sal is", sal.shape)
+
+        if symmetry:
+            print("Using symmetry")
+            sal = self.make_symmetric_around_max(sal)        
 
         return torch.stack(sals)
+    
+    # NOTE: use this to create symmetric saliency maps (NOTE: no use for now, since vis becomes worse)
+    @staticmethod
+    def make_symmetric_around_max(saliency_map):
+        # Find the column (axis) with the max value in the entire saliency_map
+        _, _, max_x = torch.where(saliency_map == saliency_map.max())
+        max_x = max_x[0].item()
 
+        # Define the range to iterate over for both left and right
+        left_indices = torch.arange(max_x, -1, -1)
+        right_indices = torch.arange(max_x, saliency_map.size(2))
 
+        # Ensure the lengths of left_indices and right_indices are the same
+        length = min(len(left_indices), len(right_indices))
+        left_indices = left_indices[:length]
+        right_indices = right_indices[:length]
+
+        # Use broadcasting to find the max values between left and right for all rows
+        max_values = torch.max(saliency_map[:, :, left_indices], saliency_map[:, :, right_indices])
+
+        # Assign the max values to both sides of the matrix
+        saliency_map[:, :, left_indices] = max_values
+        saliency_map[:, :, right_indices] = max_values
+
+        return saliency_map
 
 class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
     """Image adaptive grid generator with fixed hyperparameters -- KDE SI"""
@@ -374,9 +415,14 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
 
         # # # Extract the vanishing point and saliency map
         # v_pts_original = v_pts[0].cpu().numpy()  # Assuming v_pts is like [[x, y]]
-        # print("saliency shape", saliency.shape)
+        # # print("saliency shape", saliency.shape) # [1, 1, 31, 51]
         # saliency_np = saliency.squeeze(0).squeeze(0).cpu().detach().numpy()
-        # print("saliency_np shape", saliency_np.shape)
+        # # NOTE: multiply 100 for visualization purposes
+        # saliency_np = saliency_np * 100
+        # # print("PlainKDEGrid saliency mean", saliency_np.mean())
+        # # print("PlainKDEGrid saliency max", saliency_np.max())
+        # # print("PlainKDEGrid saliency nonzero", np.count_nonzero(saliency_np > 0))
+        # # print("saliency_np shape", saliency_np.shape) # [31, 51]
 
         # # Convert saliency map to 3 channel image
         # saliency_np_with_vp = cv2.cvtColor(saliency_np, cv2.COLOR_GRAY2BGR)
@@ -390,53 +436,46 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         #             -1)  # Draw a filled circle
 
         # # Save the modified saliency map
-        # print("saliency_np_with_vp shape", saliency_np_with_vp.shape)
-        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_with_vp_instance.png")
+        # # print("saliency_np_with_vp shape", saliency_np_with_vp.shape) # [31, 51, 3]
+        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_PlainKDEGrid.png")
         # ################# For debug only #################
 
         grid = self.saliency_to_grid(imgs, saliency, device)
 
         return grid
     
-# TODO: rewrite this class to reduce code redundancy
-class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
 
-    def __init__(
-        self,
-        attraction_fwhm=4,
-        bandwidth_scale=64,
-        amplitude_scale=1,
-        **kwargs
-    ):
+class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
+
+    def __init__(self, 
+                 attraction_fwhm = 4,
+                 bandwidth_scale = 64,
+                 amplitude_scale = 1,
+                 homo_layer: str = 'cuboid', 
+                 **kwargs):
         
-        # Setting up all required attributes
-        self.separable = kwargs.get('separable', True)
-        self.anti_crop = kwargs.get('anti_crop', True)
-        # self.input_shape = kwargs.get('input_shape', (1200, 1920))
-        # self.output_shape = kwargs.get('output_shape', (600, 960))
+        # Select the appropriate layer based on the homo_layer argument
+        if homo_layer == 'cuboid':
+            layer_instance = CuboidLayerGlobal()
+        elif homo_layer == 'tripet':
+            layer_instance = TripetLayerGlobal()
+        else:
+            raise ValueError(f"Unknown homo_layer: {homo_layer}. Supported values are 'cuboid' or 'tripet'.")
 
-        # Initialize alpha and beta as a learnable parameter
-        self.alpha = nn.Parameter(torch.tensor(0.5), requires_grad=True)
-        self.beta = nn.Parameter(torch.tensor(0.5), requires_grad=True)
+        # Initialize the base class with the chosen layer
+        super(MixKDEGrid, self).__init__(layer_instance, **kwargs)
 
-        super(MixKDEGrid, self).__init__()
-        RecasensSaliencyToGridMixin.__init__(self, **kwargs)
+        # Set the additional attributes for the class
         self.attraction_fwhm = attraction_fwhm
         self.bandwidth_scale = bandwidth_scale
         self.amplitude_scale = amplitude_scale
-
-        # self.homo = CuboidLayerGlobal(self.input_shape)
-        self.homo = CuboidLayerGlobal()
         
-    def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
-        # saliency from image-level
-        device = imgs.device
-        v_pts = torch.tensor(v_pts, device=device)
-        v_pts = v_pts.unsqueeze(0)
-        self.saliency = self.homo.forward(imgs, v_pts)
-        self.saliency = F.interpolate(self.saliency, (31, 51))
+        # Define learnable parameters (TODO: tune these parameter later, or make it learnable)
+        self.alpha = nn.Parameter(torch.tensor(0.5), requires_grad=True)
+        self.beta = nn.Parameter(torch.tensor(0.5), requires_grad=True)
 
-        # saliency from bbox-level
+    def compute_bbox_saliency(self, imgs, gt_bboxes, jitter):
+        # print("gt_bboxes is", gt_bboxes)
         img_shape = imgs.shape
         
         if isinstance(gt_bboxes, torch.Tensor):
@@ -446,46 +485,26 @@ class MixKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
                 batch_bboxes = gt_bboxes[0].clone()  # noqa: E501, removing the augmentation dimension
             else:
                 batch_bboxes = [bboxes.clone() for bboxes in gt_bboxes]
-        device = batch_bboxes[0].device
         saliency = self.bbox2sal(batch_bboxes, img_shape, jitter)
+        return saliency
 
-        # average image-level and bbox-level saliency
-        assert saliency.shape == self.saliency.shape, print(f"saliency {saliency.shape} mismatches self.saliency {self.saliency.shape}")
-        # print("saliency mean", saliency.mean())
-        # print("self.saliency mean", self.saliency.mean())
+    def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
+        device = imgs.device
 
-        # saliency = (saliency + self.saliency) / 2.0
-        # Mix saliencies with the learnable alpha parameter
-        print(f"alpha = {self.alpha}; beta = {self.beta}")
-        saliency = self.alpha * saliency + self.beta * self.saliency
-
-        # # ################# For debug only #################
-
-        # # # Extract the vanishing point and saliency map
-        # v_pts_original = v_pts[0].cpu().numpy()  # Assuming v_pts is like [[x, y]]
-        # # print("saliency shape", saliency.shape)
-        # saliency_np = saliency.squeeze(0).squeeze(0).cpu().detach().numpy()
-        # # print("saliency_np shape", saliency_np.shape)
-
-        # # Convert saliency map to 3 channel image
-        # saliency_np_with_vp = cv2.cvtColor(saliency_np, cv2.COLOR_GRAY2BGR)
-
-        # # Draw a circle at the vanishing point on the saliency map
-        # vanishing_point_color = (0, 0, 255)  # BGR color format (red)
-        # cv2.circle(saliency_np_with_vp, 
-        #             (int(v_pts_original[0]), int(v_pts_original[1])), 
-        #             5, 
-        #             vanishing_point_color, 
-        #             -1)  # Draw a filled circle
-
-        # # Save the modified saliency map
-        # # print("saliency_np_with_vp shape", saliency_np_with_vp.shape)
-        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_with_vp_instance.png")
-        # ################# For debug only #################
-
-        grid = self.saliency_to_grid(imgs, saliency, device)
-
-        return grid
-    
-
-# TODO: write debug code here with sample images, vps, and bboxes
+        # NOTE: hardcode this line here to get image shape
+        self.update_output_shape(imgs.shape[2:4])
+        
+        # Image-level saliency
+        img_saliency = super().get_saliency(imgs, v_pts)
+        
+        # Bbox-level saliency
+        bbox_saliency = self.compute_bbox_saliency(imgs, gt_bboxes, jitter)
+        assert bbox_saliency.shape == img_saliency.shape, f"saliency {bbox_saliency.shape} mismatches img_saliency {img_saliency.shape}"
+        
+        # Mix saliencies
+        # print(f"alpha = {self.alpha}; beta = {self.beta}")
+        # print("bbox_saliency mean", bbox_saliency.mean())
+        # print("img_saliency mean", img_saliency.mean())
+        mixed_saliency = self.alpha * bbox_saliency + self.beta * img_saliency
+        
+        return self.saliency_to_grid(imgs, mixed_saliency, device)
