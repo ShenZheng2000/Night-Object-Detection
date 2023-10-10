@@ -1,0 +1,13 @@
+_BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
+
+WARP_AUG_LZU: False
+
+# PATH_BLUR: True
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+
+INPUT:
+  MIN_SIZE_TRAIN: (300,)

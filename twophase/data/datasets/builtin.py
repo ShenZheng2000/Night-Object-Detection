@@ -277,6 +277,11 @@ register_coco_instances("bdd100k_night_val",
 f'{data_path}/bdd100k/coco_labels/val_night.json', 
 f'{data_path}/bdd100k/images/100k/val')
 
+register_coco_instances("bdd100k_day_val", 
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_day.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
 register_coco_instances("bdd100k_night_val_valid_vp", 
 {}, 
 f'{data_path}/bdd100k/coco_labels/val_night_valid_vp.json', 

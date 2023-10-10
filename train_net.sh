@@ -633,7 +633,7 @@
 #       OUTPUT_DIR outputs/bdd100k_10_4_v2 \
 #       > bdd100k_10_4_v2.out 2>&1 &
 
-# NOTE: train with (max_theta=150, max_theta_top=240)
+# NOTE: train with (max_theta=150, max_theta_top=240) => still not working
 # nohup \
 # python train_net.py \
 #       --num-gpus 3 \
@@ -641,17 +641,24 @@
 #       OUTPUT_DIR outputs/bdd100k_10_6_tpp_mid \
 #       > bdd100k_10_6_tpp_mid.out 2>&1 &
 
-# NOTE: train with (max_theta=170, max_theta_top=230)
+# NOTE: train with (max_theta=170, max_theta_top=230) => still not working
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_10_7_tpp_mid.yaml \
+#       OUTPUT_DIR outputs/bdd100k_10_7_tpp_mid \
+#       > bdd100k_10_7_tpp_mid.out 2>&1 &
+
+# TODO: train with 0.5x images (baseline, fovea, tpp, bbox-level)
+# TODO: always do visualization of images and bboxes
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_10_7_tpp_mid.yaml \
-      OUTPUT_DIR outputs/bdd100k_10_7_tpp_mid \
-      > bdd100k_10_7_tpp_mid.out 2>&1 &
+      --config configs/bdd100k_10_9_05x.yaml \
+      OUTPUT_DIR outputs/bdd100k_10_9_05x \
+      > bdd100k_10_9_05x.out 2>&1 &
 
-# TODO: mix bbox-level and image-level saliency, and makes it learnabe!
-# TODO: train the above experiments in 3090 to reproduce results
-# TODO: record all results in a separate table!
+# TODO: need to change test shape also!!!!
 
 # # train fovea (no lzu!)
 # nohup \
