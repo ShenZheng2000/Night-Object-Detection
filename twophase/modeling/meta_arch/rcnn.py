@@ -234,6 +234,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         #     features = process_and_update_features(batched_inputs, images, self.warp_aug_lzu, 
         #                                             self.vp_dict, self.grid_net, self.backbone, warp_aug=self.warp_aug)
         # NOTE: hardcode non-warping during testing stage for now
+        # print("images.tensor shape", images.tensor.shape) # [1, 3, 750, 1333]
         features = self.backbone(images.tensor)
 
         if detected_instances is None:

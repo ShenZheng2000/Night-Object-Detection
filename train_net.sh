@@ -650,15 +650,27 @@
 #       > bdd100k_10_7_tpp_mid.out 2>&1 &
 
 # TODO: train with 0.5x images (baseline, fovea, tpp, bbox-level)
-# TODO: always do visualization of images and bboxes
+# baseline
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_10_9_05x.yaml \
+#       OUTPUT_DIR outputs/bdd100k_10_9_05x \
+#       > bdd100k_10_9_05x.out 2>&1 &
+
+# tpp
 nohup \
 python train_net.py \
       --num-gpus 3 \
-      --config configs/bdd100k_10_9_05x.yaml \
-      OUTPUT_DIR outputs/bdd100k_10_9_05x \
-      > bdd100k_10_9_05x.out 2>&1 &
+      --config configs/bdd100k_tpp_05x.yaml \
+      OUTPUT_DIR outputs/bdd100k_tpp_05x \
+      > bdd100k_tpp_05x.out 2>&1 &
 
-# TODO: need to change test shape also!!!!
+# bbox-level (WARP_FOVEA_INST)
+
+
+# fovea (WARP_FOVEA)
+
 
 # # train fovea (no lzu!)
 # nohup \

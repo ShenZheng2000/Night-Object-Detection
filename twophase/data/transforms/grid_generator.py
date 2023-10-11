@@ -287,62 +287,86 @@ class MidKDEGrid(BaseKDEGrid):
 class SaliencyMixin:
     # NOTE: single bboxes always symmetric, but multiple bboxes are not
     # TODO: combine saliency map wisely (instead of simple adding them together)
-    def bbox2sal(self, batch_bboxes, img_shape, jitter=None, symmetry=False):
+    def bbox2sal(self, batch_bboxes, img_shape, jitter=None, symmetry=False, maximal=False):
+        # print("batch_bboxes.shape is", batch_bboxes.shape) # [N, 4]
+        # Get the device of the bounding boxes.
         device = batch_bboxes[0].device
+        
+        # Define the output saliency map dimensions.
         h_out, w_out = self.grid_shape
         sals = []
 
-        # Assuming all bboxes in batch_bboxes are for a single image with shape img_shape
-        h, w = img_shape[-2:]  # img_shape should be a tuple (h, w)
+        # Assuming all bounding boxes in the batch are for a single image with the shape img_shape
+        h, w = img_shape[-2:]  # Extract the height and width from the img_shape
 
+        # Check if there are no bounding boxes provided
         if len(batch_bboxes) == 0:  # zero detections case
+            # Create a uniform saliency map
             sal = torch.ones(h_out, w_out, device=device).unsqueeze(0)
             sal /= sal.sum()
             sals.append(sal)
-            return torch.stack(sals)  # Return early if no bboxes
+            # Return the uniform saliency map since there are no detections
+            return torch.stack(sals)
 
-        bboxes = batch_bboxes  # All bboxes are for the same image
-        bboxes[:, 2:] -= bboxes[:, :2]  # ltrb -> ltwh
+        # All bounding boxes pertain to the same image.
+        bboxes = batch_bboxes
+
+        # Convert bounding boxes from left-top right-bottom format to left-top width-height format
+        bboxes[:, 2:] -= bboxes[:, :2]  
+
+        # Calculate the center of each bounding box.
         cxy = bboxes[:, :2] + 0.5 * bboxes[:, 2:]
-        # print("bboxes shape", bboxes.shape) # # [N, 4]
-        # print("cxy.shape", cxy.shape) # [N, 2]
 
+        # If jitter is provided, add random noise to the center coordinates.
         if jitter is not None:
             cxy += 2 * jitter * (torch.randn(cxy.shape, device=device) - 0.5)
 
+        # Calculate the scaled widths and heights.
         widths = (bboxes[:, 2] * self.bandwidth_scale).unsqueeze(1)
         heights = (bboxes[:, 3] * self.bandwidth_scale).unsqueeze(1)
 
+        # Create mesh grids corresponding to image dimensions.
         X, Y = torch.meshgrid(
             torch.linspace(0, w, w_out, dtype=torch.float, device=device),
             torch.linspace(0, h, h_out, dtype=torch.float, device=device),
         )
 
         grids = torch.stack((X.flatten(), Y.flatten()), dim=1).t()
-        # print("grids.shape", grids.shape) # [2, 31*51]
+
         m, n = cxy.shape[0], grids.shape[1]
 
+        # Compute the norm for distance calculations.
         norm1 = (cxy[:, 0:1] ** 2 / widths + cxy[:, 1:2] ** 2 / heights).expand(m, n)
         norm2 = grids[0:1, :] ** 2 / widths + grids[1:2, :] ** 2 / heights
         norms = norm1 + norm2
-        # print("norms.shape", norms.shape) # [N, 31*51]
 
+        # Normalize the bounding box centers.
         cxy_norm = cxy
         cxy_norm[:, 0:1] /= widths
         cxy_norm[:, 1:2] /= heights
 
+        # Calculate distances from each bounding box center to the grid locations.
         distances = norms - 2 * cxy_norm.mm(grids)
-        # print("distances shape", distances.shape) # [N, 31*51]
 
+        # Compute the saliency map values based on distances.
         sal = (-0.5 * distances).exp()
         sal = self.amplitude_scale * (sal / (0.00001 + sal.sum(dim=1, keepdim=True)))
         sal += 1 / ((2 * self.padding_size + 1) ** 2)
+        # print("sal shape", sal.shape) # [N, 1581]
+
+        # NOTE: Taking the max saliency among overlapping bounding boxes
+        # if maximal:
+        #     sal, _ = torch.max(sal, dim=0)
+            # sal = sal.unsqueeze(0)
+
         sal = sal.sum(dim=0)
         sal /= sal.sum()
+
+        # Reshape the saliency map.
         sal = sal.reshape(w_out, h_out).t().unsqueeze(0)
         sals.append(sal)
-        # print("sal is", sal.shape)
 
+        # If symmetry is set to True, adjust the saliency map to be symmetric.
         if symmetry:
             print("Using symmetry")
             sal = self.make_symmetric_around_max(sal)        

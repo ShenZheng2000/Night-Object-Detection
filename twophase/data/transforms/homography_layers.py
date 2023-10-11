@@ -163,7 +163,6 @@ class CuboidLayerGlobal(BaseLayerGlobal):
 
 # NOTE: add a middle plane in between the top and bottom planes
 class TripetLayerGlobal(BaseLayerGlobal):
-    # TODO: play with the hyperparameters
     #  min_theta=110, max_theta=120, min_alpha=0.2, max_alpha=0.4,
     #  min_p=1, max_p=5, lambd=0.97, requires_grad=False,
     #  min_theta_top=70, max_theta_top=60,

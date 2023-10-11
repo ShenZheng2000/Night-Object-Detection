@@ -148,7 +148,7 @@ def apply_unwarp(warped_x, grid, keep_size=True):
     B = warped_x.shape[0]
     inverse_grid = inverse_grid.expand(B, -1, -1, -1)
 
-    # Perform unzoom (TODO: might consider using bicubic)
+    # Perform unzoom
     unwarped_x = F.grid_sample(
         warped_x, inverse_grid, mode='bilinear',
         align_corners=True, padding_mode='zeros'
