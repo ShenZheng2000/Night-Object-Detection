@@ -1,6 +1,7 @@
 _BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
 
-WARP_AUG_LZU: False
+WARP_AUG_LZU: True
+WARP_FOVEA: True
 
 # PATH_BLUR: True
 
