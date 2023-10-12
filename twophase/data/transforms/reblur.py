@@ -4,7 +4,6 @@ from .flow_utils import flow_to_numpy_rgb
 import torch
 import time
 import random
-from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
 import os
 
 def vp_flow_generator(im, v_pts, T_z, zeta):
@@ -107,6 +106,7 @@ def apply_path_blur(img, vanishing_point, T_z_values=None, zeta_values=None):
 def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=False):
 
     # Get flip and new_width information
+    from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
     flip = isinstance(flip_transform, HFlipTransform)
     if flip:
         new_width = flip_transform.width

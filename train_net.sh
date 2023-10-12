@@ -659,17 +659,22 @@
 #       > bdd100k_10_9_05x.out 2>&1 &
 
 # tpp
-nohup \
-python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_tpp_05x.yaml \
-      OUTPUT_DIR outputs/bdd100k_tpp_05x \
-      > bdd100k_tpp_05x.out 2>&1 &
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_tpp_05x.yaml \
+#       OUTPUT_DIR outputs/bdd100k_tpp_05x \
+#       > bdd100k_tpp_05x.out 2>&1 &
 
 # bbox-level (WARP_FOVEA_INST)
 
-
 # fovea (WARP_FOVEA)
+nohup \
+python train_net.py \
+      --num-gpus 3 \
+      --config configs/bdd100k_fovea_05x.yaml \
+      OUTPUT_DIR outputs/bdd100k_fovea_05x \
+      > bdd100k_fovea_05x.out 2>&1 &
 
 
 # # train fovea (no lzu!)

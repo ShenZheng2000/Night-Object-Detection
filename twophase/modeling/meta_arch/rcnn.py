@@ -16,6 +16,7 @@ from detectron2.utils.events import get_event_storage
 from detectron2.structures import ImageList
 
 from twophase.data.transforms.grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid
+from twophase.data.transforms.fovea import build_grid_net
 
 # import sys
 # sys.path.append('/root/autodl-tmp/Methods/Night-Object-Detection')
@@ -136,29 +137,13 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
         self.warp_aug_lzu = warp_aug_lzu
         self.warp_aug = warp_aug
-        self.warp_fovea = warp_fovea
-        self.warp_fovea_inst = warp_fovea_inst
-        self.warp_fovea_mix = warp_fovea_mix
-        self.warp_middle = warp_middle
+        # self.warp_fovea = warp_fovea
+        # self.warp_fovea_inst = warp_fovea_inst
+        # self.warp_fovea_mix = warp_fovea_mix
+        # self.warp_middle = warp_middle
 
         # NOTE: define grid_net here (instead of in train.py)
-        self.grid_net = self.build_grid_net()
-
-    def build_grid_net(self):
-        if self.warp_aug_lzu:
-            if self.warp_fovea:
-                saliency_file = 'dataset_saliency.pkl'
-                return FixedKDEGrid(saliency_file,)
-            elif self.warp_fovea_inst:
-                return PlainKDEGrid()
-            elif self.warp_fovea_mix:
-                return MixKDEGrid()
-            elif self.warp_middle:
-                return MidKDEGrid()
-            else:
-                return CuboidGlobalKDEGrid()
-        else:
-            return None
+        self.grid_net = build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle)
 
     def build_discriminator(self):
         self.D_img = FCDiscriminator_img(self.backbone._out_feature_channels[self.dis_type]).to(self.device) # Need to know the channel

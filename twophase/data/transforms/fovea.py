@@ -2,10 +2,27 @@ import torch
 import torch.nn.functional as F
 from .invert_grid import invert_grid
 from .reblur import is_out_of_bounds, get_vanising_points
-from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
 from torchvision import utils as vutils
 import sys
 import os
+
+from .grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid
+
+def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle):
+    if warp_aug_lzu:
+        if warp_fovea:
+            saliency_file = 'dataset_saliency.pkl'
+            return FixedKDEGrid(saliency_file,)
+        elif warp_fovea_inst:
+            return PlainKDEGrid()
+        elif warp_fovea_mix:
+            return MixKDEGrid()
+        elif warp_middle:
+            return MidKDEGrid()
+        else:
+            return CuboidGlobalKDEGrid()
+    else:
+        return None
 
 def unwarp_bboxes(bboxes, grid, output_shape):
     """Unwarps a tensor of bboxes of shape (n, 4) or (n, 5) according to the grid \
@@ -167,6 +184,7 @@ def apply_unwarp(warped_x, grid, keep_size=True):
 
 
 def extract_ratio_and_flip(transform_list):
+    from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
     for transform in transform_list:
         if isinstance(transform, ResizeTransform):
             ratio = transform.new_h / transform.h
