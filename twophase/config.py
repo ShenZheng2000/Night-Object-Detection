@@ -153,4 +153,4 @@ def add_teacher_config(cfg):
     _C.WARP_MIDDLE = False
 
     # NOTE: default warp size is None
-    _C.WARP_SIZE = None
+    _C.WARP_SCALE = 1.0

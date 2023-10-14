@@ -8,19 +8,19 @@ import os
 
 from .grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid
 
-def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_size):
+def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_scale):
     if warp_aug_lzu:
         if warp_fovea:
             saliency_file = 'dataset_saliency.pkl'
-            return FixedKDEGrid(saliency_file, warp_size)
+            return FixedKDEGrid(saliency_file, warp_scale)
         elif warp_fovea_inst:
-            return PlainKDEGrid(warp_size)
+            return PlainKDEGrid(warp_scale)
         elif warp_fovea_mix:
-            return MixKDEGrid(warp_size)
+            return MixKDEGrid(warp_scale)
         elif warp_middle:
-            return MidKDEGrid(warp_size)
+            return MidKDEGrid(warp_scale)
         else:
-            return CuboidGlobalKDEGrid(warp_size)
+            return CuboidGlobalKDEGrid(warp_scale)
     else:
         return None
 
@@ -147,7 +147,12 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     if warp_aug:
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
     elif warp_aug_lzu:
+        # print("BEFORE, ins is", ins.gt_boxes.tensor)
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False)
+        
+    # NOTE: scale ins based on warp_scale
+    ins.gt_boxes.tensor *= grid_net.warp_scale
+    # print("AFTER, ins is", ins.gt_boxes.tensor)
 
     # reshape 4d to 3d
     if (len(img.shape) == 4) and keep_size:

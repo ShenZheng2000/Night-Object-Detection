@@ -668,19 +668,19 @@ python train_net.py \
       > bdd100k_fovea_05x_retrain.out 2>&1 &
 
 
-# # tpp (retrain with correct warping)
-nohup \
-python train_net.py \
-      --num-gpus 3 \
-      --config configs/bdd100k_tpp_05x.yaml \
-      OUTPUT_DIR outputs/bdd100k_tpp_05x_retrain \
-      > bdd100k_tpp_05x_retrain.out 2>&1 &
+# # tpp (retrain with correct warping) => TODO: try this once other training is done
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_tpp_05x.yaml \
+#       OUTPUT_DIR outputs/bdd100k_tpp_05x_retrain \
+#       > bdd100k_tpp_05x_retrain.out 2>&1 &
 
 
 # # bbox-level (retrain with correct warping)
-nohup \
-  python train_net.py \
-  --num-gpus 3 \
-  --config configs/bdd100k_fovea_05x.yaml \
-  OUTPUT_DIR outputs/bdd100k_fovea_05x_retrain \
-  > bdd100k_fovea_05x_retrain.out 2>&1 &
+# nohup \
+#   python train_net.py \
+#   --num-gpus 3 \
+#   --config configs/bdd100k_fovea_05x.yaml \
+#   OUTPUT_DIR outputs/bdd100k_fovea_05x_retrain \
+#   > bdd100k_fovea_05x_retrain.out 2>&1 &

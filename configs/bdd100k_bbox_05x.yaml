@@ -2,7 +2,7 @@ _BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
 
 WARP_AUG_LZU: True
 WARP_FOVEA_INST: True
-WARP_SIZE: (300, 533)
+WARP_SCALE: 0.5
 
 # PATH_BLUR: True
 
