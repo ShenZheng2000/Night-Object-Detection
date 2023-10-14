@@ -133,9 +133,12 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
 
 
 def apply_warp_aug(img, ins, vanishing_point, warp_aug=False, 
-                    warp_aug_lzu=False, grid_net=None, keep_size=True):
+                    warp_aug_lzu=False, grid_net=None, keep_size=True,
+                    file_name=None, processed_files=set()):
     # print(f"img is {img.shape}") # [3, 600, 1067]
     grid = None
+
+    # print("start apply_warp_aug")
 
     img_height, img_width = img.shape[-2:]
     
@@ -148,11 +151,14 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
     elif warp_aug_lzu:
         # print("BEFORE, ins is", ins.gt_boxes.tensor)
+        # print("img shape is", img.shape)
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False)
         
     # NOTE: scale ins based on warp_scale
-    ins.gt_boxes.tensor *= grid_net.warp_scale
-    # print("AFTER, ins is", ins.gt_boxes.tensor)
+    if file_name not in processed_files:
+        # print(f"performs warp_scale of {grid_net.warp_scale}")
+        ins.gt_boxes.tensor *= grid_net.warp_scale
+        processed_files.add(file_name)
 
     # reshape 4d to 3d
     if (len(img.shape) == 4) and keep_size:
@@ -259,8 +265,18 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     #     for image, vp in zip(images.tensor, vanishing_points)
     # ])
     # NOTE: gt bboxes already updated in apply_warp_aug => no need to return
+    # NOTE: add file_name to avoid dup scaling for the same image
+    processed_files = set()
+
     warped_images, _, grids = zip(*[
-        apply_warp_aug(image, sample.get('instances', None), vp, warp_aug, warp_aug_lzu, grid_net) 
+        apply_warp_aug(image, 
+                       sample.get('instances', None), 
+                       vp, 
+                       warp_aug, 
+                       warp_aug_lzu, 
+                       grid_net, 
+                       file_name=sample['file_name'],
+                       processed_files=processed_files) 
         for image, vp, sample in zip(images.tensor, vanishing_points, batched_inputs)
     ])
     warped_images = torch.stack(warped_images)
@@ -287,6 +303,7 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         # Replace the original features with unwarped ones
         features[feature_key] = unwarped_features
 
+    # print("features['res5']", features['res5'].shape) # [BS, C, H, W]
     return features
 
 

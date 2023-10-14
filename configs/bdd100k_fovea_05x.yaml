@@ -2,7 +2,7 @@ _BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
 
 WARP_AUG_LZU: True
 WARP_FOVEA: True
-WARP_SCALE: 0.5
+WARP_SCALE: 1.0
 
 # PATH_BLUR: True
 
@@ -17,4 +17,6 @@ INPUT:
 
 # # NOTE: for single-gpu debug for now, remove later
 # SOLVER:
-#   IMG_PER_BATCH_LABEL: 5
+#   IMG_PER_BATCH_LABEL: 1
+
+# NIGHTAUG: False

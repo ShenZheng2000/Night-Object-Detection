@@ -247,18 +247,19 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
         return results
 
-    def _process_images(self, images, batched_inputs, label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm):
-        if warp_aug_lzu:
-            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
-                                                vp_dict, self.grid_net, self.backbone, 
-                                                warp_debug, warp_image_norm, warp_aug=self.warp_aug)
-        else:
-            features = self.backbone(images.tensor)
+    # NOTE: skip this part for now
+    # def _process_images(self, images, batched_inputs, label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm):
+    #     if warp_aug_lzu:
+    #         features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
+    #                                             vp_dict, self.grid_net, self.backbone, 
+    #                                             warp_debug, warp_image_norm, warp_aug=self.warp_aug)
+    #     else:
+    #         features = self.backbone(images.tensor)
 
-        features = grad_reverse(features[self.dis_type])
-        D_img_out = self.D_img(features)
-        loss_D_img = F.binary_cross_entropy_with_logits(D_img_out, torch.FloatTensor(D_img_out.data.size()).fill_(label).to(self.device))
-        return loss_D_img
+    #     features = grad_reverse(features[self.dis_type])
+    #     D_img_out = self.D_img(features)
+    #     loss_D_img = F.binary_cross_entropy_with_logits(D_img_out, torch.FloatTensor(D_img_out.data.size()).fill_(label).to(self.device))
+    #     return loss_D_img
 
     # incorporate AT training in this code (DONE)
     def forward(
@@ -296,18 +297,19 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         source_label = 0
         target_label = 1
 
-        if branch == "domain":
+        # NOTE: skip this part for now
+        # if branch == "domain":
 
-            # Assuming source_label and target_label are defined somewhere or passed as arguments
-            images_s, images_t = self.preprocess_image_train(batched_inputs)
+        #     # Assuming source_label and target_label are defined somewhere or passed as arguments
+        #     images_s, images_t = self.preprocess_image_train(batched_inputs)
 
-            loss_D_img_s = self._process_images(images_s, batched_inputs, source_label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm)
-            loss_D_img_t = self._process_images(images_t, batched_inputs, target_label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm)
+        #     loss_D_img_s = self._process_images(images_s, batched_inputs, source_label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm)
+        #     loss_D_img_t = self._process_images(images_t, batched_inputs, target_label, warp_aug_lzu, vp_dict, warp_debug, warp_image_norm)
 
-            losses = {}
-            losses["loss_D_img_s"] = loss_D_img_s
-            losses["loss_D_img_t"] = loss_D_img_t
-            return losses, [], [], None
+        #     losses = {}
+        #     losses["loss_D_img_s"] = loss_D_img_s
+        #     losses["loss_D_img_t"] = loss_D_img_t
+        #     return losses, [], [], None
 
         images = self.preprocess_image(batched_inputs)
 
@@ -316,7 +318,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         else:
             gt_instances = None
         
-        # print("before", batched_inputs[0]["instances"])
+        # print("before batched_inputs", batched_inputs[0]["instances"])
 
         # print(f"batched_inputs len is {len(batched_inputs)}, [0].keys() is {batched_inputs[0].keys()}") 
             # 12, dict_keys(['file_name', 'height', 'width', 'image_id', 'transform', 'instances', 'image'])
