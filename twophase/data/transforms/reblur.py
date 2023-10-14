@@ -103,6 +103,44 @@ def apply_path_blur(img, vanishing_point, T_z_values=None, zeta_values=None):
     return img
 
 
+# NOTE: no use for now
+# def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=False, assign_width=None):
+
+#     # Get flip and new_width information
+#     try:
+#         from detectron2.data.transforms import ResizeTransform, HFlipTransform, NoOpTransform
+#         flip = isinstance(flip_transform, HFlipTransform)
+#         new_width = flip_transform.width
+#     except:
+#         flip = flip_transform
+#         new_width = assign_width
+
+#     # if flip:
+#     #     new_width = flip_transform.width
+
+#     # Get the vanishing point for the current image
+#     image_basename = os.path.basename(image_path)
+#     vanishing_point = vanishing_points[image_basename]
+
+#     # print("vanishing_point Before", vanishing_point)
+#     # print("flip is", flip)
+#     # print("new_width  is", new_width)
+
+#     # Scale vanishing_point according to the ratio
+#     vanishing_point = [n * ratio for n in vanishing_point]
+
+#     # print("flip_transform is", flip_transform)
+#     # print(f"vanishing_point Before {vanishing_point}")
+
+#     if flip:
+#         # Flip x-coordinates of vanishing_point
+#         vanishing_point[0] = new_width - vanishing_point[0]
+
+#     # print(f"vanishing_point After {vanishing_point}")
+
+#     return vanishing_point
+
+
 def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=False):
 
     # Get flip and new_width information

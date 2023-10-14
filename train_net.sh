@@ -658,51 +658,29 @@
 #       OUTPUT_DIR outputs/bdd100k_10_9_05x \
 #       > bdd100k_10_9_05x.out 2>&1 &
 
-# tpp
-# nohup \
-# python train_net.py \
-#       --num-gpus 3 \
-#       --config configs/bdd100k_tpp_05x.yaml \
-#       OUTPUT_DIR outputs/bdd100k_tpp_05x \
-#       > bdd100k_tpp_05x.out 2>&1 &
 
-# bbox-level (WARP_FOVEA_INST)
-
-# fovea (WARP_FOVEA)
+# # fovea (retrain with correct warping)
 nohup \
 python train_net.py \
       --num-gpus 3 \
       --config configs/bdd100k_fovea_05x.yaml \
-      OUTPUT_DIR outputs/bdd100k_fovea_05x \
-      > bdd100k_fovea_05x.out 2>&1 &
+      OUTPUT_DIR outputs/bdd100k_fovea_05x_retrain \
+      > bdd100k_fovea_05x_retrain.out 2>&1 &
 
 
-# # train fovea (no lzu!)
-# nohup \
-# python train_net.py \
-#       --num-gpus 3 \
-#       --config configs/bdd100k_10_5_fovea.yaml \
-#       OUTPUT_DIR outputs/bdd100k_10_5_fovea \
-#       > bdd100k_10_5_fovea.out 2>&1 &
+# # tpp (retrain with correct warping)
+nohup \
+python train_net.py \
+      --num-gpus 3 \
+      --config configs/bdd100k_tpp_05x.yaml \
+      OUTPUT_DIR outputs/bdd100k_tpp_05x_retrain \
+      > bdd100k_tpp_05x_retrain.out 2>&1 &
 
-# TODO: have to make sure test (inference) also works well
-# nohup \
-# python train_net.py \
-#       --resume \
-#       --num-gpus 3 \
-#       --config configs/bdd100k_10_2_v2.yaml \
-#       OUTPUT_DIR outputs/bdd100k_10_2_v2 \
-#       MODEL.WEIGHTS outputs/bdd100k_10_2_v2/model_0064999.pth \
-#       > bdd100k_10_2_v2.out 2>&1 &
 
-# TODO: train on (day and night), and test on (night)
-  # lower bound: train on day, test on night
-  # middle bound: train on night, test on night
-  # upper bound: train on (day + night), test on night
-
-# TODO: check category-wise numbers
-
-# TODO: later needs to import correct gt_bbox for testing with bbox-level saliency
-
-# NOTE: modify dataset path in here: twophase/data/datasets/builtin.py
-# NOTE: modify basic configs in here: twophase/config.py
+# # bbox-level (retrain with correct warping)
+nohup \
+  python train_net.py \
+  --num-gpus 3 \
+  --config configs/bdd100k_fovea_05x.yaml \
+  OUTPUT_DIR outputs/bdd100k_fovea_05x_retrain \
+  > bdd100k_fovea_05x_retrain.out 2>&1 &

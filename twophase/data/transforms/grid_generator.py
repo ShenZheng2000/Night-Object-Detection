@@ -197,10 +197,11 @@ class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         used to load saliency during inference.
     """
 
-    def __init__(self, saliency_file, **kwargs):
+    def __init__(self, saliency_file, warp_size=None, **kwargs):
         super(FixedKDEGrid, self).__init__()
         RecasensSaliencyToGridMixin.__init__(self, **kwargs)
         self.saliency = pickle.load(open(saliency_file, 'rb'))
+        self.warp_size = warp_size
         # print("saliency is", self.saliency.shape) # [1, 1, 31, 51]
 
     def forward(self, imgs, v_pts, gt_bboxes # NOTE: vp no use here
@@ -211,7 +212,10 @@ class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         assert len(imgs.shape) == 4, "Expected imgs to be in BCHW format"
         
         # Extract the shape of the input images
-        self.update_output_shape(imgs.shape[2:4])
+        if self.warp_size is None:
+            self.update_output_shape(imgs.shape[2:4])
+        else:
+            self.update_output_shape(self.warp_size)
 
         # vis_options = kwargs.get('vis_options', {})
         device = imgs.device
@@ -226,13 +230,14 @@ class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
     which has a fixed parameter set we learn.
     """
 
-    def __init__(self, homo_layer, **kwargs):
+    def __init__(self, homo_layer, warp_size=None, **kwargs):
         
         # Call parent class constructors
         super(BaseKDEGrid, self).__init__()
         RecasensSaliencyToGridMixin.__init__(self, **kwargs)
 
         self.homo = homo_layer
+        self.warp_size = warp_size
 
     def get_saliency(self, imgs, v_pts):
         device = imgs.device
@@ -250,7 +255,10 @@ class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         assert len(imgs.shape) == 4, f"Expected imgs to be in BCHW format. Now imgs.shape = {imgs.shape}"
         
         # Extract the shape of the input images
-        self.update_output_shape(imgs.shape[2:4])
+        if self.warp_size is None:
+            self.update_output_shape(imgs.shape[2:4])
+        else:
+            self.update_output_shape(self.warp_size)
 
         device = imgs.device
 
@@ -262,8 +270,8 @@ class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
 
 
 class CuboidGlobalKDEGrid(BaseKDEGrid):
-    def __init__(self, **kwargs):
-        super(CuboidGlobalKDEGrid, self).__init__(homo_layer=CuboidLayerGlobal(), **kwargs)
+    def __init__(self, warp_size=None, **kwargs):
+        super(CuboidGlobalKDEGrid, self).__init__(warp_size=warp_size, homo_layer=CuboidLayerGlobal(), **kwargs)
 
 class MidKDEGrid(BaseKDEGrid):
     def __init__(self, 
@@ -274,7 +282,7 @@ class MidKDEGrid(BaseKDEGrid):
                  min_alpha_top=TripetLayerGlobal.DEFAULTS['min_alpha_top'], 
                  max_alpha_top=TripetLayerGlobal.DEFAULTS['max_alpha_top'],
                  **kwargs):
-        super(MidKDEGrid, self).__init__(homo_layer=TripetLayerGlobal(min_theta=min_theta, 
+        super(MidKDEGrid, self).__init__(warp_size=None, homo_layer=TripetLayerGlobal(min_theta=min_theta, 
                                                                       max_theta=max_theta,
                                                                       min_theta_top=min_theta_top, 
                                                                       max_theta_top=max_theta_top,
@@ -403,6 +411,7 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
 
     def __init__(
         self,
+        warp_size=None,
         attraction_fwhm=4,
         bandwidth_scale=64,
         amplitude_scale=1,
@@ -413,13 +422,17 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         self.attraction_fwhm = attraction_fwhm
         self.bandwidth_scale = bandwidth_scale
         self.amplitude_scale = amplitude_scale
+        self.warp_size = warp_size
 
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
         # Check if imgs is in BCHW format
         assert len(imgs.shape) == 4, "Expected imgs to be in BCHW format"
         
         # Extract the shape of the input images
-        self.update_output_shape(imgs.shape[2:4])
+        if self.warp_size is None:
+            self.update_output_shape(imgs.shape[2:4])
+        else:
+            self.update_output_shape(self.warp_size)
 
         img_shape = imgs.shape
         
@@ -472,6 +485,7 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
 class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
 
     def __init__(self, 
+                 warp_size=None,
                  attraction_fwhm = 4,
                  bandwidth_scale = 64,
                  amplitude_scale = 1,
@@ -498,6 +512,8 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         self.alpha = nn.Parameter(torch.tensor(0.5), requires_grad=True)
         self.beta = nn.Parameter(torch.tensor(0.5), requires_grad=True)
 
+        self.warp_size = warp_size
+
     def compute_bbox_saliency(self, imgs, gt_bboxes, jitter):
         # print("gt_bboxes is", gt_bboxes)
         img_shape = imgs.shape
@@ -516,7 +532,10 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         device = imgs.device
 
         # NOTE: hardcode this line here to get image shape
-        self.update_output_shape(imgs.shape[2:4])
+        if self.warp_size is None:
+            self.update_output_shape(imgs.shape[2:4])
+        else:
+            self.update_output_shape(self.warp_size)
         
         # Image-level saliency
         img_saliency = super().get_saliency(imgs, v_pts)

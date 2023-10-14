@@ -151,3 +151,6 @@ def add_teacher_config(cfg):
 
     # NOTE: add middle plane saliency to tpp
     _C.WARP_MIDDLE = False
+
+    # NOTE: default warp size is None
+    _C.WARP_SIZE = None

@@ -8,19 +8,19 @@ import os
 
 from .grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid
 
-def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle):
+def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_size):
     if warp_aug_lzu:
         if warp_fovea:
             saliency_file = 'dataset_saliency.pkl'
-            return FixedKDEGrid(saliency_file,)
+            return FixedKDEGrid(saliency_file, warp_size)
         elif warp_fovea_inst:
-            return PlainKDEGrid()
+            return PlainKDEGrid(warp_size)
         elif warp_fovea_mix:
-            return MixKDEGrid()
+            return MixKDEGrid(warp_size)
         elif warp_middle:
-            return MidKDEGrid()
+            return MidKDEGrid(warp_size)
         else:
-            return CuboidGlobalKDEGrid()
+            return CuboidGlobalKDEGrid(warp_size)
     else:
         return None
 
@@ -76,6 +76,9 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None):
 
     imgs = torch.stack(tuple(imgs), dim=0)
 
+    # print("imgs is", imgs.device)
+    # print("vanishing_point is", vanishing_point)
+    # print("bboxes is", bboxes)
     grid = grid_net(imgs, vanishing_point, bboxes)
     # print("grid shape", grid.shape)
 
@@ -100,6 +103,8 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
     # read bboxes
     if isinstance(ins, torch.Tensor):
         bboxes = ins.to(device)
+    elif ins is None:
+        bboxes = None
     else:
         bboxes = ins.gt_boxes.tensor
         bboxes = bboxes.to(device)
@@ -281,46 +286,42 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
 
 
 def concat_and_save_images(batched_inputs, warped_images, debug=False):
-    """
-    Concatenate original and warped images side by side and save them.
-
-    Inputs:
-    - batched_inputs: List of dictionaries containing image information, including 'image' for original image.
-    - warped_images: List of warped image tensors.
-    - debug: Boolean flag to determine whether to save the images or not.
-
-    Outputs:
-    - None. This function saves the concatenated images if debug is True.
-    """
     cnt = 0
     if debug:
         for (input_info, warped_img) in zip(batched_inputs, warped_images):
-            original_img = input_info['image'].cuda()  # Access the original image
-
+            original_img = input_info['image'].cuda()
+            
             # Switch from BGR to RGB
             original_img = torch.flip(original_img, [0])
             warped_img = torch.flip(warped_img, [0])
-
+            
+            # Debugging: Print the sizes and check for mismatch
+            print(f"Original Image Size: {original_img.shape}")
+            print(f"Warped Image Size: {warped_img.shape}")
+            
+            if original_img.shape != warped_img.shape:
+                print("Resizing original image to match warped image dimensions.")
+                original_img = torch.nn.functional.interpolate(original_img.unsqueeze(0), 
+                                                               size=(warped_img.shape[1], 
+                                                                     warped_img.shape[2])).squeeze(0)
+            
             # Normalize the images
             original_img = (original_img - original_img.min()) / (original_img.max() - original_img.min())
             warped_img = (warped_img - warped_img.min()) / (warped_img.max() - warped_img.min())
-
-            # Concatenate images along width dimension
+            
             combined_image = torch.cat((original_img, warped_img), dim=2)
 
             # Save images to output path
-            file_name = os.path.basename(input_info['file_name'])  # Extract the original file name
+            file_name = os.path.basename(input_info['file_name'])
             file_name_without_extension, file_extension = os.path.splitext(file_name)
 
             warp_out_dir = 'warped_images'
             os.makedirs(warp_out_dir, exist_ok=True)
-
-            # Append cnt to the file name before the extension
+            
             save_path = os.path.join(warp_out_dir, f"{cnt}_{file_name_without_extension}{file_extension}")
-
+            
             vutils.save_image(combined_image, save_path, normalize=True)
             cnt += 1
-        
-        print(f"Saved {cnt} images!")
 
+        print(f"Saved {cnt} images!")
         sys.exit(1)

@@ -102,6 +102,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         warp_fovea_inst: bool = False,
         warp_fovea_mix: bool = False,
         warp_middle: bool = False,
+        warp_size: Tuple[int, int] = (100, 200)
     ):
         """
         Args:
@@ -137,13 +138,19 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
         self.warp_aug_lzu = warp_aug_lzu
         self.warp_aug = warp_aug
+        self.warp_size = warp_size
         # self.warp_fovea = warp_fovea
         # self.warp_fovea_inst = warp_fovea_inst
         # self.warp_fovea_mix = warp_fovea_mix
         # self.warp_middle = warp_middle
 
         # NOTE: define grid_net here (instead of in train.py)
-        self.grid_net = build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle)
+        self.grid_net = build_grid_net(warp_aug_lzu, 
+                                       warp_fovea, 
+                                       warp_fovea_inst, 
+                                       warp_fovea_mix, 
+                                       warp_middle, 
+                                       warp_size)
 
     def build_discriminator(self):
         self.D_img = FCDiscriminator_img(self.backbone._out_feature_channels[self.dis_type]).to(self.device) # Need to know the channel
@@ -170,6 +177,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             "warp_fovea_inst": cfg.WARP_FOVEA_INST,
             "warp_fovea_mix": cfg.WARP_FOVEA_MIX,
             "warp_middle": cfg.WARP_MIDDLE,
+            "warp_size": cfg.WARP_SIZE,
         }
 
     def preprocess_image_train(self, batched_inputs: List[Dict[str, torch.Tensor]]):

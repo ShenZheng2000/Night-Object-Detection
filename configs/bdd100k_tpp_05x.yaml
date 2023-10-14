@@ -1,6 +1,7 @@
 _BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
 
 WARP_AUG_LZU: True
+WARP_SIZE: (300, 533)
 
 # PATH_BLUR: True
 
@@ -10,5 +11,9 @@ WARP_AUG_LZU: True
 # WARP_DEBUG: True
 
 INPUT:
-  MIN_SIZE_TRAIN: (300,)
+  # MIN_SIZE_TRAIN: (300,)
   MIN_SIZE_TEST: 375
+
+# # NOTE: for single-gpu debug for now, remove later
+# SOLVER:
+#   IMG_PER_BATCH_LABEL: 5
