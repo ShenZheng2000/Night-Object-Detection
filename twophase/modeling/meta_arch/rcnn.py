@@ -311,13 +311,10 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         #     losses["loss_D_img_t"] = loss_D_img_t
         #     return losses, [], [], None
 
+        # TODO: think later: whether to use warp_scale for unsupervised stage training
+
         images = self.preprocess_image(batched_inputs)
 
-        if "instances" in batched_inputs[0]:
-            gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-        else:
-            gt_instances = None
-        
         # print("before batched_inputs", batched_inputs[0]["instances"])
 
         # print(f"batched_inputs len is {len(batched_inputs)}, [0].keys() is {batched_inputs[0].keys()}") 
@@ -329,18 +326,29 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
         # NOTE: add zoom-unzoom here
         if warp_aug_lzu:
-            features = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
-                                                   vp_dict, self.grid_net, self.backbone, 
-                                                   warp_debug, warp_image_norm, warp_aug=self.warp_aug)
+            features, images = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
+                                                            vp_dict, self.grid_net, self.backbone, 
+                                                            warp_debug, warp_image_norm, warp_aug=self.warp_aug)
         
             # print("after batched_inputs", batched_inputs[0]["instances"])
 
         else:
             features = self.backbone(images.tensor)
+            
         # first_key = next(iter(features))
         # first_value = features[first_key]
         # print(f"len {len(features)} all_keys {features.keys()} first_key {first_key}, first_value {first_value.shape}")
             # 1, dict_keys(['res5']), res5, torch.Size([BS, 2048, 38, 67])
+
+        # NOTE: move gt_instances to here, since batched_inputs were updated in process_and_update_features
+        if "instances" in batched_inputs[0]:
+            gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
+        else:
+            gt_instances = None
+
+        # print("images.tensor shape", images.tensor.shape)
+        # print("features['res5'] shape", features['res5'].shape)
+        # print("gt_instances", gt_instances)
 
         # TODO: remove the usage of if else here. This needs to be re-organized
         if branch == "supervised":

@@ -5,6 +5,7 @@ from .reblur import is_out_of_bounds, get_vanising_points
 from torchvision import utils as vutils
 import sys
 import os
+from detectron2.structures import ImageList
 
 from .grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid
 
@@ -133,8 +134,7 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
 
 
 def apply_warp_aug(img, ins, vanishing_point, warp_aug=False, 
-                    warp_aug_lzu=False, grid_net=None, keep_size=True,
-                    file_name=None, processed_files=set()):
+                    warp_aug_lzu=False, grid_net=None, keep_size=True):
     # print(f"img is {img.shape}") # [3, 600, 1067]
     grid = None
 
@@ -153,12 +153,6 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
         # print("BEFORE, ins is", ins.gt_boxes.tensor)
         # print("img shape is", img.shape)
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False)
-        
-    # NOTE: scale ins based on warp_scale
-    if file_name not in processed_files:
-        # print(f"performs warp_scale of {grid_net.warp_scale}")
-        ins.gt_boxes.tensor *= grid_net.warp_scale
-        processed_files.add(file_name)
 
     # reshape 4d to 3d
     if (len(img.shape) == 4) and keep_size:
@@ -274,13 +268,40 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
                        vp, 
                        warp_aug, 
                        warp_aug_lzu, 
-                       grid_net, 
-                       file_name=sample['file_name'],
-                       processed_files=processed_files) 
+                       grid_net) 
         for image, vp, sample in zip(images.tensor, vanishing_points, batched_inputs)
     ])
     warped_images = torch.stack(warped_images)
 
+    # NOTE: scale images and ins if necessary
+    if grid_net.warp_scale != 1.0:
+
+        # Scale images
+        scaled_image_tensor = F.interpolate(images.tensor, scale_factor=grid_net.warp_scale, mode='bilinear', align_corners=False)
+        images = ImageList(scaled_image_tensor, images.image_sizes) # TODO: hardcode size for now since images.image_sizes is not used later
+
+        # Scale ins
+        processed_files = set()
+
+        for sample in batched_inputs:
+            ins = sample.get('instances', None)
+
+            file_name = sample.get('file_name')
+            if file_name in processed_files:
+                continue  # Skip this entry if it's been processed already
+            else:
+                processed_files.add(file_name)  # Add the file_name to the set
+
+            # print("before", ins.gt_boxes.tensor)
+            ins.gt_boxes.tensor *= grid_net.warp_scale
+            # print("after", ins.gt_boxes.tensor)
+
+            height, width = ins.image_size
+            # print(f"height = {height}, width = {width}")
+            ins._image_size = (height*grid_net.warp_scale, 
+                            width*grid_net.warp_scale)
+            # new_height, new_width = ins.image_size; print(f"new_height = {new_height}, new_width = {new_width}")
+        
     # Normalize warped images
     if warp_image_norm:
         warped_images = torch.stack([(img - img.min()) / (img.max() - img.min()) * 255 for img in warped_images])
@@ -293,6 +314,8 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     # Call the backbone
     features = backbone(warped_images)
 
+    # print("Before features['res5']", features['res5'].shape) # [BS, C, H, W]
+
     # Apply unwarping
     if not warp_aug:
         feature_key = next(iter(features))
@@ -303,8 +326,9 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         # Replace the original features with unwarped ones
         features[feature_key] = unwarped_features
 
-    # print("features['res5']", features['res5'].shape) # [BS, C, H, W]
-    return features
+    # print("After features['res5']", features['res5'].shape) # [BS, C, H, W]
+    
+    return features, images
 
 
 def concat_and_save_images(batched_inputs, warped_images, debug=False):
