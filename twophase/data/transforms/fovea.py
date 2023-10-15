@@ -260,7 +260,6 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
     # ])
     # NOTE: gt bboxes already updated in apply_warp_aug => no need to return
     # NOTE: add file_name to avoid dup scaling for the same image
-    processed_files = set()
 
     warped_images, _, grids = zip(*[
         apply_warp_aug(image, 
