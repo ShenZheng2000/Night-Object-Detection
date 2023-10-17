@@ -5,9 +5,23 @@ from .reblur import is_out_of_bounds, get_vanising_points
 from torchvision import utils as vutils
 import sys
 import os
-from detectron2.structures import ImageList
+import json
 
 from .grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid
+
+
+# NOTE: read vp from here
+def before_train_json(VP): 
+    # print("VANISHING_POINT is", VP)
+    if VP is not None:
+        with open(VP, 'r') as f:
+            vanishing_point = json.load(f)
+        vanishing_point = {os.path.basename(k): v for k, v in vanishing_point.items()}
+    else:
+        vanishing_point = None
+    # print("vanishing_point is", vanishing_point)
+    return vanishing_point
+
 
 def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_scale):
     if warp_aug_lzu:
@@ -274,6 +288,9 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
 
     # NOTE: scale images and ins if necessary
     if grid_net.warp_scale != 1.0:
+        
+        # Import ImageList
+        from detectron2.structures import ImageList
 
         # Scale images
         scaled_image_tensor = F.interpolate(images.tensor, scale_factor=grid_net.warp_scale, mode='bilinear', align_corners=False)
