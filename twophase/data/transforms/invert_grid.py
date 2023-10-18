@@ -8,10 +8,11 @@ def invert_grid(grid, input_shape, separable=False):
     f = invert_separable_grid if separable else invert_nonseparable_grid
     return f(grid, list(input_shape))
 
-
-@torch.jit.script
+# TODO: hardcode removing this for debug
+# @torch.jit.script
 def invert_separable_grid(grid, input_shape: List[int]):
     grid = grid.clone()
+    # print("==================================================>")
     # print(f"input_shape is {input_shape} grid is {grid.shape}")
     # print(f"torch.isnan is {torch.isnan(grid).any()}")
     # print(f"grid.min is {grid.min()} grid.max is {grid.max()}")

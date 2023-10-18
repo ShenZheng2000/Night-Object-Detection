@@ -255,7 +255,12 @@ class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         self.update_output_shape(tuple(int(dim * self.warp_scale) for dim in imgs.shape[2:4]))
 
         device = imgs.device
+        # print("device", device)
 
+        # print("imgs.shape", imgs.shape) # [1, 3, H, W]
+        # print("img.dtype", imgs.dtype) # torch.float32
+        # print("v_pts is", v_pts) # [v_pts_w, v_pts_h]
+        # print("type(v_pts)[0]", type(v_pts[0])) # <class 'float'>
         self.saliency = self.get_saliency(imgs, v_pts)
 
         grid = self.saliency_to_grid(imgs, self.saliency, device)

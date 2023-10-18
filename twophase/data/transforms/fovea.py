@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from .invert_grid import invert_grid
-from .reblur import is_out_of_bounds, get_vanising_points
+from .reblur import is_out_of_bounds, get_vanising_points, get_vanising_points_mmseg
 from torchvision import utils as vutils
 import sys
 import os
@@ -91,7 +91,7 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None):
 
     imgs = torch.stack(tuple(imgs), dim=0)
 
-    # print("imgs is", imgs.device)
+    # print("imgs.shape is", imgs.shape)
     # print("vanishing_point is", vanishing_point)
     # print("bboxes is", bboxes)
     grid = grid_net(imgs, vanishing_point, bboxes)
@@ -180,7 +180,8 @@ def apply_unwarp(warped_x, grid, keep_size=True):
     if (len(warped_x.shape) == 3) and keep_size:
         warped_x = warped_x.unsqueeze(0)
 
-    # print(f'warped_x is {warped_x.shape} grid is {grid.shape}') # [1, 3, 600, 1067], [1, 600, 1067, 2]
+    # print(f'warped_x is {warped_x.shape}; grid is {grid.shape}') # [1, 2048, 38, 67]; [1, 600, 1067, 2]
+    # print(f'warped_x is {warped_x.dtype}; grid is {grid.dtype}') # torch.float32, torch.float32
 
     # Compute inverse_grid
     inverse_grid = invert_grid(grid, warped_x.shape, separable=True)[0:1]
@@ -344,6 +345,159 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
 
     # print("After features['res5']", features['res5'].shape) # [BS, C, H, W]
     
+    return features, images
+
+
+
+def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone, 
+                warp_debug=False, warp_image_norm=False, warp_aug=False):
+    '''
+    '''
+    # print(f"batched_inputs = {batched_inputs}")   # list: [...]
+    # print(f"images = {images.tensor}")            # detectron2.structures.image_list.ImageList
+    # print(f"warp_aug_lzu = {warp_aug_lzu}")       # bool: True/False
+    # print(f"vp_dict = {vp_dict}")                 # dict: {'xxx.jpg': [vpw, vph], ...}
+    # print(f"grid_net = {grid_net}")               # CuboidGlobalKDEGrid
+    # print(f"backbone = {backbone}")               # ResNet
+    # print(f"warp_debug = {warp_debug}")           # bool: True/False
+    # print(f"warp_image_norm = {warp_image_norm}") # bool: True/False
+    
+    # Preprocessing
+    img_height, img_width = images.shape[-2:]
+    # print("process_mmseg; images.shape", images.shape)
+    # print(f"batched_inputs[0] is", batched_inputs[0]['filename'])
+    # print(f"img_height = {img_height}, img_width = {img_width}") # 512, 1024
+    # TODO: address the issue when cityscape images are forced to be darkzurich image size
+
+    # ori_height, ori_width = batched_inputs[0]['height'], batched_inputs[0]['width']
+    # print("batched_inputs is", batched_inputs)
+    ori_height, ori_width, _ = batched_inputs[0]['ori_shape']
+    # print(f"ori_height = {ori_height}, ori_width = {ori_width}") # 1024, 2048
+
+    # vanishing_points = [
+    #     get_vanising_points(
+    #         sample['file_name'], 
+    #         vp_dict, 
+    #         *extract_ratio_and_flip(sample['transform'])
+    #     ) for sample in batched_inputs
+    # ]
+
+    vanishing_points = []
+    for sample in batched_inputs:
+        # Handle the absence of 'transform' key in test case
+        ratio, flip = img_height/ori_height, sample['flip']  # Or any default value suitable for your case
+        # print("ratio is ", ratio) # 0.5
+        # print("flip is", flip) # True/False
+            
+        vp = get_vanising_points_mmseg(sample['filename'], vp_dict, ratio, flip, img_width)
+        vanishing_points.append(vp)
+
+    # NOTE: skip for for now, since all vps are valid
+    # # Correcting vanishing_points if they are out of bounds
+    # corrected_vanishing_points = []
+    # for vp in vanishing_points:
+    #     if is_out_of_bounds(vp, img_width, img_height):
+    #         vp_x = min(max(1, vp[0]), img_width - 2)
+    #         vp_y = min(max(1, vp[1]), img_height - 2)
+    #         print(f"Vanishing point {vp} was out of bounds and has been clipped to {[vp_x, vp_y]}")
+    #         corrected_vanishing_points.append([vp_x, vp_y])
+    #     else:
+    #         corrected_vanishing_points.append(vp)
+    
+    # vanishing_points = corrected_vanishing_points  # Update the vanishing_points list
+
+    # Apply warping
+    # warped_images, _, grids = zip(*[
+    #     apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
+    #     for image, vp in zip(images.tensor, vanishing_points)
+    # ])
+    # NOTE: gt bboxes already updated in apply_warp_aug => no need to return
+    # NOTE: add file_name to avoid dup scaling for the same image
+
+    # TODO: generate bbox-level saliency information for instances later
+    warped_images, _, grids = zip(*[
+        apply_warp_aug(image, 
+                       sample.get('instances', None), 
+                       vp, 
+                       warp_aug, 
+                       warp_aug_lzu, 
+                       grid_net) 
+        for image, vp, sample in zip(images, vanishing_points, batched_inputs)
+    ])
+    warped_images = torch.stack(warped_images)
+
+    # print("warped_images shape", warped_images.shape) # [2, 3, 512, 1024]
+    if warp_debug:
+        first_image = images[0]
+        first_warped_image = warped_images[0]
+        cat_image = torch.cat([first_image, first_warped_image], dim=2)
+        vutils.save_image(cat_image, f"visuals/warped_images_{grid_net.__class__.__name__}.png", normalize=True)
+        exit()
+
+    # NOTE: scale images and ins if necessary
+    # TODO: debug this with this mmseg function later
+    if grid_net.warp_scale != 1.0:
+        
+        # Import ImageList
+        from detectron2.structures import ImageList
+
+        # Scale images
+        scaled_image_tensor = F.interpolate(images, scale_factor=grid_net.warp_scale, mode='bilinear', align_corners=False)
+        images = ImageList(scaled_image_tensor, images.image_sizes) # TODO: hardcode size for now since images.image_sizes is not used later
+
+        # Scale ins
+        processed_files = set()
+
+        for sample in batched_inputs:
+            ins = sample.get('instances', None)
+
+            file_name = sample.get('file_name')
+            if file_name in processed_files:
+                continue  # Skip this entry if it's been processed already
+            else:
+                processed_files.add(file_name)  # Add the file_name to the set
+
+            # print("before", ins.gt_boxes.tensor)
+            ins.gt_boxes.tensor *= grid_net.warp_scale
+            # print("after", ins.gt_boxes.tensor)
+
+            height, width = ins.image_size
+            # print(f"height = {height}, width = {width}")
+            ins._image_size = (height*grid_net.warp_scale, 
+                            width*grid_net.warp_scale)
+            # new_height, new_width = ins.image_size; print(f"new_height = {new_height}, new_width = {new_width}")
+        
+    # Normalize warped images
+    if warp_image_norm:
+        warped_images = torch.stack([(img - img.min()) / (img.max() - img.min()) * 255 for img in warped_images])
+
+    # debug images
+    # print("len batched_inputs", len(batched_inputs)) # BS
+    # print("warped_images", warped_images.shape) # [BS, C, H, W]
+    # concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
+
+    # Call the backbone
+    features = backbone(warped_images) # a list with many torch tensors
+
+    # Apply unwarping to all feature levels
+    # TODO: vetorize later
+    if not warp_aug:
+
+        for idx, feature_level in enumerate(features):
+            unwarped_list = []
+                
+            for batch_idx in range(feature_level.size(0)):  # Loop over the batch size
+                feature = feature_level[batch_idx]
+                grid = grids[batch_idx]
+                # print(f"feature shape = {feature.shape}") # [64, 128, 256]
+                # print(f"grid shape = {grid.shape}") # [1, 512, 1024, 2]
+                unwarped = apply_unwarp(feature, grid)
+                unwarped_list.append(unwarped)
+
+            # Stack the results along the batch dimension again
+            features[idx] = torch.stack(unwarped_list)
+            # print(f"idx = {idx}, features[idx] shape = {features[idx].shape}")
+
     return features, images
 
 
