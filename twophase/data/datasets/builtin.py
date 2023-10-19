@@ -183,7 +183,7 @@ register_all_cityscapes_foggy(_root)
 register_all_clipart(_root)
 register_all_water(_root)
 
-data_path = '/root/autodl-tmp/Datasets'
+data_path = '/home/aghosh/Projects/2PCNet/Datasets'
 enhance_path = '/home/aghosh/Projects/2PCNet/LLIE/Results'
 
 # NOTE: warp for LLIE enhanced images
