@@ -183,7 +183,7 @@ register_all_cityscapes_foggy(_root)
 register_all_clipart(_root)
 register_all_water(_root)
 
-data_path = '/home/aghosh/Projects/2PCNet/Datasets'
+data_path = '/root/autodl-tmp/Datasets'
 enhance_path = '/home/aghosh/Projects/2PCNet/LLIE/Results'
 
 # NOTE: warp for LLIE enhanced images
@@ -228,6 +228,31 @@ register_coco_instances("bdd100k_day_train_valid_vp",
 {}, 
 f'{data_path}/bdd100k/coco_labels/train_day_valid_vp.json', 
 f'{data_path}/bdd100k/images/100k/train')
+
+
+
+# NOTE: 
+register_coco_instances("bdd100k_clear_train_valid_vp",
+{}, 
+f'{data_path}/bdd100k/coco_labels/train_clear_valid_vp.json', 
+f'{data_path}/bdd100k/images/100k/train')
+
+
+register_coco_instances("bdd100k_rainy_train",
+{}, 
+f'{data_path}/bdd100k/coco_labels/train_rainy.json', 
+f'{data_path}/bdd100k/images/100k/train')
+
+
+# NOTE: 
+register_coco_instances("bdd100k_rainy_val",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_rainy.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+
+
+
 
 register_coco_instances("bdd100k_night_train", 
 {}, 
