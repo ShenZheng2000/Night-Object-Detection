@@ -9,11 +9,15 @@ DATASETS:
   TRAIN_UNLABEL: ("bdd100k_rainy_train",) #Clipart1k_train
   TEST: ("bdd100k_rainy_val",) #Clipart1k_test
 
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_clear.json"
+
 # PATH_BLUR: True
-WARP_AUG_LZU: False
+# WARP_AUG_LZU: True
+
+# NOTE: TURN DOWN the nightaug for clear2rainy here
 
 # USE_DEBUG: True
 # TWO_PC_AUG: False
 # AUG_PROB: 1.0
 # WARP_DEBUG: True
-
+NIGHTAUG: False
