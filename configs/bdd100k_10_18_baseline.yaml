@@ -12,7 +12,7 @@ DATASETS:
 VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_clear.json"
 
 # PATH_BLUR: True
-# WARP_AUG_LZU: True
+WARP_AUG_LZU: False
 
 # NOTE: TURN DOWN the nightaug for clear2rainy here
 

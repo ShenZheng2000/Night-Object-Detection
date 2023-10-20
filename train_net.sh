@@ -700,4 +700,8 @@ train_bdd() {
 }
 
 
-train_bdd "bdd100k_10_18_baseline"
+# train_bdd "bdd100k_10_18_baseline"
+
+# train_bdd "bdd100k_10_18_tpp"
+
+train_bdd "bdd100k_10_18_bbox"
