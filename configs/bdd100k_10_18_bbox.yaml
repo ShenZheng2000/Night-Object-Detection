@@ -3,4 +3,4 @@ _BASE_: "./bdd100k_10_18_baseline.yaml"
 
 WARP_AUG_LZU: True
 WARP_FOVEA_INST: True
-WARP_DEBUG: True
+# WARP_DEBUG: True

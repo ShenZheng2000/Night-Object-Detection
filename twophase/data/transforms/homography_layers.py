@@ -11,6 +11,10 @@ import sys
 from torchvision.utils import save_image
 import cv2
 
+from .homography_torch import find_homography_dlt_unnormalized
+from .perspective_fix import warp_perspective
+
+
 # NOTE: add a base class for others to inherit
 class BaseLayerGlobal(nn.Module):
     def __init__(self, 
@@ -80,15 +84,51 @@ class BaseLayerGlobal(nn.Module):
         pt_dst = torch.tensor([[
             [0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]
         ]], dtype=torch.float32, device=self.device).repeat(B, 1, 1)
-        M = K.geometry.get_perspective_transform(pt_dst, pt_src)
+        # print(f"pt_dst: {pt_dst}, pt_src: {pt_src}")
+
+        try:
+            M = K.geometry.get_perspective_transform(pt_dst, pt_src)
+        except:
+            # print("doing find_homography_dlt_unnormalized")
+            # print(f"pt_dst = {pt_dst}, pt_src = {pt_src}")
+
+            M = find_homography_dlt_unnormalized(pt_dst, pt_src) # [1, 4, 2], [1, 4, 2] => [1, 3, 3]
+
+            # # TODO: use identify matrix of size [1, 3, 3] for now
+            # M = torch.zeros([1, 3, 3], device='cuda')
+
+            # torch.cuda.empty_cache() # NOTE: use this to avoud OOM
+            # M = torch.tensor([[[ 0.30689, -0.72058, 368.22],
+            #                 [ 0.0052209, 0.065667, 117.92],
+            #                 [ 0.000010226, -0.0013768, 1.0000]]], device='cuda')
+            # print("M is", M)
+            # print('finishing find_homography_dlt_unnormalized')
+        # M = K.geometry.homography.find_homography_dlt_iterated(pt_dst, pt_src, torch.ones(B, 4, device=self.device)) => no need for now
+        
         return pt_src, M
     
     def map_warp(self, B, v_pts, thetas_l, thetas_r, alphas_1, alphas_2, ps, bottom):
         points_src, M = self.parametric_homography(v_pts, thetas_l, thetas_r, alphas_1, alphas_2, bottom)
         init_map = self.init_map.to(self.device).repeat(B, 1, 1, 1)        
         init_map = torch.exp( torch.mul(ps, init_map) )
-        map_warp: torch.tensor = K.geometry.warp_perspective(init_map.float(), M, 
-                                    dsize=( round(self.im_shape[0]), round(self.im_shape[1]) ))
+
+        try:
+            map_warp: torch.tensor = K.geometry.warp_perspective(init_map.float(), M, 
+                                        dsize=( round(self.im_shape[0]), round(self.im_shape[1]) ))
+        except:
+            # print("doing warp_perspective")
+            map_warp: torch.tensor = warp_perspective(init_map.float(), M, 
+                                        dsize=( round(self.im_shape[0]), round(self.im_shape[1]) ))
+            # print("map_warp CORR is", map_warp.shape)
+
+            # # torch.cuda.empty_cache()
+            # TODO: hardcode init_map for now
+            map_warp: torch.tensor = init_map
+
+            # print("finishing warp_perspective")
+            # print("map_warp.mean() is", map_warp.mean())
+            # print("map_warp INIT is", map_warp.shape)
+
         return points_src, map_warp
 
     def process_warp(self, B, v_pts, thetas_l, thetas_r, alphas_1, alphas_2, p, bottom_flag):
@@ -156,12 +196,15 @@ class CuboidLayerGlobal(BaseLayerGlobal):
 
         if vis_flag:
             save_image(map_warp, f"cuboid_layer_global.png")
+            exit()
             # self.visualize(v_pts, bottom, top, filename='cuboid_layer_global.png')
+        
+        # save_image(map_warp, f"cuboid_layer_global.png"); exit()
 
         return map_warp
 
 
-# NOTE: add a middle plane in between the top and bottom planes
+# # NOTE: add a middle plane in between the top and bottom planes
 class TripetLayerGlobal(BaseLayerGlobal):
     #  min_theta=110, max_theta=120, min_alpha=0.2, max_alpha=0.4,
     #  min_p=1, max_p=5, lambd=0.97, requires_grad=False,

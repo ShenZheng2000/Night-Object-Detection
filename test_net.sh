@@ -51,3 +51,11 @@ test_net_wrapper_05x(){
 #       --config configs/bdd100k_10_9_05x.yaml \
 #       MODEL.WEIGHTS "outputs/bdd100k_10_9_05x/model_final.pth" \
 #       OUTPUT_DIR outputs/bdd100k_10_9_05x \
+
+
+python train_net.py \
+  --num-gpus 3 \
+  --eval-only \
+  --config "configs/bdd100k_10_18_bbox.yaml" \
+  MODEL.WEIGHTS "outputs/bdd100k_10_18_bbox/model_0114999.pth" \
+  OUTPUT_DIR "outputs/bdd100k_10_18_bbox"

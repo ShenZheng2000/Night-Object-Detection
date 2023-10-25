@@ -219,7 +219,48 @@ class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         grid = self.saliency_to_grid(imgs, self.saliency, device)
 
         return grid
+
+
+def create_centered_gradient_tensor(saliency_shape, saliency_min, saliency_max):
+    B, C, H, W = saliency_shape
     
+    # Create a grid
+    x = torch.linspace(-1, 1, W, device="cuda").view(1, 1, 1, W).expand(B, C, H, W)
+    y = torch.linspace(-1, 1, H, device="cuda").view(1, 1, H, 1).expand(B, C, H, W)
+    
+    # Compute the distance to the center
+    dist = torch.sqrt(x ** 2 + y ** 2)
+    dist_norm = (dist - dist.min()) / (dist.max() - dist.min())
+    
+    # Linearly scale the distance between the minimum and maximum values
+    gradient_tensor = saliency_min + (1 - dist_norm) * (saliency_max - saliency_min)
+    
+    return gradient_tensor
+
+
+# TODO: later merge with previous function FixedKDEGrid
+class FixedKDEGrid_New(FixedKDEGrid):
+    """ Grid generator that uses a fixed saliency map -- KDE SD.
+        
+        If the vanishing point is fixed, this class can be instead 
+        used to load saliency during inference.
+    """
+    def __init__(self, saliency_file, warp_scale=1.0, **kwargs):
+        super(FixedKDEGrid_New, self).__init__(saliency_file, warp_scale, **kwargs)
+
+        # print("saliency shape", self.saliency.shape) # [1, 1, 31, 51]")
+        # print("saliency min", self.saliency.min()) # 0.0002
+        # print("saliency max", self.saliency.max()) # 0.0115
+
+        self.saliency = create_centered_gradient_tensor(self.saliency.shape, self.saliency.min(), self.saliency.max())
+
+        # print(self.saliency)
+        # print("saliency shape", self.saliency.shape) # [1, 1, 31, 51]")
+        # print("saliency min", self.saliency.min()) # 0.0002
+        # print("saliency max", self.saliency.max()) # 0.0115
+        # exit()
+
+
 
 class BaseKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
     """
@@ -294,11 +335,12 @@ class MidKDEGrid(BaseKDEGrid):
 # NOTE: write this as separate class to reduce code duplication
 class SaliencyMixin:
     # NOTE: single bboxes always symmetric, but multiple bboxes are not
-    # TODO: combine saliency map wisely (instead of simple adding them together)
     def bbox2sal(self, batch_bboxes, img_shape, jitter=None, symmetry=False, maximal=False):
         # print("batch_bboxes.shape is", batch_bboxes.shape) # [N, 4]
         # Get the device of the bounding boxes.
-        device = batch_bboxes[0].device
+        # NOTE: change this to avoid empty bboxes
+        # device = batch_bboxes[0].device
+        device = batch_bboxes.device
         
         # Define the output saliency map dimensions.
         h_out, w_out = self.grid_shape
@@ -320,10 +362,13 @@ class SaliencyMixin:
         bboxes = batch_bboxes
 
         # Convert bounding boxes from left-top right-bottom format to left-top width-height format
+        # print("before", bboxes)
         bboxes[:, 2:] -= bboxes[:, :2]  
+        # print("after", bboxes)
 
         # Calculate the center of each bounding box.
         cxy = bboxes[:, :2] + 0.5 * bboxes[:, 2:]
+        # print(f"cxy is", cxy.min(), cxy.max())
 
         # If jitter is provided, add random noise to the center coordinates.
         if jitter is not None:
@@ -332,6 +377,13 @@ class SaliencyMixin:
         # Calculate the scaled widths and heights.
         widths = (bboxes[:, 2] * self.bandwidth_scale).unsqueeze(1)
         heights = (bboxes[:, 3] * self.bandwidth_scale).unsqueeze(1)
+
+        # NOTE: clip widths and heights by 1
+        widths = torch.clamp(widths, min=1)
+        heights = torch.clamp(heights, min=1)
+
+        # print("widths is", widths.min(), widths.max())
+        # print("heights is", heights.min(), heights.max())
 
         # Create mesh grids corresponding to image dimensions.
         X, Y = torch.meshgrid(
@@ -346,7 +398,11 @@ class SaliencyMixin:
         # Compute the norm for distance calculations.
         norm1 = (cxy[:, 0:1] ** 2 / widths + cxy[:, 1:2] ** 2 / heights).expand(m, n)
         norm2 = grids[0:1, :] ** 2 / widths + grids[1:2, :] ** 2 / heights
+        # print("norm1.min", norm1.min(), "norm1.max", norm1.max())
+        # print("norm2.min", norm2.min(), "norm2.max", norm2.max())
+
         norms = norm1 + norm2
+        # print("norms.min", norms.min(), "norms.max", norms.max())
 
         # Normalize the bounding box centers.
         cxy_norm = cxy
@@ -440,10 +496,18 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
                 batch_bboxes = gt_bboxes[0].clone()  # noqa: E501, removing the augmentation dimension
             else:
                 batch_bboxes = [bboxes.clone() for bboxes in gt_bboxes]
-        device = batch_bboxes[0].device
-        saliency = self.bbox2sal(batch_bboxes, img_shape, jitter)
 
-        # # ################# For debug only #################
+        # NOTE: stop hardcode using batch_bboxes
+        # TODO: hardcode only for debug
+        # device = batch_bboxes[0].device
+        device = batch_bboxes.device
+        # print("device is", device); exit()
+
+        # print("batch_bboxes is", batch_bboxes)
+        saliency = self.bbox2sal(batch_bboxes, img_shape, jitter)
+        # print(f"saliency min {saliency.min()}, max {saliency.max()}, mean {saliency.mean()}")
+
+        # # ################# TODO: for debug only #################
         # v_pts = torch.tensor(v_pts, device=device)
         # v_pts = v_pts.unsqueeze(0)
 

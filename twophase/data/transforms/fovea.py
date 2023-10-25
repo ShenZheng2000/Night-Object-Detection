@@ -1,13 +1,24 @@
 import torch
 import torch.nn.functional as F
 from .invert_grid import invert_grid
-from .reblur import is_out_of_bounds, get_vanising_points, get_vanising_points_mmseg
+from .reblur import is_out_of_bounds, get_vanising_points, update_vp_ins
 from torchvision import utils as vutils
+
+from .grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid, FixedKDEGrid_New
+
 import sys
 import os
 import json
+import torch
 
-from .grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid
+
+def read_seg_to_det(SEG_TO_DET):
+    if SEG_TO_DET is not None:
+        with open(SEG_TO_DET, 'r') as f:
+            seg_to_det = json.load(f)
+    else:
+        seg_to_det = None
+    return seg_to_det
 
 
 # NOTE: read vp from here
@@ -23,11 +34,14 @@ def before_train_json(VP):
     return vanishing_point
 
 
-def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_scale):
+def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_scale,
+                   warp_fovea_center):
     if warp_aug_lzu:
+        saliency_file = 'dataset_saliency.pkl'
         if warp_fovea:
-            saliency_file = 'dataset_saliency.pkl'
             return FixedKDEGrid(saliency_file, warp_scale)
+        elif warp_fovea_center:
+            return FixedKDEGrid_New(saliency_file, warp_scale)
         elif warp_fovea_inst:
             return PlainKDEGrid(warp_scale)
         elif warp_fovea_mix:
@@ -118,6 +132,8 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
     # read bboxes
     if isinstance(ins, torch.Tensor):
         bboxes = ins.to(device)
+    elif isinstance(ins, list):
+        bboxes = torch.tensor(ins).to(device)
     elif ins is None:
         bboxes = None
     else:
@@ -250,8 +266,9 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
             # Handle the absence of 'transform' key in test case
             ratio, flip = img_height/ori_height, False  # Or any default value suitable for your case
         # print("ratio is ", ratio)
-            
+        
         vp = get_vanising_points(sample['file_name'], vp_dict, ratio, flip)
+        # TODO: scale instances using ratio and flip also
         vanishing_points.append(vp)
 
     # NOTE: skip for for now, since all vps are valid
@@ -349,12 +366,26 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
 
 
 
+# def add_bbox_to_meta(self, img_metas):
+#     if img_metas is None:
+#         return img_metas
+    
+#     if self.seg_to_det is None:
+#         return img_metas
+    
+#     for meta in img_metas:
+#         bboxes = self.seg_to_det.get(meta['ori_filename'], [])
+#         meta['instances'] = bboxes
+    
+#     return img_metas
+
+
 def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone, 
-                warp_debug=False, warp_image_norm=False, warp_aug=False):
+                warp_debug=False, warp_image_norm=False, warp_aug=False, seg_to_det=None):
     '''
     '''
     # print(f"batched_inputs = {batched_inputs}")   # list: [...]
-    # print(f"images = {images.tensor}")            # detectron2.structures.image_list.ImageList
+    # print(f"images = {images.shape}")            # torch tensor
     # print(f"warp_aug_lzu = {warp_aug_lzu}")       # bool: True/False
     # print(f"vp_dict = {vp_dict}")                 # dict: {'xxx.jpg': [vpw, vph], ...}
     # print(f"grid_net = {grid_net}")               # CuboidGlobalKDEGrid
@@ -367,7 +398,6 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # print("process_mmseg; images.shape", images.shape)
     # print(f"batched_inputs[0] is", batched_inputs[0]['filename'])
     # print(f"img_height = {img_height}, img_width = {img_width}") # 512, 1024
-    # TODO: address the issue when cityscape images are forced to be darkzurich image size
 
     # ori_height, ori_width = batched_inputs[0]['height'], batched_inputs[0]['width']
     # print("batched_inputs is", batched_inputs)
@@ -385,12 +415,15 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     vanishing_points = []
     for sample in batched_inputs:
         # Handle the absence of 'transform' key in test case
-        ratio, flip = img_height/ori_height, sample['flip']  # Or any default value suitable for your case
-        # print("ratio is ", ratio) # 0.5
+        ratio = img_height/ori_height  # Or any default value suitable for your case
+        # print("ratio is ",  ratio) # 0.5
         # print("flip is", flip) # True/False
-            
-        vp = get_vanising_points_mmseg(sample['filename'], vp_dict, ratio, flip, img_width)
-        vanishing_points.append(vp)
+
+        update_vp_ins(sample, vp_dict, ratio, img_width, seg_to_det)
+
+        vanishing_points.append(sample['vanishing_point'])
+
+        # print("vp ==", sample['vanishing_point'])
 
     # NOTE: skip for for now, since all vps are valid
     # # Correcting vanishing_points if they are out of bounds
@@ -415,6 +448,8 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # NOTE: add file_name to avoid dup scaling for the same image
 
     # TODO: generate bbox-level saliency information for instances later
+    # print("start apply_warp_aug")
+    # TODO: think about scaling instances, not just images
     warped_images, _, grids = zip(*[
         apply_warp_aug(image, 
                        sample.get('instances', None), 
@@ -425,8 +460,10 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
         for image, vp, sample in zip(images, vanishing_points, batched_inputs)
     ])
     warped_images = torch.stack(warped_images)
+    # print("end apply_warp_aug")
 
     # print("warped_images shape", warped_images.shape) # [2, 3, 512, 1024]
+    # TODO: change later so it save both the source and target images
     if warp_debug:
         first_image = images[0]
         first_warped_image = warped_images[0]
@@ -477,10 +514,13 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
 
     # Call the backbone
+    # print("start backbone")
     features = backbone(warped_images) # a list with many torch tensors
+    # print("end backbone")
 
     # Apply unwarping to all feature levels
     # TODO: vetorize later
+    # print("start unwarp")
     if not warp_aug:
 
         for idx, feature_level in enumerate(features):
@@ -497,6 +537,7 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
             # Stack the results along the batch dimension again
             features[idx] = torch.stack(unwarped_list)
             # print(f"idx = {idx}, features[idx] shape = {features[idx].shape}")
+    # print("end unwarp")
 
     return features, images
 
@@ -541,3 +582,17 @@ def concat_and_save_images(batched_inputs, warped_images, debug=False):
 
         print(f"Saved {cnt} images!")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    json_path = "/home/aghosh/Projects/2PCNet/Datasets/cityscapes_seg2det.json"
+    seg_to_det = read_seg_to_det(json_path)
+
+    for idx, (image_path, bboxes) in enumerate(seg_to_det.items()):
+        print(f"Image Path: {image_path}")
+        for j, bbox in enumerate(bboxes, 1):
+            print(f"    Bounding Box {j}: Top-Left ({bbox[0]}, {bbox[1]}), Bottom-Right ({bbox[2]}, {bbox[3]})")
+        print("\n")  # Separate different image data with a newline
+        
+        if idx == 2:  # Stop after 3 items
+            break

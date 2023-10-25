@@ -688,20 +688,20 @@
 
 # python train_net.py --num-gpus 3 --config configs/bdd100k_9_18_v2.yaml OUTPUT_DIR outputs/bdd100k_9_18_v2_debug
 
-train_bdd() {
-  local name="$1"
+# train_bdd() {
+#   local name="$1"
 
-  nohup \
-    python train_net.py \
-    --num-gpus 3 \
-    --config "configs/${name}.yaml" \
-    OUTPUT_DIR "outputs/${name}" \
-    > "${name}.out" 2>&1 &
-}
+#   nohup \
+#     python train_net.py \
+#     --num-gpus 3 \
+#     --config "configs/${name}.yaml" \
+#     OUTPUT_DIR "outputs/${name}" \
+#     > "${name}.out" 2>&1 &
+# }
 
 
 # train_bdd "bdd100k_10_18_baseline"
 
 # train_bdd "bdd100k_10_18_tpp"
 
-train_bdd "bdd100k_10_18_bbox"
+# train_bdd "bdd100k_10_18_bbox"
