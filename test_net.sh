@@ -45,11 +45,11 @@ function test_rainy() {
 
 # test_night_05x "bdd100k_10_9_05x"
 # test_night_05x "bdd100k_bbox_05x_retrain"
-# test_night_05x "bdd100k_fovea_05x_retrain" # TODO
-# test_night_05x "bdd100k_tpp_05x_retrain"  # TODO
+# test_night_05x "bdd100k_fovea_05x_retrain"
+test_night_05x "bdd100k_tpp_05x_retrain"
 
-# test_rainy "bdd100k_10_18_baseline" # TODO
-# test_rainy "bdd100k_10_18_fovea"  # TODO
+# test_rainy "bdd100k_10_18_baseline"
+# test_rainy "bdd100k_10_18_fovea"
 # test_rainy "bdd100k_10_18_tpp"
 # test_rainy "bdd100k_10_18_bbox"
 

@@ -174,8 +174,9 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     
     # NOTE: this for debug only
     if is_out_of_bounds(vanishing_point, img_width, img_height):
-        print("both vp coords OOB. Training Stops!!!!")
-        sys.exit(1)
+        print("Warning: both vp coords OOB. !!!!")
+        vanishing_point = (img_width // 2, img_height // 2)  # Set vanishing point to image center
+        # sys.exit(1)
         # return img, ins, grid
     if warp_aug:
         img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
