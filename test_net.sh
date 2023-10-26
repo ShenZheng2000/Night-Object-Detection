@@ -1,61 +1,57 @@
-#!/bin/bash
-
-# NOTE: let's test all on day images!
-# test_net_wrapper(){
-#     local model_name="$1"
+function test_night() {
+    local MODEL_NAME="$1"
     
-#     python train_net.py \
-#       --num-gpus 3 \
-#       --eval-only \
-#       --config "configs/bdd100k_test_day.yaml" \
-#       MODEL.WEIGHTS "outputs/${model_name}/model_final.pth" \
-#       OUTPUT_DIR "outputs/${model_name}"
-# }
-
-
-test_net_wrapper_05x(){
-    local model_name="$1"
-    
+    CUDA_VISIBLE_DEVICES=2 \
     python train_net.py \
-      --num-gpus 3 \
-      --eval-only \
-      --config "configs/bdd100k_test_day_05x.yaml" \
-      MODEL.WEIGHTS "outputs/${model_name}/model_final.pth" \
-      OUTPUT_DIR "outputs/${model_name}"
+        --num-gpus 1 \
+        --eval-only \
+        --config "configs/bdd100k_test_night.yaml" \
+        MODEL.WEIGHTS "outputs/${MODEL_NAME}/model_final.pth" \
+        OUTPUT_DIR "outputs/${MODEL_NAME}/night"
 }
 
-# test_net_wrapper "warp_aug_8_2"
 
-# test_net_wrapper "warp_aug_9_12"
+function test_night_05x() {
+    local MODEL_NAME="$1"
+    
+    CUDA_VISIBLE_DEVICES=2 \
+    python train_net.py \
+        --num-gpus 1 \
+        --eval-only \
+        --config "configs/bdd100k_test_night_05.yaml" \
+        MODEL.WEIGHTS "outputs/${MODEL_NAME}/model_final.pth" \
+        OUTPUT_DIR "outputs/${MODEL_NAME}/night_05"
+}
 
-# test_net_wrapper "bdd100k_9_22_v1"
-
-# test_net_wrapper_05x "bdd100k_bbox_05x_retrain"
-
-# test_net_wrapper_05x "bdd100k_10_9_05x"
-
-# # NOTE: for testing baseline model on day images
-# python train_net.py \
-#       --num-gpus 3 \
-#         --eval-only \
-#       --config configs/bdd100k_test_day.yaml \
-#       MODEL.WEIGHTS outputs/pretrained/model_final.pth \
-#       OUTPUT_DIR outputs/pretrained \
-
-
-
-# Let's test on night images!
-# python train_net.py \
-#       --num-gpus 3 \
-#       --eval-only \
-#       --config configs/bdd100k_10_9_05x.yaml \
-#       MODEL.WEIGHTS "outputs/bdd100k_10_9_05x/model_final.pth" \
-#       OUTPUT_DIR outputs/bdd100k_10_9_05x \
+function test_rainy() {
+    local MODEL_NAME="$1"
+    
+    CUDA_VISIBLE_DEVICES=2 \
+    python train_net.py \
+        --num-gpus 1 \
+        --eval-only \
+        --config "configs/bdd100k_test_rainy.yaml" \
+        MODEL.WEIGHTS "outputs/${MODEL_NAME}/model_final.pth" \
+        OUTPUT_DIR "outputs/${MODEL_NAME}/rainy"
+}
 
 
-python train_net.py \
-  --num-gpus 3 \
-  --eval-only \
-  --config "configs/bdd100k_10_18_bbox.yaml" \
-  MODEL.WEIGHTS "outputs/bdd100k_10_18_bbox/model_0114999.pth" \
-  OUTPUT_DIR "outputs/bdd100k_10_18_bbox"
+
+# test_night "pretrained"
+# test_night "warp_aug_9_12"
+# test_night "warp_aug_8_2"
+# test_night "bdd100k_9_22_v1"
+
+
+# test_night_05x "bdd100k_10_9_05x"
+# test_night_05x "bdd100k_bbox_05x_retrain"
+# test_night_05x "bdd100k_fovea_05x_retrain" # TODO
+# test_night_05x "bdd100k_tpp_05x_retrain"  # TODO
+
+# test_rainy "bdd100k_10_18_baseline" # TODO
+# test_rainy "bdd100k_10_18_fovea"  # TODO
+# test_rainy "bdd100k_10_18_tpp"
+# test_rainy "bdd100k_10_18_bbox"
+
+
+# TODO: rainy (0.5x)
