@@ -359,7 +359,8 @@ class SaliencyMixin:
             return torch.stack(sals)
 
         # All bounding boxes pertain to the same image.
-        bboxes = batch_bboxes
+        # NOTE: do not in-place opperations for batch_bboxes!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        bboxes = batch_bboxes.clone()
 
         # Convert bounding boxes from left-top right-bottom format to left-top width-height format
         # print("before", bboxes)
@@ -375,8 +376,12 @@ class SaliencyMixin:
             cxy += 2 * jitter * (torch.randn(cxy.shape, device=device) - 0.5)
 
         # Calculate the scaled widths and heights.
+        # print("self.bandwidth_scale is", self.bandwidth_scale)
         widths = (bboxes[:, 2] * self.bandwidth_scale).unsqueeze(1)
         heights = (bboxes[:, 3] * self.bandwidth_scale).unsqueeze(1)
+
+        # print(f"widths = {widths.min()} - {widths.max()}")
+        # print(f"heights = {heights.min()} - {heights.max()}")
 
         # NOTE: clip widths and heights by 1
         widths = torch.clamp(widths, min=1)
@@ -498,12 +503,11 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
                 batch_bboxes = [bboxes.clone() for bboxes in gt_bboxes]
 
         # NOTE: stop hardcode using batch_bboxes
-        # TODO: hardcode only for debug
         # device = batch_bboxes[0].device
         device = batch_bboxes.device
         # print("device is", device); exit()
 
-        # print("batch_bboxes is", batch_bboxes)
+        # TODO: add choice for depth(vp)-guided bbox2sal
         saliency = self.bbox2sal(batch_bboxes, img_shape, jitter)
         # print(f"saliency min {saliency.min()}, max {saliency.max()}, mean {saliency.mean()}")
 
