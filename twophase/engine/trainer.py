@@ -516,11 +516,6 @@ class TwoPCTrainer(DATrainer):
         # 1. Input labeled data into the student model
         record_all_label_data, _, _, _ = self.model(
             label_data, branch="supervised", 
-            # warp_aug_lzu=self.cfg.WARP_AUG_LZU,
-            # vp_dict=self.vanishing_point,
-            # grid_net=self.grid_net,
-            # warp_debug=self.cfg.WARP_DEBUG,
-            # warp_image_norm=self.cfg.WARP_IMAGE_NORM
         )
         record_dict.update(record_all_label_data)
 
@@ -680,32 +675,7 @@ class TwoPCTrainer(DATrainer):
         data_to_use = label_data if 'label_data' in locals() else label_data_q
         # my_shape = data_to_use[0]['image'].shape[1:]
 
-        # if self.cfg.WARP_AUG_LZU:
-        #     if self.cfg.WARP_FOVEA:
-        #         saliency_file = 'dataset_saliency.pkl'
-        #         self.grid_net = FixedKDEGrid(saliency_file,
-        #                                     separable=True, 
-        #                                     anti_crop=True, 
-        #                                     input_shape=my_shape, 
-        #                                     output_shape=my_shape)
-        #     elif self.cfg.WARP_FOVEA_INST:
-        #         self.grid_net = PlainKDEGrid(separable=True, 
-        #                                         anti_crop=True, 
-        #                                         input_shape=my_shape, 
-        #                                         output_shape=my_shape)
-        #     elif self.cfg.WARP_FOVEA_MIX:
-        #         self.grid_net = MixKDEGrid(separable=True, 
-        #                                         anti_crop=True, 
-        #                                         input_shape=my_shape, 
-        #                                         output_shape=my_shape)                
-        #     else:
-        #         self.grid_net = CuboidGlobalKDEGrid(separable=True, 
-        #                                         anti_crop=True, 
-        #                                         input_shape=my_shape, 
-        #                                         output_shape=my_shape)
-        # else:
-        #     self.grid_net = None
-                      
+
         # Add NightAug images into supervised batch
         # NOTE: do not use nightaug for label_data_mid!!!!
         label_data_aug = None
@@ -743,7 +713,6 @@ class TwoPCTrainer(DATrainer):
                 "branch": "supervised",
                 "warp_aug_lzu": self.cfg.WARP_AUG_LZU,
                 "vp_dict": self.vanishing_point,
-                # "grid_net": self.grid_net,
                 "warp_debug": self.cfg.WARP_DEBUG,
                 "warp_image_norm": self.cfg.WARP_IMAGE_NORM,
             }

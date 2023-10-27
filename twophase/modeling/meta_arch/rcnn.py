@@ -103,6 +103,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         warp_fovea_mix: bool = False,
         warp_middle: bool = False,
         warp_scale: float = 1.0,
+        warp_fovea_inst_scale: bool = False,
     ):
         """
         Args:
@@ -150,7 +151,9 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
                                        warp_fovea_inst, 
                                        warp_fovea_mix, 
                                        warp_middle, 
-                                       warp_scale)
+                                       warp_scale,
+                                       warp_fovea_inst_scale,
+                                       )
 
     def build_discriminator(self):
         self.D_img = FCDiscriminator_img(self.backbone._out_feature_channels[self.dis_type]).to(self.device) # Need to know the channel
@@ -178,6 +181,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             "warp_fovea_mix": cfg.WARP_FOVEA_MIX,
             "warp_middle": cfg.WARP_MIDDLE,
             "warp_scale": cfg.WARP_SCALE,
+            "warp_fovea_inst_scale": cfg.WARP_FOVEA_INST_SCALE,
         }
 
     def preprocess_image_train(self, batched_inputs: List[Dict[str, torch.Tensor]]):

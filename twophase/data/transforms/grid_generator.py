@@ -20,6 +20,9 @@ from .homography_layers import CuboidLayerGlobal, TripetLayerGlobal
 #     """Build grid generator."""
 #     return GRID_GENERATORS.build(cfg)
 
+def custom_sigmoid(x):
+    return 1 / (1 + torch.exp(-x))
+
 def make1DGaussian(size, fwhm=3, center=None):
     """ Make a 1D gaussian kernel.
 
@@ -238,7 +241,6 @@ def create_centered_gradient_tensor(saliency_shape, saliency_min, saliency_max):
     return gradient_tensor
 
 
-# TODO: later merge with previous function FixedKDEGrid
 class FixedKDEGrid_New(FixedKDEGrid):
     """ Grid generator that uses a fixed saliency map -- KDE SD.
         
@@ -335,7 +337,7 @@ class MidKDEGrid(BaseKDEGrid):
 # NOTE: write this as separate class to reduce code duplication
 class SaliencyMixin:
     # NOTE: single bboxes always symmetric, but multiple bboxes are not
-    def bbox2sal(self, batch_bboxes, img_shape, jitter=None, symmetry=False, maximal=False):
+    def bbox2sal(self, batch_bboxes, img_shape, jitter=None, symmetry=False, maximal=False, v_pts=None):
         # print("batch_bboxes.shape is", batch_bboxes.shape) # [N, 4]
         # Get the device of the bounding boxes.
         # NOTE: change this to avoid empty bboxes
@@ -377,8 +379,50 @@ class SaliencyMixin:
 
         # Calculate the scaled widths and heights.
         # print("self.bandwidth_scale is", self.bandwidth_scale)
-        widths = (bboxes[:, 2] * self.bandwidth_scale).unsqueeze(1)
-        heights = (bboxes[:, 3] * self.bandwidth_scale).unsqueeze(1)
+
+        # NOTE: if self.warp_fovea_inst_scale is True, then we use the depth to scale the bandwidth
+        
+        if self.warp_fovea_inst_scale:
+            # print("Using depth saliency")
+            # print("bboxes is", bboxes) # [x1, y1, w, h]
+            # print("v_pts is", v_pts) # [w, h]
+            # print("cxy is", cxy)
+
+            # (1) calculate the absolute distance of the bounding box based on vanishing point
+            dx = torch.abs(cxy[:, 0] - v_pts[0])
+            dy = torch.abs(cxy[:, 1] - v_pts[1])
+            
+            # print("=======================>")
+            # print(f"dx = {dx}, dy = {dy}")
+
+            # (2) scale bandwidth by distance (dis small => bandwidth small, dis large => bandwidth large)
+            img_width, img_height = w, h
+            dists_to_bound_x = torch.min(cxy[:, 0], img_width - cxy[:, 0])
+            dists_to_bound_y = torch.min(cxy[:, 1], img_height - cxy[:, 1])
+
+            # print("=======================>")
+            # print(f"dists_to_bound_x = {dists_to_bound_x}, dists_to_bound_y = {dists_to_bound_y}")
+            
+            dists_ratio_x = dx / dists_to_bound_x
+            dists_ratio_y = dy / dists_to_bound_y
+
+            # Mapping dists_ratio using custom_sigmoid
+            # TODO: adjust so larger stuffs so tha ratios looks better
+            # dists_ratio_x = custom_sigmoid(dists_ratio_x)
+            # dists_ratio_y = custom_sigmoid(dists_ratio_y)            
+
+            # print("=======================>")
+            # print(f"dists_ratio_x = {dists_ratio_x}, dists_ratio_y = {dists_ratio_y}")
+
+            # (3) update widths and heights using updated bandwidth_scale
+            # Update widths and heights
+            widths = (bboxes[:, 2] * dists_ratio_x * self.bandwidth_scale).unsqueeze(1)
+            heights = (bboxes[:, 3] * dists_ratio_y * self.bandwidth_scale).unsqueeze(1)
+            # exit()
+
+        else:
+            widths = (bboxes[:, 2] * self.bandwidth_scale).unsqueeze(1)
+            heights = (bboxes[:, 3] * self.bandwidth_scale).unsqueeze(1)
 
         # print(f"widths = {widths.min()} - {widths.max()}")
         # print(f"heights = {heights.min()} - {heights.max()}")
@@ -476,6 +520,7 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         attraction_fwhm=4,
         bandwidth_scale=64,
         amplitude_scale=1,
+        warp_fovea_inst_scale=False,
         **kwargs
     ):
         super(PlainKDEGrid, self).__init__()
@@ -484,6 +529,7 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         self.bandwidth_scale = bandwidth_scale
         self.amplitude_scale = amplitude_scale
         self.warp_scale = warp_scale
+        self.warp_fovea_inst_scale = warp_fovea_inst_scale
 
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
         # Check if imgs is in BCHW format
@@ -507,11 +553,10 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         device = batch_bboxes.device
         # print("device is", device); exit()
 
-        # TODO: add choice for depth(vp)-guided bbox2sal
-        saliency = self.bbox2sal(batch_bboxes, img_shape, jitter)
+        saliency = self.bbox2sal(batch_bboxes, img_shape, jitter, v_pts=v_pts)
         # print(f"saliency min {saliency.min()}, max {saliency.max()}, mean {saliency.mean()}")
 
-        # # ################# TODO: for debug only #################
+        # # # # ################# TODO: for debug only #################
         # v_pts = torch.tensor(v_pts, device=device)
         # v_pts = v_pts.unsqueeze(0)
 
@@ -539,7 +584,9 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
 
         # # Save the modified saliency map
         # # print("saliency_np_with_vp shape", saliency_np_with_vp.shape) # [31, 51, 3]
-        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), "saliency_PlainKDEGrid.png")
+        # print("saving saliency_np_with_vp maps!!!!!!!!!!!!!!!!!!!!!!!!")
+        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), \
+        #     f"warped_images_exp/PlainKDEGrid/saliency_PlainKDEGrid_{self.bandwidth_scale}_{self.warp_fovea_inst_scale}.png")
         # ################# For debug only #################
 
         grid = self.saliency_to_grid(imgs, saliency, device)
@@ -573,7 +620,7 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         self.bandwidth_scale = bandwidth_scale
         self.amplitude_scale = amplitude_scale
         
-        # Define learnable parameters (TODO: tune these parameter later, or make it learnable)
+        # Define learnable parameters
         self.alpha = nn.Parameter(torch.tensor(0.5), requires_grad=True)
         self.beta = nn.Parameter(torch.tensor(0.5), requires_grad=True)
 

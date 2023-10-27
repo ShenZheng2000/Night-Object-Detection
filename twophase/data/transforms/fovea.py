@@ -35,7 +35,7 @@ def before_train_json(VP):
 
 
 def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_scale,
-                   warp_fovea_center=False):
+                   warp_fovea_center=False, warp_fovea_inst_scale=False):
     if warp_aug_lzu:
         saliency_file = 'dataset_saliency.pkl'
         if warp_fovea:
@@ -43,7 +43,8 @@ def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, wa
         elif warp_fovea_center:
             return FixedKDEGrid_New(saliency_file, warp_scale)
         elif warp_fovea_inst:
-            return PlainKDEGrid(warp_scale)
+            return PlainKDEGrid(warp_scale=warp_scale, 
+                                warp_fovea_inst_scale=warp_fovea_inst_scale)
         elif warp_fovea_mix:
             return MixKDEGrid(warp_scale)
         elif warp_middle:

@@ -154,3 +154,6 @@ def add_teacher_config(cfg):
 
     # NOTE: default warp size is None
     _C.WARP_SCALE = 1.0
+
+    # MOTE: add scaling to bbox-level saliency 
+    _C.WARP_FOVEA_INST_SCALE = 1.0
