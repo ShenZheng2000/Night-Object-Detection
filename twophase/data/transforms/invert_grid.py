@@ -13,8 +13,12 @@ def invert_grid(grid, input_shape, separable=False):
 def invert_separable_grid(grid, input_shape: List[int]):
     grid = grid.clone()
     
-    # NOTE: replace any nan values with 0
-    grid[torch.isnan(grid)] = 0
+    # Check if the 'grid' tensor has any NaN values
+    if torch.isnan(grid).any():
+        print("Grid contains NaN values")
+        
+        # Replace any NaN values with 0
+        grid[torch.isnan(grid)] = 0
 
     # print("==================================================>")
     # print(f"input_shape is {input_shape} grid is {grid.shape}")
