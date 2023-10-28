@@ -12,6 +12,10 @@ def invert_grid(grid, input_shape, separable=False):
 # @torch.jit.script
 def invert_separable_grid(grid, input_shape: List[int]):
     grid = grid.clone()
+    
+    # NOTE: replace any nan values with 0
+    grid[torch.isnan(grid)] = 0
+
     # print("==================================================>")
     # print(f"input_shape is {input_shape} grid is {grid.shape}")
     # print(f"torch.isnan is {torch.isnan(grid).any()}")
