@@ -110,9 +110,11 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None):
     # print("vanishing_point is", vanishing_point)
     # print("bboxes is", bboxes)
     grid = grid_net(imgs, vanishing_point, bboxes)
-    # print("grid shape", grid.shape)
+    # print("grid shape", grid.shape); print("grid min", grid.min(), "grid max", grid.max(), "grid mean", grid.mean())
 
     warped_imgs = F.grid_sample(imgs, grid, align_corners=True)
+
+    # print("imgs.shape", imgs.shape); exit()
 
     return grid, warped_imgs
 
