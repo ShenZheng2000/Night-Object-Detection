@@ -1,0 +1,29 @@
+_BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
+
+WARP_AUG_LZU: True
+WARP_FOVEA_INST: True
+WARP_SCALE: 0.5 # NOTE: for a quick debug
+
+WARP_FOVEA_MIX: True
+
+# PATH_BLUR: True
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+
+INPUT:
+  # MIN_SIZE_TRAIN: (300,)
+  MIN_SIZE_TEST: 375
+
+# # NOTE: for single-gpu debug for now, remove later
+# SOLVER:
+#   IMG_PER_BATCH_LABEL: 5
+
+# NOTE: for debug only, remove later!!!!!!!!!!
+# SOLVER:
+#   # STEPS: (72000, 96000, 108000, 432000)
+#   # MAX_ITER: 120000
+#   IMG_PER_BATCH_LABEL: 5 # 15
+#   IMG_PER_BATCH_UNLABEL: 5 # 15

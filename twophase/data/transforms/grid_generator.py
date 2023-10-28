@@ -200,7 +200,10 @@ class FixedKDEGrid(nn.Module, RecasensSaliencyToGridMixin):
         used to load saliency during inference.
     """
 
-    def __init__(self, saliency_file, warp_scale=1.0, **kwargs):
+    def __init__(self, 
+                 saliency_file="dataset_saliency.pkl", 
+                 warp_scale=1.0, 
+                 **kwargs):
         super(FixedKDEGrid, self).__init__()
         RecasensSaliencyToGridMixin.__init__(self, **kwargs)
         self.saliency = pickle.load(open(saliency_file, 'rb'))
@@ -601,7 +604,10 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
                  attraction_fwhm = 4,
                  bandwidth_scale = 64,
                  amplitude_scale = 1,
-                 homo_layer: str = 'cuboid', 
+                 homo_layer = 'cuboid',
+                 saliency_file = 'dataset_saliency.pkl',
+                 warp_fovea_inst_scale = False,
+                 fusion_method='max',
                  **kwargs):
         
         # Select the appropriate layer based on the homo_layer argument
@@ -620,11 +626,19 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         self.bandwidth_scale = bandwidth_scale
         self.amplitude_scale = amplitude_scale
         
-        # Define learnable parameters
-        self.alpha = nn.Parameter(torch.tensor(0.5), requires_grad=True)
-        self.beta = nn.Parameter(torch.tensor(0.5), requires_grad=True)
+        # Define learnable parameters (NOTE: change to 1, and disables gradient)
+        self.alpha = nn.Parameter(torch.tensor(1), requires_grad=False)
+        self.beta = nn.Parameter(torch.tensor(1), requires_grad=False)
+        self.gamma = nn.Parameter(torch.tensor(1), requires_grad=False)
 
         self.warp_scale = warp_scale
+        self.warp_fovea_inst_scale = warp_fovea_inst_scale
+
+        # read saliency for bboxes_level
+        self.dataset_saliency = pickle.load(open(saliency_file, 'rb'))
+
+        # define saliency fusion methods
+        self.fusion_method = fusion_method
 
     def compute_bbox_saliency(self, imgs, gt_bboxes, jitter):
         # print("gt_bboxes is", gt_bboxes)
@@ -639,6 +653,11 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
                 batch_bboxes = [bboxes.clone() for bboxes in gt_bboxes]
         saliency = self.bbox2sal(batch_bboxes, img_shape, jitter)
         return saliency
+    
+    def normalize_image(self, imgs):
+        # using min max scale to normalize image
+        imgs = (imgs - imgs.min()) / (imgs.max() - imgs.min())
+        return imgs
 
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
         device = imgs.device
@@ -646,17 +665,46 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         # NOTE: hardcode this line here to get image shape
         self.update_output_shape(tuple(int(dim * self.warp_scale) for dim in imgs.shape[2:4]))
         
-        # Image-level saliency
-        img_saliency = super().get_saliency(imgs, v_pts)
-        
         # Bbox-level saliency
-        bbox_saliency = self.compute_bbox_saliency(imgs, gt_bboxes, jitter)
-        assert bbox_saliency.shape == img_saliency.shape, f"saliency {bbox_saliency.shape} mismatches img_saliency {img_saliency.shape}"
+        bbox_saliency = self.compute_bbox_saliency(imgs, gt_bboxes, jitter).to(device)
+
+        # Image-level saliency
+        img_saliency = super().get_saliency(imgs, v_pts).to(device)
+
+        # Dataset-level saliency
+        dataset_saliency = self.dataset_saliency.to(device)
+
+        # assert these three saliency maps has the same shape
+        assert dataset_saliency.shape == img_saliency.shape == bbox_saliency.shape
         
-        # Mix saliencies
-        # print(f"alpha = {self.alpha}; beta = {self.beta}")
+        # Normalize saliencies
+        bbox_saliency = self.normalize_image(bbox_saliency)
+        img_saliency = self.normalize_image(img_saliency)
+        dataset_saliency = self.normalize_image(dataset_saliency)
+
+        # Mix saliencies based on the fusion method
+        if self.fusion_method == 'add':
+            mixed_saliency = self.alpha * bbox_saliency + \
+                            self.beta * img_saliency + \
+                            self.gamma * dataset_saliency
+        elif self.fusion_method == 'max':
+            mixed_saliency = torch.max(torch.max(bbox_saliency, img_saliency), dataset_saliency)
+        elif self.fusion_method == 'mean':
+            mixed_saliency = (bbox_saliency + img_saliency + dataset_saliency) / 3
+        else:
+            raise ValueError(f"Unknown fusion method: {self.fusion_method}")
+
+        
+        # TODO: save saliency maps with different names
+        # print("saving saliency maps!!!!!!!!!!!!!!!!!!!!!!!!")
+        # print("dataset_saliency mean", dataset_saliency.mean())
         # print("bbox_saliency mean", bbox_saliency.mean())
         # print("img_saliency mean", img_saliency.mean())
-        mixed_saliency = self.alpha * bbox_saliency + self.beta * img_saliency
+        # print("mixed_saliency mean", mixed_saliency.mean())
+
+        # save_image(dataset_saliency, f"warped_images_exp/saliency/dataset_saliency.png", normalize=True)
+        # save_image(img_saliency, f"warped_images_exp/saliency/img_saliency.png", normalize=True)
+        # save_image(bbox_saliency, f"warped_images_exp/saliency/bbox_saliency.png", normalize=True)
+        # save_image(mixed_saliency, f"warped_images_exp/saliency/mixed_saliency_{self.fusion_method}.png", normalize=True)
         
         return self.saliency_to_grid(imgs, mixed_saliency, device)

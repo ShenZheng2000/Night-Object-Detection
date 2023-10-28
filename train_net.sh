@@ -705,3 +705,12 @@
 # train_bdd "bdd100k_10_18_tpp"
 
 # train_bdd "bdd100k_10_18_bbox"
+
+# TODO: one gpu for debug only! Use 3 GPU for training!
+CUDA_VISIBLE_DEVICES=2 \
+  nohup \
+    python train_net.py \
+    --num-gpus 1 \
+    --config configs/bdd100k_bbox_05x_max.yaml \
+    OUTPUT_DIR outputs/bdd100k_bbox_05x_max \
+    > bdd100k_bbox_05x_max.out 2>&1 &
