@@ -146,13 +146,13 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         # self.warp_middle = warp_middle
 
         # NOTE: define grid_net here (instead of in train.py)
-        self.grid_net = build_grid_net(warp_aug_lzu, 
-                                       warp_fovea, 
-                                       warp_fovea_inst, 
-                                       warp_fovea_mix, 
-                                       warp_middle, 
-                                       warp_scale,
-                                       warp_fovea_inst_scale,
+        self.grid_net = build_grid_net(warp_aug_lzu=warp_aug_lzu, 
+                                       warp_fovea=warp_fovea, 
+                                       warp_fovea_inst=warp_fovea_inst, 
+                                       warp_fovea_mix=warp_fovea_mix, 
+                                       warp_middle=warp_middle, 
+                                       warp_scale=warp_scale,
+                                       warp_fovea_inst_scale=warp_fovea_inst_scale,
                                        )
 
     def build_discriminator(self):

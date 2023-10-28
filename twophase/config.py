@@ -156,4 +156,4 @@ def add_teacher_config(cfg):
     _C.WARP_SCALE = 1.0
 
     # MOTE: add scaling to bbox-level saliency 
-    _C.WARP_FOVEA_INST_SCALE = 1.0
+    _C.WARP_FOVEA_INST_SCALE = False
