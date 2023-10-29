@@ -608,6 +608,7 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
                  saliency_file = 'dataset_saliency.pkl',
                  warp_fovea_inst_scale = False,
                  fusion_method='max',
+                 pyramid_layer=2,
                  **kwargs):
         
         # Select the appropriate layer based on the homo_layer argument
@@ -639,6 +640,7 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
 
         # define saliency fusion methods
         self.fusion_method = fusion_method
+        self.pyramid_layer = pyramid_layer
 
     def compute_bbox_saliency(self, imgs, gt_bboxes, jitter):
         # print("gt_bboxes is", gt_bboxes)
@@ -691,6 +693,15 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
             mixed_saliency = torch.max(torch.max(bbox_saliency, img_saliency), dataset_saliency)
         elif self.fusion_method == 'mean':
             mixed_saliency = (bbox_saliency + img_saliency + dataset_saliency) / 3
+        # TODO: think about other fusion combinations later
+        elif self.fusion_method == 'pyramid':
+            # print("Using pyramid fusion method")
+            # print("self.pyramid_layer is", self.pyramid_layer)
+            mixed_saliency = fuse_saliency_maps(img_saliency, bbox_saliency, num_layers=self.pyramid_layer)
+            # print("Before, mixed_saliency min", mixed_saliency.min(), "max", mixed_saliency.max())
+            # clip the saliency map to [0, 1]
+            mixed_saliency = torch.clamp(mixed_saliency, min=0, max=1)
+            # print("After, mixed_saliency min", mixed_saliency.min(), "max", mixed_saliency.max())
         else:
             raise ValueError(f"Unknown fusion method: {self.fusion_method}")
 
@@ -702,9 +713,59 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         # print("img_saliency mean", img_saliency.mean())
         # print("mixed_saliency mean", mixed_saliency.mean())
 
-        # save_image(dataset_saliency, f"warped_images_exp/saliency/dataset_saliency.png", normalize=True)
-        # save_image(img_saliency, f"warped_images_exp/saliency/img_saliency.png", normalize=True)
-        # save_image(bbox_saliency, f"warped_images_exp/saliency/bbox_saliency.png", normalize=True)
-        # save_image(mixed_saliency, f"warped_images_exp/saliency/mixed_saliency_{self.fusion_method}.png", normalize=True)
+        # # save_image(dataset_saliency, f"warped_images_exp/saliency_debug/dataset_saliency.png", normalize=True)
+        # save_image(img_saliency, f"warped_images_exp/saliency_debug/img_saliency.png", normalize=True)
+        # save_image(bbox_saliency, f"warped_images_exp/saliency_debug/bbox_saliency.png", normalize=True)
+        # save_image(mixed_saliency, f"warped_images_exp/saliency_debug/mixed_saliency_{self.fusion_method}.png", normalize=True)
         
         return self.saliency_to_grid(imgs, mixed_saliency, device)
+    
+
+# NOTE: code for pyramid saliency fusion
+def pyr_down(img):
+    if img.size(-1) > 2 and img.size(-2) > 2:  # Ensure dimensions are > 2 before down-sampling
+        return F.avg_pool2d(img, kernel_size=2, stride=2)
+    return img  # return the image unchanged if it's too small
+
+def pyr_up(img, output_size):
+    # Upsample the image to the specified size
+    return F.interpolate(img, size=output_size, mode='bilinear', align_corners=False)
+
+def fuse_saliency_maps(img1, img2, num_layers=5):
+    '''
+    img1: torch tensor of shape (1, 1, H, W)
+    img2: torch tensor of shape (1, 1, H, W)
+    num_layers: number of layers in the Gaussian and Laplacian pyramids
+    '''
+
+    # assert layer numbers are valid
+    assert num_layers >= 1, "Number of layers must be greater than or equal to 1"
+
+    # Create Gaussian pyramids
+    gp1 = [img1]
+    gp2 = [img2]
+    for i in range(num_layers):
+        img1 = pyr_down(img1)
+        img2 = pyr_down(img2)
+        gp1.append(img1)
+        gp2.append(img2)
+
+    # Create Laplacian pyramids
+    lp1 = [gp1[-1]]
+    lp2 = [gp2[-1]]
+    for i in range(num_layers, 0, -1):
+        lap1 = gp1[i-1] - pyr_up(gp1[i], gp1[i-1].shape[-2:])
+        lap2 = gp2[i-1] - pyr_up(gp2[i], gp2[i-1].shape[-2:])
+        lp1.append(lap1)
+        lp2.append(lap2)
+
+    # Fuse pyramids: use lp2 for the base layer and lp1 for the detail layers
+    fused_pyramid = [lp2[0]]
+    fused_pyramid.extend(lp1[1:])
+
+    # Reconstruct the image from the fused pyramid
+    fused_image = fused_pyramid[0]
+    for i in range(1, len(fused_pyramid)):
+        fused_image = pyr_up(fused_image, fused_pyramid[i].shape[-2:]) + fused_pyramid[i]
+
+    return fused_image
