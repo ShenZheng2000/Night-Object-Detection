@@ -6,6 +6,9 @@ import pickle
 from torchvision.utils import save_image
 import sys
 import cv2
+from torchvision.transforms import functional as T_F
+from PIL import Image
+import os
 # from mmcv.utils import Registry
 # from vis import vis_batched_imgs
 
@@ -609,6 +612,8 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
                  warp_fovea_inst_scale = False,
                  fusion_method='max',
                  pyramid_layer=2,
+                 is_seg=False,
+                 folder_path='tpp_saliency',
                  **kwargs):
         
         # Select the appropriate layer based on the homo_layer argument
@@ -642,6 +647,9 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         self.fusion_method = fusion_method
         self.pyramid_layer = pyramid_layer
 
+        self.folder_path = folder_path # NOTE: hardcode for now
+        self.is_seg = is_seg
+
     def compute_bbox_saliency(self, imgs, gt_bboxes, jitter):
         # print("gt_bboxes is", gt_bboxes)
         img_shape = imgs.shape
@@ -660,8 +668,32 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         # using min max scale to normalize image
         imgs = (imgs - imgs.min()) / (imgs.max() - imgs.min())
         return imgs
+    
+    def obtain_image_saliency(self, file_name, use_flip):
+        # Construct the full path to the image
+        # print('self.folder_path is', self.folder_path)
+        # print("file_name is", file_name)
 
-    def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
+        full_path = os.path.join(self.folder_path, file_name)
+
+        # Load the image
+        img = Image.open(full_path).convert("L")  # Convert to grayscale
+
+        # Flip the image horizontally if use_flip is True
+        if use_flip:
+            img = T_F.hflip(img)
+
+        # Convert the image to a tensor
+        img_tensor = T_F.to_tensor(img)
+
+        # Reshape to [1, 1, H, W]
+        img_tensor = img_tensor.unsqueeze(0)
+
+        return img_tensor
+    
+    def forward(self, imgs, v_pts, gt_bboxes, jitter=False, 
+                file_name=None, use_flip=False):
+        
         device = imgs.device
 
         # NOTE: hardcode this line here to get image shape
@@ -671,7 +703,17 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         bbox_saliency = self.compute_bbox_saliency(imgs, gt_bboxes, jitter).to(device)
 
         # Image-level saliency
-        img_saliency = super().get_saliency(imgs, v_pts).to(device)
+        if self.is_seg:
+            img_saliency = self.obtain_image_saliency(file_name, use_flip).to(device)
+        else:
+            img_saliency = super().get_saliency(imgs, v_pts).to(device)
+
+        # # # save img_saliency and img_saliency_2 as images
+        # print(f"saving saliency with use_flip = {use_flip}!")
+        # save_image(img_saliency, f"img_saliency.png", normalize=True)
+        # # save_image(img_saliency_2, f"img_saliency_2.png", normalize=True)
+
+        # exit()
 
         # Dataset-level saliency
         dataset_saliency = self.dataset_saliency.to(device)
@@ -703,8 +745,13 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
             mixed_saliency = torch.clamp(mixed_saliency, min=0, max=1)
             # print("After, mixed_saliency min", mixed_saliency.min(), "max", mixed_saliency.max())
         else:
-            raise ValueError(f"Unknown fusion method: {self.fusion_method}")
-
+            # NOTE: use this for vis debug now
+            mixed_saliency = img_saliency
+            os.makedirs(self.folder_path, exist_ok=True)
+            filename = f"{file_name}.png"
+            filepath = os.path.join(self.folder_path, filename)
+            print("saving saliency maps!!!!!!!!!!!!!!!!!!!!!!!!")
+            save_image(mixed_saliency, filepath, normalize=True)
         
         # TODO: save saliency maps with different names
         # print("saving saliency maps!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -712,11 +759,12 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
         # print("bbox_saliency mean", bbox_saliency.mean())
         # print("img_saliency mean", img_saliency.mean())
         # print("mixed_saliency mean", mixed_saliency.mean())
+        # print("v_pts is", v_pts)
 
-        # # save_image(dataset_saliency, f"warped_images_exp/saliency_debug/dataset_saliency.png", normalize=True)
-        # save_image(img_saliency, f"warped_images_exp/saliency_debug/img_saliency.png", normalize=True)
-        # save_image(bbox_saliency, f"warped_images_exp/saliency_debug/bbox_saliency.png", normalize=True)
-        # save_image(mixed_saliency, f"warped_images_exp/saliency_debug/mixed_saliency_{self.fusion_method}.png", normalize=True)
+        # save_image(dataset_saliency, f"warped_images_exp/saliency/dataset_saliency.png", normalize=True)
+        # save_image(img_saliency, f"warped_images_exp/saliency/img_saliency.png", normalize=True)
+        # save_image(bbox_saliency, f"warped_images_exp/saliency/bbox_saliency.png", normalize=True)
+        # save_image(mixed_saliency, f"warped_images_exp/saliency/mixed_saliency_{self.fusion_method}_{self.pyramid_layer}.png", normalize=True)
         
         return self.saliency_to_grid(imgs, mixed_saliency, device)
     

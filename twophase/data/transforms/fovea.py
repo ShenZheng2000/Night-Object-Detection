@@ -35,7 +35,7 @@ def before_train_json(VP):
 
 
 def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_scale,
-                   warp_fovea_center=False, warp_fovea_inst_scale=False, fusion_method='max', pyramid_layer=2):
+                   warp_fovea_center=False, warp_fovea_inst_scale=False, fusion_method='max', pyramid_layer=2, is_seg=False):
     if warp_aug_lzu:
         saliency_file = 'dataset_saliency.pkl'
         if warp_fovea:
@@ -48,7 +48,8 @@ def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, wa
         elif warp_fovea_mix:
             return MixKDEGrid(warp_scale=warp_scale, 
                               fusion_method=fusion_method, 
-                              pyramid_layer=pyramid_layer)
+                              pyramid_layer=pyramid_layer,
+                              is_seg=is_seg)
         elif warp_middle:
             return MidKDEGrid(warp_scale)
         else:
@@ -92,7 +93,7 @@ def warp_bboxes(bboxes, grid, separable=True):
     return bboxes
 
 
-def simple_test(grid_net, imgs, vanishing_point, bboxes=None):
+def simple_test(grid_net, imgs, vanishing_point, bboxes=None, file_name=None, use_flip=False):
     """Test function without test time augmentation.
     Args:
         grid_net (CuboidGlobalKDEGrid): An instance of CuboidGlobalKDEGrid.
@@ -111,7 +112,10 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None):
     # print("imgs.shape is", imgs.shape)
     # print("vanishing_point is", vanishing_point)
     # print("bboxes is", bboxes)
-    grid = grid_net(imgs, vanishing_point, bboxes)
+    if isinstance(grid_net, MixKDEGrid):
+        grid = grid_net(imgs, vanishing_point, bboxes, file_name=file_name, use_flip=use_flip)
+    else:
+        grid = grid_net(imgs, vanishing_point, bboxes)
     # print("grid shape", grid.shape); print("grid min", grid.min(), "grid max", grid.max(), "grid mean", grid.mean())
 
     warped_imgs = F.grid_sample(imgs, grid, align_corners=True)
@@ -122,7 +126,7 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None):
 
 
 
-def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
+def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False, file_name=None, use_flip=False):
 
     # read image
     img = img.float()
@@ -149,7 +153,7 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
     # print("bboxes shape", bboxes.shape) # [N, 4]: x1, y1, x2, y2
     # print("vanishing_point", vanishing_point)
 
-    grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point, bboxes)
+    grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point, bboxes, file_name=file_name, use_flip=use_flip)
 
     if use_ins:
 
@@ -169,7 +173,8 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False):
 
 
 def apply_warp_aug(img, ins, vanishing_point, warp_aug=False, 
-                    warp_aug_lzu=False, grid_net=None, keep_size=True):
+                    warp_aug_lzu=False, grid_net=None, keep_size=True, 
+                    file_name=None, use_flip=False):
     # print(f"img is {img.shape}") # [3, 600, 1067]
     grid = None
 
@@ -184,11 +189,11 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
         # sys.exit(1)
         # return img, ins, grid
     if warp_aug:
-        img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True)
+        img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=True, file_name=file_name, use_flip=use_flip)
     elif warp_aug_lzu:
         # print("BEFORE, ins is", ins.gt_boxes.tensor)
         # print("img shape is", img.shape)
-        img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False)
+        img, ins, grid = make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False, file_name=file_name, use_flip=use_flip)
 
     # reshape 4d to 3d
     if (len(img.shape) == 4) and keep_size:
@@ -457,12 +462,14 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # print("start apply_warp_aug")
     # TODO: think about scaling instances, not just images
     warped_images, _, grids = zip(*[
-        apply_warp_aug(image, 
-                       sample.get('instances', None), 
-                       vp, 
-                       warp_aug, 
-                       warp_aug_lzu, 
-                       grid_net) 
+        apply_warp_aug(img = image, 
+                       ins = sample.get('instances', None), 
+                       vanishing_point = vp, 
+                       warp_aug = warp_aug, 
+                       warp_aug_lzu = warp_aug_lzu, 
+                       grid_net = grid_net,
+                       file_name = os.path.basename(sample['filename']),
+                       use_flip = sample['flip']) 
         for image, vp, sample in zip(images, vanishing_points, batched_inputs)
     ])
     warped_images = torch.stack(warped_images)
@@ -537,8 +544,16 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
                 grid = grids[batch_idx]
                 # print(f"feature shape = {feature.shape}") # [64, 128, 256]
                 # print(f"grid shape = {grid.shape}") # [1, 512, 1024, 2]
-                unwarped = apply_unwarp(feature, grid)
-                unwarped_list.append(unwarped)
+                # TODO: use this for debug only
+                try:
+                    unwarped = apply_unwarp(feature, grid)
+                    unwarped_list.append(unwarped)
+                except:
+                    # Handle the error and process original images
+                    print("Error encountered during unwarping. Images in this batch are:")
+                    for img_data in batched_inputs:
+                        print(os.path.basename(img_data['filename']))
+                    return handle_unwarp_exception(images, backbone)                
 
             # Stack the results along the batch dimension again
             features[idx] = torch.stack(unwarped_list)
@@ -547,6 +562,11 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
 
     return features, images
 
+
+def handle_unwarp_exception(images, backbone):
+    # If there's an error during unwarping, use original images to get features
+    features = backbone(images)
+    return features, images
 
 def concat_and_save_images(batched_inputs, warped_images, debug=False):
     cnt = 0
