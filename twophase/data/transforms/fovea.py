@@ -10,6 +10,7 @@ import sys
 import os
 import json
 import torch
+import gc 
 
 
 def read_seg_to_det(SEG_TO_DET):
@@ -37,11 +38,12 @@ def before_train_json(VP):
 def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_scale,
                    warp_fovea_center=False, warp_fovea_inst_scale=False, fusion_method='max', pyramid_layer=2, is_seg=False):
     if warp_aug_lzu:
-        saliency_file = 'dataset_saliency.pkl'
+        # NOTE: remove saliency for now, because it has been set by default
+        # saliency_file = 'dataset_saliency.pkl'
         if warp_fovea:
-            return FixedKDEGrid(saliency_file, warp_scale)
+            return FixedKDEGrid(warp_scale=warp_scale)
         elif warp_fovea_center:
-            return FixedKDEGrid_New(saliency_file, warp_scale)
+            return FixedKDEGrid_New(warp_scale=warp_scale)
         elif warp_fovea_inst:
             return PlainKDEGrid(warp_scale=warp_scale, 
                                 warp_fovea_inst_scale=warp_fovea_inst_scale)
@@ -524,7 +526,33 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # debug images
     # print("len batched_inputs", len(batched_inputs)) # BS
     # print("warped_images", warped_images.shape) # [BS, C, H, W]
-    # concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
+    concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
+    
+    # NOTE: use this for debug now
+    # TODO: think out a better way instead of hardcode like this
+    # black_list = ['stuttgart_000055_000019_leftImg8bit.png', 
+    #               'stuttgart_000058_000019_leftImg8bit.png',
+    #               'darmstadt_000007_000019_leftImg8bit.png',
+    #               'hamburg_000000_044400_leftImg8bit.png',
+    #               'hamburg_000000_006192_leftImg8bit.png',
+    #               'dusseldorf_000140_000019_leftImg8bit.png',
+    #               'darmstadt_000026_000019_leftImg8bit.png',
+    #               'bremen_000176_000019_leftImg8bit.png',
+    #               'strasbourg_000001_026606_leftImg8bit.png',
+    #               'bremen_000081_000019_leftImg8bit.png',
+    #               'bremen_000078_000019_leftImg8bit.png',
+    #               'cologne_000121_000019_leftImg8bit.png'
+    #               ]
+
+    # for sample in batched_inputs:
+    #     # print("os.path.basename(sample['filename']) is", os.path.basename(sample['filename'])); exit()
+    #     if os.path.basename(sample['filename']) in black_list:
+    #         print("images shape", images.shape)
+    #         print("warped_images shape", warped_images.shape)
+    #         print("grid nan is", torch.isnan(grids).any())
+    #         print("grids is", grids)
+    #         features = backbone(images)
+    #         return features, images
 
     # Call the backbone
     # print("start backbone")
@@ -549,7 +577,7 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
                     unwarped = apply_unwarp(feature, grid)
                     unwarped_list.append(unwarped)
                 except:
-                    # Handle the error and process original images
+                    # Handle the error and process original images (TODO: no use for now, only used to debug the problematic file name)
                     print("Error encountered during unwarping. Images in this batch are:")
                     for img_data in batched_inputs:
                         print(os.path.basename(img_data['filename']))
@@ -561,7 +589,6 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # print("end unwarp")
 
     return features, images
-
 
 def handle_unwarp_exception(images, backbone):
     # If there's an error during unwarping, use original images to get features

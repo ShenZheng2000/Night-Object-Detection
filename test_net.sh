@@ -1,38 +1,17 @@
 function test_night() {
     local MODEL_NAME="$1"
+    local CONFIG_SUFFIX="$2"  # Suffix for the configuration file, e.g., "night", "night_05x"
+    
+    # Construct the configuration filename using the constant prefix and the passed suffix.
+    local CONFIG_FILE="configs/bdd100k_test_${CONFIG_SUFFIX}.yaml"
     
     CUDA_VISIBLE_DEVICES=2 \
     python train_net.py \
         --num-gpus 1 \
         --eval-only \
-        --config "configs/bdd100k_test_night.yaml" \
+        --config "${CONFIG_FILE}" \
         MODEL.WEIGHTS "outputs/${MODEL_NAME}/model_final.pth" \
-        OUTPUT_DIR "outputs/${MODEL_NAME}/night"
-}
-
-
-function test_night_05x() {
-    local MODEL_NAME="$1"
-    
-    CUDA_VISIBLE_DEVICES=2 \
-    python train_net.py \
-        --num-gpus 1 \
-        --eval-only \
-        --config "configs/bdd100k_test_night_05.yaml" \
-        MODEL.WEIGHTS "outputs/${MODEL_NAME}/model_final.pth" \
-        OUTPUT_DIR "outputs/${MODEL_NAME}/night_05"
-}
-
-function test_rainy() {
-    local MODEL_NAME="$1"
-    
-    CUDA_VISIBLE_DEVICES=2 \
-    python train_net.py \
-        --num-gpus 1 \
-        --eval-only \
-        --config "configs/bdd100k_test_rainy.yaml" \
-        MODEL.WEIGHTS "outputs/${MODEL_NAME}/model_final.pth" \
-        OUTPUT_DIR "outputs/${MODEL_NAME}/rainy"
+        OUTPUT_DIR "outputs/${MODEL_NAME}/${CONFIG_SUFFIX}"
 }
 
 

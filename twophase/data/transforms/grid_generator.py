@@ -253,7 +253,7 @@ class FixedKDEGrid_New(FixedKDEGrid):
         If the vanishing point is fixed, this class can be instead 
         used to load saliency during inference.
     """
-    def __init__(self, saliency_file, warp_scale=1.0, **kwargs):
+    def __init__(self, saliency_file, warp_scale, **kwargs):
         super(FixedKDEGrid_New, self).__init__(saliency_file, warp_scale, **kwargs)
 
         # print("saliency shape", self.saliency.shape) # [1, 1, 31, 51]")
