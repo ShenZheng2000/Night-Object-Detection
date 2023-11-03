@@ -167,7 +167,12 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False, file_name=
 
         # update ins
         # print("before ins.gt_boxes.tensor", ins.gt_boxes.tensor)
-        ins.gt_boxes.tensor = warped_bboxes
+        # print("before; bboxes", bboxes)
+        try:
+            ins.gt_boxes.tensor = warped_bboxes
+        except:
+            ins = warped_bboxes
+        # print("after; warped_bboxes", warped_bboxes)
         # print("after ins.gt_boxes.tensor", ins.gt_boxes.tensor)
 
     return warped_imgs, ins, grid
