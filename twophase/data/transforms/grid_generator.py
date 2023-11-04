@@ -414,7 +414,6 @@ class SaliencyMixin:
             dists_ratio_y = dy / dists_to_bound_y
 
             # Mapping dists_ratio using custom_sigmoid
-            # TODO: adjust so larger stuffs so tha ratios looks better
             # dists_ratio_x = custom_sigmoid(dists_ratio_x)
             # dists_ratio_y = custom_sigmoid(dists_ratio_y)         
 
@@ -427,7 +426,7 @@ class SaliencyMixin:
             heights = (bboxes[:, 3] * dists_ratio_y * self.bandwidth_scale).unsqueeze(1)
             # exit()
 
-        # TODO: merge code with above later
+        # Maybe: merge code with above later
         elif self.warp_fovea_inst_scale_l2:
             dx = torch.abs(cxy[:, 0] - v_pts[0])
             dy = torch.abs(cxy[:, 1] - v_pts[1])
@@ -454,7 +453,7 @@ class SaliencyMixin:
         # print(f"widths = {widths.min()} - {widths.max()}")
         # print(f"heights = {heights.min()} - {heights.max()}")
 
-        # NOTE: clip widths and heights by 1
+        # NOTE: clip widths and heights by 1 to avoid nan
         widths = torch.clamp(widths, min=1)
         heights = torch.clamp(heights, min=1)
 
@@ -511,7 +510,7 @@ class SaliencyMixin:
             print("Using symmetry")
             sal = self.make_symmetric_around_max(sal)
         
-        # NOTE: check if any nan in saliency map
+        # NOTE: check if any nan in saliency map. If so, return uniform saliency map
         if torch.isnan(sal).any():
             # Print out relevant variables when NaN is detected
             print(f"NaN detected in sal!")
@@ -519,13 +518,25 @@ class SaliencyMixin:
             print(f"img_shape: {img_shape}")
             print(f"jitter: {jitter}")
             print(f"v_pts: {v_pts}")
+            print(f"dx = {dx}")
+            print(f"dy = {dy}")
             print(f"widths: {widths}")
             print(f"heights: {heights}")
-            print(f"dist_to_bound: {dist_to_bound}")
-            print(f"dist_ratio: {dist_ratio}")
-            print(f"distances: {distances}")
-            print(f"sal (before normalization): {sal}")
-            print(f"sal.sum() (before final normalization): {sal.sum()}")
+            # print(f"dist_to_bound: {dist_to_bound}")
+            # print(f"dist_ratio: {dist_ratio}")
+            # print(f"distances: {distances}")
+            # print(f"sal (before normalization): {sal}")
+            # print(f"sal.sum() (before final normalization): {sal.sum()}")
+
+            sals = []
+
+            # Create a uniform saliency map
+            sal = torch.ones(h_out, w_out, device=device).unsqueeze(0)
+            sal /= sal.sum()
+            sals.append(sal)
+            
+            # Return the uniform saliency map since there are no detections
+            return torch.stack(sals)
 
         return torch.stack(sals)
     
@@ -774,7 +785,6 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
             mixed_saliency = torch.max(torch.max(bbox_saliency, img_saliency), dataset_saliency)
         elif self.fusion_method == 'mean':
             mixed_saliency = (bbox_saliency + img_saliency + dataset_saliency) / 3
-        # TODO: think about other fusion combinations later
         elif self.fusion_method == 'pyramid':
             # print("Using pyramid fusion method")
             # print("self.pyramid_layer is", self.pyramid_layer)
