@@ -1,0 +1,17 @@
+_BASE_: "./bdd100k_10_18_baseline.yaml"
+
+WARP_AUG_LZU: True # already done earlier
+WARP_FOVEA_INST: True
+
+WARP_FOVEA_INST_SCALE: True
+
+# PATH_BLUR: True
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+
+INPUT:
+  MIN_SIZE_TRAIN: (300,)
+  MIN_SIZE_TEST: 375

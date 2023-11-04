@@ -253,8 +253,9 @@ class FixedKDEGrid_New(FixedKDEGrid):
         If the vanishing point is fixed, this class can be instead 
         used to load saliency during inference.
     """
-    def __init__(self, saliency_file, warp_scale, **kwargs):
-        super(FixedKDEGrid_New, self).__init__(saliency_file, warp_scale, **kwargs)
+    def __init__(self, warp_scale, **kwargs):
+        # We do not pass saliency_file here, relying on FixedKDEGrid's default.
+        super(FixedKDEGrid_New, self).__init__(warp_scale=warp_scale, **kwargs)
 
         # print("saliency shape", self.saliency.shape) # [1, 1, 31, 51]")
         # print("saliency min", self.saliency.min()) # 0.0002
@@ -415,7 +416,7 @@ class SaliencyMixin:
             # Mapping dists_ratio using custom_sigmoid
             # TODO: adjust so larger stuffs so tha ratios looks better
             # dists_ratio_x = custom_sigmoid(dists_ratio_x)
-            # dists_ratio_y = custom_sigmoid(dists_ratio_y)            
+            # dists_ratio_y = custom_sigmoid(dists_ratio_y)         
 
             # print("=======================>")
             # print(f"dists_ratio_x = {dists_ratio_x}, dists_ratio_y = {dists_ratio_y}")
@@ -424,6 +425,26 @@ class SaliencyMixin:
             # Update widths and heights
             widths = (bboxes[:, 2] * dists_ratio_x * self.bandwidth_scale).unsqueeze(1)
             heights = (bboxes[:, 3] * dists_ratio_y * self.bandwidth_scale).unsqueeze(1)
+            # exit()
+
+        # TODO: merge code with above later
+        elif self.warp_fovea_inst_scale_l2:
+            dx = torch.abs(cxy[:, 0] - v_pts[0])
+            dy = torch.abs(cxy[:, 1] - v_pts[1])
+
+            dist = torch.sqrt(dx**2 + dy**2)
+
+            img_width, img_height = w, h
+            dist_to_bound = torch.sqrt(torch.min(cxy[:, 0], img_width - cxy[:, 0])**2 + \
+                                        torch.min(cxy[:, 1], img_height - cxy[:, 1])**2)
+            
+            dist_ratio = dist / dist_to_bound
+            # print("dist is", dist)
+            # print("dist_to_bound is", dist_to_bound)
+            # print("dist_ratio is", dist_ratio)
+
+            widths = (bboxes[:, 2] * dist_ratio * self.bandwidth_scale).unsqueeze(1)
+            heights = (bboxes[:, 3] * dist_ratio * self.bandwidth_scale).unsqueeze(1)
             # exit()
 
         else:
@@ -488,7 +509,23 @@ class SaliencyMixin:
         # If symmetry is set to True, adjust the saliency map to be symmetric.
         if symmetry:
             print("Using symmetry")
-            sal = self.make_symmetric_around_max(sal)        
+            sal = self.make_symmetric_around_max(sal)
+        
+        # NOTE: check if any nan in saliency map
+        if torch.isnan(sal).any():
+            # Print out relevant variables when NaN is detected
+            print(f"NaN detected in sal!")
+            print(f"batch_bboxes: {batch_bboxes}")
+            print(f"img_shape: {img_shape}")
+            print(f"jitter: {jitter}")
+            print(f"v_pts: {v_pts}")
+            print(f"widths: {widths}")
+            print(f"heights: {heights}")
+            print(f"dist_to_bound: {dist_to_bound}")
+            print(f"dist_ratio: {dist_ratio}")
+            print(f"distances: {distances}")
+            print(f"sal (before normalization): {sal}")
+            print(f"sal.sum() (before final normalization): {sal.sum()}")
 
         return torch.stack(sals)
     
@@ -527,6 +564,7 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         bandwidth_scale=64,
         amplitude_scale=1,
         warp_fovea_inst_scale=False,
+        warp_fovea_inst_scale_l2=False,
         **kwargs
     ):
         super(PlainKDEGrid, self).__init__()
@@ -536,6 +574,7 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         self.amplitude_scale = amplitude_scale
         self.warp_scale = warp_scale
         self.warp_fovea_inst_scale = warp_fovea_inst_scale
+        self.warp_fovea_inst_scale_l2 = warp_fovea_inst_scale_l2
 
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
         # Check if imgs is in BCHW format

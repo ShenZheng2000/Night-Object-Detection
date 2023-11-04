@@ -707,9 +707,10 @@
 # train_bdd "bdd100k_10_18_bbox"
 
 # TODO: one gpu for debug only! Use 3 GPU for training!
-nohup \
-  python train_net.py \
-  --num-gpus 3 \
-  --config configs/bdd100k_bbox_05x_pyramid_2.yaml \
-  OUTPUT_DIR outputs/bdd100k_bbox_05x_pyramid_2 \
-  > bdd100k_bbox_05x_pyramid_2.out 2>&1 &
+# nohup \
+#   python train_net.py \
+#   --num-gpus 3 \
+#   --config configs/bdd100k_bbox_05x_pyramid_2.yaml \
+#   OUTPUT_DIR outputs/bdd100k_bbox_05x_pyramid_2 \
+#   > bdd100k_bbox_05x_pyramid_2.out 2>&1 &
+

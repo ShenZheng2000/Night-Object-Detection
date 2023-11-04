@@ -104,6 +104,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         warp_middle: bool = False,
         warp_scale: float = 1.0,
         warp_fovea_inst_scale: bool = False,
+        warp_fovea_inst_scale_l2: bool = False,
         fusion_method: str = "max",
         pyramid_layer: int = 2,
     ):
@@ -155,6 +156,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
                                        warp_middle=warp_middle, 
                                        warp_scale=warp_scale,
                                        warp_fovea_inst_scale=warp_fovea_inst_scale,
+                                       warp_fovea_inst_scale_l2=warp_fovea_inst_scale_l2,
                                        fusion_method=fusion_method,
                                         pyramid_layer=pyramid_layer,
                                        )
@@ -186,6 +188,7 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             "warp_middle": cfg.WARP_MIDDLE,
             "warp_scale": cfg.WARP_SCALE,
             "warp_fovea_inst_scale": cfg.WARP_FOVEA_INST_SCALE,
+            "warp_fovea_inst_scale_l2": cfg.WARP_FOVEA_INST_SCALE_L2,
             "fusion_method": cfg.FUSION_METHOD,
             "pyramid_layer": cfg.PYRAMID_LAYER,
         }

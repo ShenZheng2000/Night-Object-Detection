@@ -158,6 +158,9 @@ def add_teacher_config(cfg):
     # MOTE: add scaling to bbox-level saliency 
     _C.WARP_FOVEA_INST_SCALE = False
 
+    # NOTE: add l2 scaling to bbox-level saliency
+    _C.WARP_FOVEA_INST_SCALE_L2 = False
+
     # NOTE: add default fusion method and pyramid fusion layers
     _C.FUSION_METHOD = "max"
 
