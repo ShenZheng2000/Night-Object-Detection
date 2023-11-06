@@ -36,6 +36,8 @@ def main():
         'FixedKDEGrid',
         'CuboidGlobalKDEGrid',
         'PlainKDEGrid',
+        'PlainKDEGrid_False_True', # l1 scale
+        'PlainKDEGrid_True_False', # l2 scale
     ]
 
     hist_data_orig = load_data_from_txt("hist_data_orig.txt")

@@ -20,10 +20,16 @@ import matplotlib.pyplot as plt
 
 # NOTE: use this to get coco file for different weather: /home/aghosh/Projects/2PCNet/Scripts/bdd/filter_file.py
 
+# general parameters
 is_coco_style = True  # NOTE: You can set this to False if not in COCO style
-save_flag = False  # True or False
-warp_fovea_inst_scale = False  # True or False
-use_ins = True # NOTE: be careful about setting this as True
+save_flag = True  # True or False
+use_ins = False # NOTE: be careful about setting this as True
+
+# parameters for PlainKDEGrid only
+warp_fovea_inst_scale = False
+warp_fovea_inst_scale_l2 = False
+
+assert not (warp_fovea_inst_scale and warp_fovea_inst_scale_l2), "warp_fovea_inst_scale and warp_fovea_inst_scale_l2 cannot be True at the same time."
 
 # root_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_day"
 # coco_base = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/train_day.json"
@@ -43,23 +49,6 @@ def calculate_bbox_areas(bboxes):
         area = (x2 - x1) * (y2 - y1)
         areas.append(area)
     return areas
-
-# def plot_histogram(data_orig, data_warped, num_bins=50, title='', output_path=''):
-#     # Create bin edges for logarithmic scale
-#     bin_edges = np.logspace(np.log10(1), np.log10(720*1280), num_bins)
-    
-#     plt.hist(data_orig, bins=bin_edges, alpha=0.5, label='Original BBoxes', color='red')
-#     plt.hist(data_warped, bins=bin_edges, alpha=0.5, label='Warped BBoxes', color='blue')
-#     plt.legend(loc='upper right')
-#     plt.title(title)
-#     plt.xlabel('Area (log scale)')
-#     plt.ylabel('Frequency')
-#     plt.xscale('log')
-#     plt.grid(axis='x', which='both') 
-#     plt.savefig(f'{output_path}.png')
-#     plt.close()
-
-
 
 def save_data_to_txt(data, filename):
     np.savetxt(filename, data, fmt='%f')
@@ -82,8 +71,12 @@ def process_images(img_paths, v_pts_list, gt_bboxes_list, grid_net):
     output_path = grid_net.__class__.__name__
 
     # Save the data to txt files
-    save_data_to_txt(hist_data_orig, "hist_data_orig.txt")
-    save_data_to_txt(hist_data_warped, f"hist_data_{output_path}.txt")
+    save_data_to_txt(hist_data_orig, "hists/hist_data_orig.txt")
+
+    if output_path == 'PlainKDEGrid':
+        save_data_to_txt(hist_data_warped, f"hists/hist_data_{output_path}_{warp_fovea_inst_scale}_{warp_fovea_inst_scale_l2}.txt")
+    else:
+        save_data_to_txt(hist_data_warped, f"hists/hist_data_{output_path}.txt")
 
     # print mean and std/mean before warping
     mean_orig = np.mean(hist_data_orig)
@@ -140,8 +133,13 @@ def warp_image_exp(img_path, v_pts, gt_bboxes, grid_net, hist_data_orig, hist_da
         pyramid_layer = ''
     
     # Adjusted this line to structure the directories
-    output_dir = os.path.join(main_output_dir, grid_type, grid_fusion, pyramid_layer)
+    if grid_type == 'PlainKDEGrid':
+        output_dir = os.path.join(main_output_dir, grid_type, grid_fusion, pyramid_layer, f"l1_{warp_fovea_inst_scale}_l2_{warp_fovea_inst_scale_l2}")
+    else:
+        output_dir = os.path.join(main_output_dir, grid_type, grid_fusion, pyramid_layer)
+
     os.makedirs(output_dir, exist_ok=True)
+    # print(f"output_dir is {output_dir}"); exit()
 
     bandwidth_scales = [64]  # can be modified based on your needs
 
@@ -162,7 +160,7 @@ def warp_image_exp(img_path, v_pts, gt_bboxes, grid_net, hist_data_orig, hist_da
             image_with_bboxes = draw_bboxes_on_image(warped_img[0], ins)
 
             # Save the resulting image
-            warped_img_name = os.path.join(output_dir, f"{base_path}_{bs}_{warp_fovea_inst_scale}.jpg")
+            warped_img_name = os.path.join(output_dir, f"{base_path}.jpg") # NOTE: skip bs for now
             image_with_bboxes.save(warped_img_name)
 
         # NOTE: code for 
@@ -290,17 +288,22 @@ def main():
 
 
     grid_net_names = [
-        'FixedKDEGrid',
+        # 'FixedKDEGrid',
         # 'CuboidGlobalKDEGrid',
-        # 'PlainKDEGrid',
+        'PlainKDEGrid',
     ]
 
     ################### Important hyperparameters ###################
 
     for grid_net_name in grid_net_names:
-        # Retrieve the class from globals() and instantiate it
-        grid_net_class = globals()[grid_net_name]
-        grid_net = grid_net_class().cuda()  # Instantiate and move to GPU
+        # Check if the grid_net_name is 'PlainKDEGrid' and instantiate with specific parameters
+        if grid_net_name == 'PlainKDEGrid':
+            grid_net = PlainKDEGrid(warp_fovea_inst_scale=warp_fovea_inst_scale, 
+                                    warp_fovea_inst_scale_l2=warp_fovea_inst_scale_l2).cuda()
+        else:
+            # Retrieve the class from globals() and instantiate it
+            grid_net_class = globals()[grid_net_name]
+            grid_net = grid_net_class().cuda()  # Instantiate and move to GPU
 
         # Use the instantiated grid_net in your process_images function
         process_images(img_paths, 
