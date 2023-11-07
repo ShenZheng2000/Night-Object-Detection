@@ -1,11 +1,12 @@
 # NOTE: use another yaml to reduce code
-_BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
-
-WARP_FOVEA_INST: True
+_BASE_: "./acdc_11_6_baseline.yaml"
 
 # PATH_BLUR: True
+WARP_AUG_LZU: True
+
 
 # USE_DEBUG: True
 # TWO_PC_AUG: False
 # AUG_PROB: 1.0
 # WARP_DEBUG: True
+NIGHTAUG: False

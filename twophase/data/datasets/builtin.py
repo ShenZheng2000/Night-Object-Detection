@@ -251,7 +251,18 @@ f'{data_path}/bdd100k/coco_labels/val_rainy.json',
 f'{data_path}/bdd100k/images/100k/val')
 
 
+# NOTE: add acdc here
+register_coco_instances("acdc_train",
+{}, 
+f'{data_path}/acdc/gt_detection/train.json', 
+f'{data_path}/acdc/rgb_anon/train')
 
+register_coco_instances("acdc_val",
+{}, 
+f'{data_path}/acdc/gt_detection/val.json', 
+f'{data_path}/acdc/rgb_anon/val')
+
+# Later: add weather of tod specific here
 
 
 register_coco_instances("bdd100k_night_train", 

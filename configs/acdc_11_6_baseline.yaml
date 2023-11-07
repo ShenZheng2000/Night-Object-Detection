@@ -1,0 +1,36 @@
+# NOTE: use another yaml to reduce code
+_BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
+
+# NOTE: train on clear, adapted to rainy, test on rainy
+
+# NOTE: change the unsup and test data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+DATASETS:
+  TRAIN_LABEL: ("bdd100k_clear_train_valid_vp",)
+  # TRAIN_UNLABEL: ("bdd100k_rainy_train",) #Clipart1k_train
+  # TEST: ("bdd100k_rainy_val",) #Clipart1k_test
+  TRAIN_UNLABEL: ("acdc_train",) #Clipart1k_train
+  TEST: ("acdc_val",) #Clipart1k_test
+
+# NOTE: decrease the max_iter and the steps!!!!!!!!!!!!!!!!!!!!!!!!!
+SOLVER:
+  # STEPS: (72000, 96000, 108000, 432000) # TODO: need to adjust this later
+  STEPS: (62000, 64000, 108000, 432000)
+  MAX_ITER: 66000 # TODO: maybe reduce to 65k or 66k, since 70k overfits too much
+
+# NOTE: adjust SCALE_STEPS here!!!!!!!!!!!!!!!!!!!
+SEMISUPNET:
+#   SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400)
+    # SCALE_STEPS: (61400, 62800, 64200, 65600, 67000, 68400)
+    SCALE_STEPS: (60840, 61680, 62520, 63360, 64200, 65040)
+
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_clear.json"
+
+# PATH_BLUR: True
+WARP_AUG_LZU: False
+
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+NIGHTAUG: False

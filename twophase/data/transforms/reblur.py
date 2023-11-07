@@ -177,10 +177,12 @@ def update_vp_ins(sample, vanishing_points, ratio=1.0, img_width=None,
 
     # Scale vanishing_point according to the ratio
     vanishing_point = [n * ratio for n in vanishing_point]
+
+    sample_basename = os.path.basename(sample['filename'])
     
-    if seg_to_det is not None and 'ori_filename' in sample and sample['ori_filename'] in seg_to_det:
+    if seg_to_det is not None and 'ori_filename' in sample and sample_basename in seg_to_det:
         # get the instances from seg_to_det
-        instances = seg_to_det[sample['ori_filename']]
+        instances = seg_to_det[sample_basename]
         # scale instances according to the ratio
         for i in range(len(instances)):
             instances[i] = [n * ratio for n in instances[i]]

@@ -22,8 +22,8 @@ import matplotlib.pyplot as plt
 
 # general parameters
 is_coco_style = True  # NOTE: You can set this to False if not in COCO style
-save_flag = True  # True or False
-use_ins = False # NOTE: be careful about setting this as True
+save_flag = False  # True or False
+use_ins = True # NOTE: be careful about setting this as True
 
 # parameters for PlainKDEGrid only
 warp_fovea_inst_scale = False
@@ -36,8 +36,9 @@ assert not (warp_fovea_inst_scale and warp_fovea_inst_scale_l2), "warp_fovea_ins
 # vp_base = "/home/aghosh/Projects/2PCNet/Datasets/VP/train_day.json"
 
 # NOTE: use this for debug, switch to 
-root_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_day"
-coco_base = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/val_day.json"
+tod = 'night'
+root_path = f"/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_{tod}"
+coco_base = f"/home/aghosh/Projects/2PCNet/Datasets/bdd100k/coco_labels/val_{tod}.json"
 vp_base = "/home/aghosh/Projects/2PCNet/Datasets/VP/bdd100k_all_vp.json"
 
 # Function to calculate the areas of bounding boxes
@@ -71,12 +72,12 @@ def process_images(img_paths, v_pts_list, gt_bboxes_list, grid_net):
     output_path = grid_net.__class__.__name__
 
     # Save the data to txt files
-    save_data_to_txt(hist_data_orig, "hists/hist_data_orig.txt")
+    save_data_to_txt(hist_data_orig, f"hists/hist_data_{tod}_orig.txt")
 
     if output_path == 'PlainKDEGrid':
-        save_data_to_txt(hist_data_warped, f"hists/hist_data_{output_path}_{warp_fovea_inst_scale}_{warp_fovea_inst_scale_l2}.txt")
+        save_data_to_txt(hist_data_warped, f"hists/hist_data_{tod}_{output_path}_{warp_fovea_inst_scale}_{warp_fovea_inst_scale_l2}.txt")
     else:
-        save_data_to_txt(hist_data_warped, f"hists/hist_data_{output_path}.txt")
+        save_data_to_txt(hist_data_warped, f"hists/hist_data_{tod}_{output_path}.txt")
 
     # print mean and std/mean before warping
     mean_orig = np.mean(hist_data_orig)
@@ -288,8 +289,8 @@ def main():
 
 
     grid_net_names = [
-        # 'FixedKDEGrid',
-        # 'CuboidGlobalKDEGrid',
+        'FixedKDEGrid',
+        'CuboidGlobalKDEGrid',
         'PlainKDEGrid',
     ]
 

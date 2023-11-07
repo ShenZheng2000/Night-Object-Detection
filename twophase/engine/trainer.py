@@ -707,7 +707,7 @@ class TwoPCTrainer(DATrainer):
                 save_normalized_images(data_to_use, data_to_use, 'debug_image/no_night_aug')
             sys.exit(1)
 
-
+        # print("self.iter is", self.iter); print("self.cfg.SEMISUPNET.BURN_UP_STEP is", self.cfg.SEMISUPNET.BURN_UP_STEP)
         if self.iter < self.cfg.SEMISUPNET.BURN_UP_STEP:
             common_args = {
                 "branch": "supervised",

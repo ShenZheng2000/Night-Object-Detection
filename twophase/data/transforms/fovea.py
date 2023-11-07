@@ -10,7 +10,6 @@ import sys
 import os
 import json
 import torch
-import gc 
 
 
 def read_seg_to_det(SEG_TO_DET):
@@ -288,7 +287,6 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
         # print("ratio is ", ratio)
         
         vp = get_vanising_points(sample['file_name'], vp_dict, ratio, flip)
-        # TODO: scale instances using ratio and flip also
         vanishing_points.append(vp)
 
     # NOTE: skip for for now, since all vps are valid
@@ -467,9 +465,7 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # NOTE: gt bboxes already updated in apply_warp_aug => no need to return
     # NOTE: add file_name to avoid dup scaling for the same image
 
-    # TODO: generate bbox-level saliency information for instances later
     # print("start apply_warp_aug")
-    # TODO: think about scaling instances, not just images
     warped_images, _, grids = zip(*[
         apply_warp_aug(img = image, 
                        ins = sample.get('instances', None), 
@@ -485,7 +481,6 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # print("end apply_warp_aug")
 
     # print("warped_images shape", warped_images.shape) # [2, 3, 512, 1024]
-    # TODO: change later so it save both the source and target images
     if warp_debug:
         first_image = images[0]
         first_warped_image = warped_images[0]
@@ -536,7 +531,6 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
     
     # NOTE: use this for debug now
-    # TODO: think out a better way instead of hardcode like this
     # black_list = ['stuttgart_000055_000019_leftImg8bit.png', 
     #               'stuttgart_000058_000019_leftImg8bit.png',
     #               'darmstadt_000007_000019_leftImg8bit.png',
@@ -567,7 +561,6 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # print("end backbone")
 
     # Apply unwarping to all feature levels
-    # TODO: vetorize later
     # print("start unwarp")
     if not warp_aug:
 
@@ -579,12 +572,11 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
                 grid = grids[batch_idx]
                 # print(f"feature shape = {feature.shape}") # [64, 128, 256]
                 # print(f"grid shape = {grid.shape}") # [1, 512, 1024, 2]
-                # TODO: use this for debug only
                 try:
                     unwarped = apply_unwarp(feature, grid)
                     unwarped_list.append(unwarped)
                 except:
-                    # Handle the error and process original images (TODO: no use for now, only used to debug the problematic file name)
+                    # Handle the error and process original images
                     print("Error encountered during unwarping. Images in this batch are:")
                     for img_data in batched_inputs:
                         print(os.path.basename(img_data['filename']))

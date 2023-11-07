@@ -29,6 +29,8 @@ import time
 import json
 import os
 
+import matplotlib.pyplot as plt
+
 def build_vp_dict(cfg):
     # If the VANISHING_POINT is set in the configuration, load it.
     if cfg.VANISHING_POINT:
@@ -107,6 +109,9 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         warp_fovea_inst_scale_l2: bool = False,
         fusion_method: str = "max",
         pyramid_layer: int = 2,
+        warp_debug: bool = False,
+        warp_image_norm: bool = False,
+        warp_test: bool = False,
     ):
         """
         Args:
@@ -143,10 +148,14 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         self.warp_aug_lzu = warp_aug_lzu
         self.warp_aug = warp_aug
         self.warp_scale = warp_scale
-        # self.warp_fovea = warp_fovea
-        # self.warp_fovea_inst = warp_fovea_inst
-        # self.warp_fovea_mix = warp_fovea_mix
-        # self.warp_middle = warp_middle
+        self.warp_fovea = warp_fovea
+        self.warp_fovea_inst = warp_fovea_inst
+        self.warp_fovea_mix = warp_fovea_mix
+        self.warp_middle = warp_middle
+        self.warp_debug = warp_debug
+        self.warp_image_norm = warp_image_norm
+
+        self.warp_test = warp_test
 
         # NOTE: define grid_net here (instead of in train.py)
         self.grid_net = build_grid_net(warp_aug_lzu=warp_aug_lzu, 
@@ -191,6 +200,9 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             "warp_fovea_inst_scale_l2": cfg.WARP_FOVEA_INST_SCALE_L2,
             "fusion_method": cfg.FUSION_METHOD,
             "pyramid_layer": cfg.PYRAMID_LAYER,
+            # NOTE: add below for debug
+            "warp_debug": cfg.WARP_DEBUG,
+            "warp_test": cfg.WARP_TEST,
         }
 
     def preprocess_image_train(self, batched_inputs: List[Dict[str, torch.Tensor]]):
@@ -241,7 +253,48 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         #                                             self.vp_dict, self.grid_net, self.backbone, warp_aug=self.warp_aug)
         # NOTE: hardcode non-warping during testing stage for now
         # print("images.tensor shape", images.tensor.shape) # [1, 3, 750, 1333]
-        features = self.backbone(images.tensor)
+        # print("images.tensor mean", images.tensor.mean()) # -98.3018
+        # print("images.tensor min", images.tensor.min()) # -123.6750
+        # print("images.tensor max", images.tensor.max()) # 151.4700
+
+        # NOTE: add a warp_test command to manage this part of the code
+        if self.warp_test and self.warp_aug_lzu and not self.warp_fovea_inst:
+            print("use warping at test-time")
+            features, images = process_and_update_features(batched_inputs, 
+                                                            images, 
+                                                            self.warp_aug_lzu, 
+                                                            self.vp_dict, 
+                                                            self.grid_net, 
+                                                            self.backbone, 
+                                                            self.warp_debug, 
+                                                            self.warp_image_norm, 
+                                                            self.warp_aug)
+        else:
+            features = self.backbone(images.tensor)
+        # print("features shaoe", features['res5'].shape) # [1, 2048, 47, 84]
+        # print("features mean", features['res5'].mean()) # 0.06
+        # print("features min", features['res5'].min()) # 0
+        # print("features max", features['res5'].max()) # 15.3375
+        # exit()
+        
+        # calculate the feature maps and visualize them
+
+        # features = self.backbone(images.tensor) # NOTE: this is the default code!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # print("features shape", features['res5'].shape) # [1, 2048, 47, 84]
+        # print("features mean", features['res5'].mean()) # 0.0632
+        # print("features min", features['res5'].min()) # 0
+        # print("features max", features['res5'].max()) # 21.3976
+
+        if self.warp_test:
+            # NOTE: use them for debug vis only
+            old_features = self.backbone(images.tensor)
+            feat_vis_dir = os.path.join("feat_vis", self.grid_net.__class__.__name__)
+            os.makedirs(feat_vis_dir, exist_ok=True)
+            save_compared_feature_maps(old_features['res5'], 
+                                        features['res5'], 
+                                        filename=os.path.join(feat_vis_dir, os.path.basename(batched_inputs[0]['file_name'])),
+                                        save_original_only=True # NOTE: need to modify this later
+                                        )
 
         if detected_instances is None:
             if self.proposal_generator is not None:
@@ -324,7 +377,6 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         #     losses["loss_D_img_t"] = loss_D_img_t
         #     return losses, [], [], None
 
-        # TODO: think later: whether to use warp_scale for unsupervised stage training
 
         images = self.preprocess_image(batched_inputs)
 
@@ -337,12 +389,26 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         #       batched_inputs[0]['instances'].gt_boxes.tensor.shape) # [N, 4]: x1, y1, x2, y2
         # .to(self.device)
 
+        # print("warp_aug_lzu is", warp_aug_lzu)
         # NOTE: add zoom-unzoom here
         if warp_aug_lzu:
+            # print("process_and_update_features")
             features, images = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
                                                             vp_dict, self.grid_net, self.backbone, 
                                                             warp_debug, warp_image_norm, warp_aug=self.warp_aug)
         
+            # NOTE: for debug only here
+            # print("images.tensor shape", images.tensor.shape)
+            # print("images.tensor mean", images.tensor.mean())
+            # print("images.tensor min", images.tensor.min())
+            # print("images.tensor max", images.tensor.max())
+
+            # old_features = self.backbone(images.tensor)
+            # # print("saving feature maps")
+            # save_compared_feature_maps(old_features['res5'], 
+            #                         features['res5'], 
+            #                         filename=os.path.join("feat_vis", os.path.basename(batched_inputs[0]['file_name']))
+            #                         )
             # print("after batched_inputs", batched_inputs[0]["instances"])
 
         else:
@@ -531,3 +597,34 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
     pass
 
+
+
+def save_compared_feature_maps(original_features, processed_features, filename='feature_comparison.png', save_original_only=False):
+    """
+    Save a comparison between the original and processed feature maps, or just the original features.
+
+    Args:
+    - original_features: the original features as a PyTorch tensor of shape [batch, channels, height, width].
+    - processed_features: the processed features as a PyTorch tensor of the same shape as original_features.
+    - filename: the filename to save the image to.
+    - save_original_only: if True, only save the original features; otherwise, save the comparison.
+    """
+    # Compute the average across the channels for the original features
+    avg_original = original_features.mean(dim=1, keepdim=True)
+
+    if save_original_only:
+        # Normalize the original feature maps for better visualization
+        avg_original = (avg_original - avg_original.min()) / (avg_original.max() - avg_original.min())
+        # Save the original feature maps as an image
+        vutils.save_image(avg_original, filename)
+    else:
+        # Compute the average across the channels for the processed features
+        avg_processed = processed_features.mean(dim=1, keepdim=True)
+        # Concatenate the average feature maps along width
+        comparison = torch.cat((avg_original, avg_processed), dim=-1)
+        # Normalize the concatenated feature maps for better visualization
+        comparison = (comparison - comparison.min()) / (comparison.max() - comparison.min())
+        # Save the concatenated feature maps as an image
+        vutils.save_image(comparison, filename)
+
+    # print(f'Saved feature map comparison image to {filename}.')

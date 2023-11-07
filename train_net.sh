@@ -707,10 +707,64 @@
 # train_bdd "bdd100k_10_18_bbox"
 
 # TODO: one gpu for debug only! Use 3 GPU for training!
+# NOTE: temporal change the configs for debug
+# python train_net.py \
+#   --resume \
+#   --num-gpus 1 \
+#   --config configs/warp_aug_8_2.yaml \
+#   MODEL.WEIGHTS outputs/warp_aug_8_2/model_final.pth \
+#   OUTPUT_DIR outputs/warp_aug_8_2_debug
+
+# python train_net.py \
+#   --num-gpus 3 \
+#   --config configs/warp_aug_9_12.yaml \
+#   OUTPUT_DIR outputs/warp_aug_9_12_debug
+
+
+
+# BDD to ACDC (resume from BDD supervised stage ends, and train ACDC unsupervised)
+# NOTE: use smaller iteration (e.g. 10% of origin) for ACDC, maybe, to see if it converges
+
+# bdd100k_10_18_baseline => acdc_11_6_baseline
+nohup \
+  python train_net.py \
+  --resume \
+  --num-gpus 3 \
+  --config configs/acdc_11_6_baseline.yaml \
+  MODEL.WEIGHTS outputs/bdd100k_10_18_baseline/model_0059999.pth \
+  OUTPUT_DIR outputs/acdc_11_6_baseline \
+  > acdc_11_6_baseline.out 2>&1 &
+
+# # # bdd100k_10_18_fovea => acdc_11_6_fovea
 # nohup \
 #   python train_net.py \
+#   --resume \
 #   --num-gpus 3 \
-#   --config configs/bdd100k_bbox_05x_pyramid_2.yaml \
-#   OUTPUT_DIR outputs/bdd100k_bbox_05x_pyramid_2 \
-#   > bdd100k_bbox_05x_pyramid_2.out 2>&1 &
+#   --config configs/acdc_11_6_fovea.yaml \
+#   MODEL.WEIGHTS outputs/bdd100k_10_18_fovea/model_0059999.pth \
+#   OUTPUT_DIR outputs/acdc_11_6_fovea \
+#   > acdc_11_6_fovea.out 2>&1 &
+
+
+# # bdd100k_10_18_tpp => acdc_11_6_tpp
+# nohup \
+#   python train_net.py \
+#   --resume \
+#   --num-gpus 3 \
+#   --config configs/acdc_11_6_tpp.yaml \
+#   MODEL.WEIGHTS outputs/bdd100k_10_18_tpp/model_0059999.pth \
+#   OUTPUT_DIR outputs/acdc_11_6_tpp \
+#   > acdc_11_6_tpp.out 2>&1 &
+
+
+
+# # bdd100k_10_18_bbox => acdc_11_6_bbox
+# nohup \
+#   python train_net.py \
+#   --resume \
+#   --num-gpus 3 \
+#   --config configs/acdc_11_6_bbox.yaml \
+#   MODEL.WEIGHTS outputs/bdd100k_10_18_bbox/model_0059999.pth \
+#   OUTPUT_DIR outputs/acdc_11_6_bbox \
+#   > acdc_11_6_bbox.out 2>&1 &
 

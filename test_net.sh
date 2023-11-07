@@ -33,4 +33,23 @@ function test_night() {
 # test_rainy "bdd100k_10_18_bbox"
 
 
-# TODO: rainy (0.5x)
+# nohup \
+# python train_net.py \
+#       --num-gpus 3 \
+#       --config configs/bdd100k_warp_aug_9_12.yaml \
+#       OUTPUT_DIR outputs/warp_aug_9_12 \
+#       > warp_aug_9_12.out 2>&1 &
+
+# TODO: write a new test config, and use the function above
+# TODO: configs/bdd100k_test_warp_night.yaml, where CONFIG_SUFFIX="warp_night"
+# NAME="pretrained"
+# NAME="warp_aug_8_2"
+NAME="warp_aug_9_12"
+# NAME="bdd100k_9_22_v1"
+
+python train_net.py \
+    --num-gpus 1 \
+      --eval-only \
+      --config configs/${NAME}.yaml \
+      MODEL.WEIGHTS outputs/${NAME}/model_final.pth \
+      OUTPUT_DIR outputs/${NAME}/warp_night
