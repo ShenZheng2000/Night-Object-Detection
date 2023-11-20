@@ -9,3 +9,4 @@
 debug.py
 **/torch-batch-svd/
 **/*.txt
+**/*.pdf

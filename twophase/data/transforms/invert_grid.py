@@ -3,15 +3,17 @@ from typing import List
 
 import torch
 
-
+# NOTE: add use_spline argument here
 def invert_grid(grid, input_shape, separable=False):
     f = invert_separable_grid if separable else invert_nonseparable_grid
     return f(grid, list(input_shape))
 
 # TODO: hardcode removing this for debug
 # @torch.jit.script
-def invert_separable_grid(grid, input_shape: List[int]):
+def invert_separable_grid(grid, input_shape):
     grid = grid.clone()
+
+    # TODO: seems like reshaping grid to input_shape's height and width, and then do inversion?
     
     # # Check if the 'grid' tensor has any NaN values
     # if torch.isnan(grid).any():
@@ -21,9 +23,9 @@ def invert_separable_grid(grid, input_shape: List[int]):
     #     grid[torch.isnan(grid)] = 0
 
     # print("==================================================>")
-    # print(f"input_shape is {input_shape} grid is {grid.shape}")
+    # print(f"input_shape is {input_shape} grid is {grid.shape}") # [1, 2048, 38, 67], [1, 600, 1067, 2]
     # print(f"torch.isnan is {torch.isnan(grid).any()}")
-    # print(f"grid.min is {grid.min()} grid.max is {grid.max()}")
+    # print(f"grid.min is {grid.min()} grid.max is {grid.max()}") # [-1, 1]
     device = grid.device
     H: int = input_shape[2]
     W: int = input_shape[3]
@@ -31,39 +33,60 @@ def invert_separable_grid(grid, input_shape: List[int]):
     assert B == input_shape[0]
 
     eps = 1e-8
+    
+    # grid now ranges from 0 to ([H or W] - 1)
     grid[:, :, :, 0] = (grid[:, :, :, 0] + 1) / 2 * (W - 1)
     grid[:, :, :, 1] = (grid[:, :, :, 1] + 1) / 2 * (H - 1)
-    # grid now ranges from 0 to ([H or W] - 1)
-    # TODO: implement batch operations
+
+    # init inverse_grid with 2 * max(H, W)
     inverse_grid = 2 * max(H, W) * torch.ones(
         [B, H, W, 2], dtype=torch.float32, device=device)
+
+    # print("inverse_grid.shape is ", inverse_grid.shape) # [1, 38, 67, 2]
+
     for b in range(B):
         # each of these is ((grid_H - 1)*(grid_W - 1)) x 2
-        p00 = grid[b,  :-1,   :-1, :].contiguous().view(-1, 2)  # noqa: 203
-        p10 = grid[b, 1:  ,   :-1, :].contiguous().view(-1, 2)  # noqa: 203
-        p01 = grid[b,  :-1,  1:  , :].contiguous().view(-1, 2)  # noqa: 203
+        p00 = grid[b,  :-1,   :-1, :].contiguous().view(-1, 2)  # noqa: 203 # top left
+        p10 = grid[b, 1:  ,   :-1, :].contiguous().view(-1, 2)  # noqa: 203 # top right
+        p01 = grid[b,  :-1,  1:  , :].contiguous().view(-1, 2)  # noqa: 203 # bottom left
+        # print("p00.shape is ", p00.shape) # [638534, 2]
+        # print("p10.shape is ", p10.shape) # [638534, 2]
+        # print("p01.shape is ", p01.shape) # [638534, 2]
 
-        ref = torch.floor(p00).to(torch.int)
-        v00 = p00 - ref
-        v10 = p10 - ref
-        v01 = p01 - ref
-        vx = p01[:, 0] - p00[:, 0]
-        vy = p10[:, 1] - p00[:, 1]
+        # calculate offsets and ranges
+        ref = torch.floor(p00).to(torch.int) # starting point of grid
+        v00 = p00 - ref # offset of top left point
+        v10 = p10 - ref # offset of top right point
+        v01 = p01 - ref # offset of bottom left point
 
+        vx = p01[:, 0] - p00[:, 0] # x range of grid
+        vy = p10[:, 1] - p00[:, 1] # y range of grid
+
+        # expand range of x and y to include all points in the grid
         min_x = int(floor(v00[:, 0].min() - eps))
         max_x = int(ceil(v01[:, 0].max() + eps))
         min_y = int(floor(v00[:, 1].min() - eps))
         max_y = int(ceil(v10[:, 1].max() + eps))
 
+        # generate a regular grid of points
         pts = torch.cartesian_prod(
             torch.arange(min_x, max_x + 1, device=device),
             torch.arange(min_y, max_y + 1, device=device),
         ).T  # 2 x (x_range*y_range)
+        # print("pts.shape is ", pts.shape) # [2, 16]
+        # print("pts is ", pts)
+
+        # unwarp points back to the original grid
+        # print("pts[0].unsqueeze(0) is ", pts[0].unsqueeze(0).shape) # [1, 16]
+        # print("v00[:, 0].unsqueeze(1) is ", v00[:, 0].unsqueeze(1).shape) # [638534, 1]
+        # print("vx.unsqueeze(1) is ", vx.unsqueeze(1).shape) # [638534, 1]
 
         unwarped_x = (pts[0].unsqueeze(0) - v00[:, 0].unsqueeze(1)) / vx.unsqueeze(1)  # noqa: E501
         unwarped_y = (pts[1].unsqueeze(0) - v00[:, 1].unsqueeze(1)) / vy.unsqueeze(1)  # noqa: E501
         unwarped_pts = torch.stack((unwarped_y, unwarped_x), dim=0)  # noqa: E501, has shape2 x ((grid_H - 1)*(grid_W - 1)) x (x_range*y_range)
+        # print("unwarped_pts.shape is ", unwarped_pts.shape) # [2, 638534, 16]
 
+        # filter points within valid range
         good_indices = torch.logical_and(
             torch.logical_and(-eps <= unwarped_pts[0],
                               unwarped_pts[0] <= 1+eps),
@@ -71,19 +94,32 @@ def invert_separable_grid(grid, input_shape: List[int]):
                               unwarped_pts[1] <= 1+eps),
         )  # ((grid_H - 1)*(grid_W - 1)) x (x_range*y_range)
         nonzero_good_indices = good_indices.nonzero()
+
+        # mapping points back to image space
         inverse_j = pts[0, nonzero_good_indices[:, 1]] + ref[nonzero_good_indices[:, 0], 0]  # noqa: E501
         inverse_i = pts[1, nonzero_good_indices[:, 1]] + ref[nonzero_good_indices[:, 0], 1]  # noqa: E501
+        # print("inverse_j.shape is ", inverse_j.shape) # [2508]
+        # print("inverse_i.shape is ", inverse_i.shape) # [2508]
         # TODO: is replacing this with reshape operations on good_indices faster? # noqa: E501
+
+        # reconstructing Grid Coordinates:
         j = nonzero_good_indices[:, 0] % (grid_W - 1)
         i = nonzero_good_indices[:, 0] // (grid_W - 1)
+
+        # combine unwarpped points with grid indices
         grid_mappings = torch.stack(
             (j + unwarped_pts[1, good_indices], i + unwarped_pts[0, good_indices]),  # noqa: E501
             dim=1
         )
+        # print("grid_mappings.shape is ", grid_mappings.shape) # [2546, 2]
+
+        # boundary checking
         in_bounds = torch.logical_and(
             torch.logical_and(0 <= inverse_i, inverse_i < H),
             torch.logical_and(0 <= inverse_j, inverse_j < W),
         )
+
+        # compute inverse grid
         inverse_grid[b, inverse_i[in_bounds], inverse_j[in_bounds], :] = grid_mappings[in_bounds, :]  # noqa: E501
 
     inverse_grid[..., 0] = (inverse_grid[..., 0]) / (grid_W - 1) * 2.0 - 1.0  # noqa: E501

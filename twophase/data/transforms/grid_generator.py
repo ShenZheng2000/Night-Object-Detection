@@ -587,6 +587,9 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         self.warp_fovea_inst_scale = warp_fovea_inst_scale
         self.warp_fovea_inst_scale_l2 = warp_fovea_inst_scale_l2
 
+        # print("self.bandwidth_scale is", self.bandwidth_scale)
+        # print("self.amplitude_scale is", amplitude_scale)
+
     def forward(self, imgs, v_pts, gt_bboxes, jitter=False):
         # Check if imgs is in BCHW format
         assert len(imgs.shape) == 4, "Expected imgs to be in BCHW format"
@@ -660,10 +663,12 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
                  homo_layer = 'cuboid',
                  saliency_file = 'dataset_saliency.pkl',
                  warp_fovea_inst_scale = False,
-                 fusion_method='max',
+                 warp_fovea_inst_scale_l2=False,
+                #  fusion_method='max',
+                fusion_method='none',
                  pyramid_layer=2,
                  is_seg=False,
-                 folder_path='tpp_saliency',
+                 folder_path='saliency',
                  **kwargs):
         
         # Select the appropriate layer based on the homo_layer argument
@@ -689,6 +694,7 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
 
         self.warp_scale = warp_scale
         self.warp_fovea_inst_scale = warp_fovea_inst_scale
+        self.warp_fovea_inst_scale_l2 = warp_fovea_inst_scale_l2
 
         # read saliency for bboxes_level
         self.dataset_saliency = pickle.load(open(saliency_file, 'rb'))
@@ -748,15 +754,25 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
 
         # NOTE: hardcode this line here to get image shape
         self.update_output_shape(tuple(int(dim * self.warp_scale) for dim in imgs.shape[2:4]))
-        
+
+        # import time
+        # time_start = time.time()
+
         # Bbox-level saliency
         bbox_saliency = self.compute_bbox_saliency(imgs, gt_bboxes, jitter).to(device)
 
+        # print("bbox-level spend", time.time() - time_start, "seconds")
+
         # Image-level saliency
+        # time_start = time.time()
+
         if self.is_seg:
             img_saliency = self.obtain_image_saliency(file_name, use_flip).to(device)
         else:
             img_saliency = super().get_saliency(imgs, v_pts).to(device)
+        
+        # print("image-level spend", time.time() - time_start, "seconds")
+        # exit()
 
         # # # save img_saliency and img_saliency_2 as images
         # print(f"saving saliency with use_flip = {use_flip}!")
@@ -795,12 +811,25 @@ class MixKDEGrid(BaseKDEGrid, SaliencyMixin):
             # print("After, mixed_saliency min", mixed_saliency.min(), "max", mixed_saliency.max())
         else:
             # NOTE: use this for vis debug now
-            mixed_saliency = img_saliency
-            os.makedirs(self.folder_path, exist_ok=True)
-            filename = f"{file_name}.png"
-            filepath = os.path.join(self.folder_path, filename)
-            print("saving saliency maps!!!!!!!!!!!!!!!!!!!!!!!!")
-            save_image(mixed_saliency, filepath, normalize=True)
+            # Create subfolders inside the main folder
+            fovea_path = os.path.join(self.folder_path, "fovea")
+            tpp_path = os.path.join(self.folder_path, "tpp")
+            bbox_path = os.path.join(self.folder_path, "bbox")
+
+            # Ensure that these directories exist
+            os.makedirs(fovea_path, exist_ok=True)
+            os.makedirs(tpp_path, exist_ok=True)
+            os.makedirs(bbox_path, exist_ok=True)
+
+            # print("saving saliency maps!!!!!!!!!!!!!!!!!!!!!!!!")
+            # Save images to respective subfolders
+            save_image(dataset_saliency, os.path.join(fovea_path, f"{file_name}.png"), normalize=True)
+            save_image(img_saliency, os.path.join(tpp_path, f"{file_name}.png"), normalize=True)
+            save_image(bbox_saliency, os.path.join(bbox_path, f"{file_name}.png"), normalize=True)
+
+            # return any of the saliency, does not matter for this vis debug case
+            return self.saliency_to_grid(imgs, bbox_saliency, device)
+
         
         # TODO: save saliency maps with different names
         # print("saving saliency maps!!!!!!!!!!!!!!!!!!!!!!!!")

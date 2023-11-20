@@ -726,14 +726,14 @@
 # NOTE: use smaller iteration (e.g. 10% of origin) for ACDC, maybe, to see if it converges
 
 # bdd100k_10_18_baseline => acdc_11_6_baseline
-nohup \
-  python train_net.py \
-  --resume \
-  --num-gpus 3 \
-  --config configs/acdc_11_6_baseline.yaml \
-  MODEL.WEIGHTS outputs/bdd100k_10_18_baseline/model_0059999.pth \
-  OUTPUT_DIR outputs/acdc_11_6_baseline \
-  > acdc_11_6_baseline.out 2>&1 &
+# nohup \
+#   python train_net.py \
+#   --resume \
+#   --num-gpus 3 \
+#   --config configs/acdc_11_6_baseline.yaml \
+#   MODEL.WEIGHTS outputs/bdd100k_10_18_baseline/model_0059999.pth \
+#   OUTPUT_DIR outputs/acdc_11_6_baseline \
+#   > acdc_11_6_baseline.out 2>&1 &
 
 # # # bdd100k_10_18_fovea => acdc_11_6_fovea
 # nohup \
@@ -741,24 +741,23 @@ nohup \
 #   --resume \
 #   --num-gpus 3 \
 #   --config configs/acdc_11_6_fovea.yaml \
-#   MODEL.WEIGHTS outputs/bdd100k_10_18_fovea/model_0059999.pth \
+#   MODEL.WEIGHTS outputs/acdc_11_6_fovea/model_0062499.pth \
 #   OUTPUT_DIR outputs/acdc_11_6_fovea \
 #   > acdc_11_6_fovea.out 2>&1 &
 
 
-# # bdd100k_10_18_tpp => acdc_11_6_tpp
+# # # bdd100k_10_18_tpp => acdc_11_6_tpp
 # nohup \
 #   python train_net.py \
 #   --resume \
 #   --num-gpus 3 \
 #   --config configs/acdc_11_6_tpp.yaml \
-#   MODEL.WEIGHTS outputs/bdd100k_10_18_tpp/model_0059999.pth \
+#   MODEL.WEIGHTS outputs/acdc_11_6_tpp/model_0061999.pth \
 #   OUTPUT_DIR outputs/acdc_11_6_tpp \
 #   > acdc_11_6_tpp.out 2>&1 &
 
 
-
-# # bdd100k_10_18_bbox => acdc_11_6_bbox
+# # # bdd100k_10_18_bbox => acdc_11_6_bbox
 # nohup \
 #   python train_net.py \
 #   --resume \
@@ -768,3 +767,7 @@ nohup \
 #   OUTPUT_DIR outputs/acdc_11_6_bbox \
 #   > acdc_11_6_bbox.out 2>&1 &
 
+# python train_net.py \
+#   --num-gpus 1 \
+#   --config configs/bdd100k_11_7_new_unwarp.yaml \
+#   OUTPUT_DIR outputs/bdd100k_11_7_new_unwarp

@@ -277,7 +277,8 @@ class DAobjTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         # print("features max", features['res5'].max()) # 15.3375
         # exit()
         
-        # calculate the feature maps and visualize them
+        # # calculate the feature maps and visualize them
+        # visualize_grad_cam(backbone=self.backbone, images=images.tensor)
 
         # features = self.backbone(images.tensor) # NOTE: this is the default code!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # print("features shape", features['res5'].shape) # [1, 2048, 47, 84]
@@ -628,3 +629,56 @@ def save_compared_feature_maps(original_features, processed_features, filename='
         vutils.save_image(comparison, filename)
 
     # print(f'Saved feature map comparison image to {filename}.')
+
+
+# NOTE: cannot work for now => Skip
+# def visualize_grad_cam(backbone, images):
+#     from pytorch_grad_cam import GradCAM
+#     from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+#     from pytorch_grad_cam.utils.image import show_cam_on_image
+#     from torchvision.transforms.functional import to_pil_image
+
+#     # downscale images to half to avoid OOM
+#     images = F.interpolate(images, scale_factor=0.25, mode='bilinear', align_corners=False)
+
+#     # if not images.requires_grad:
+#     #     images.requires_grad = True
+
+#     # Set the model to evaluation mode
+#     backbone.eval()
+
+#     # Ensure target_layers is set correctly
+#     target_layers = [backbone.res5[-1]]
+
+#     # Check if images tensor is already in a batch or needs unsqueezing
+#     if len(images.shape) == 3:
+#         images = images.unsqueeze(0)
+
+#     # Normalize the images tensor if your model requires normalization
+#     # Adjust the mean and std to match your model's training
+#     # images = normalize(images, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+
+#     # Create a GradCAM object
+#     cam = GradCAM(model=backbone, target_layers=target_layers, use_cuda=True)
+
+#     # Generate the class activation maps
+#     grayscale_cam = cam(input_tensor=images, targets=None) # None targets for highest scoring class
+
+#     # Extract the first image's CAM and image for visualization
+#     grayscale_cam = grayscale_cam[0, :]
+#     rgb_img = to_pil_image(images[0].cpu())
+
+#     print("image.shape", rgb_img.size)
+
+#     # Convert PIL image to numpy array for visualization
+#     rgb_image = np.array(rgb_img)
+#     rgb_image = rgb_image.astype(np.float32) / 255
+
+#     # Overlay the CAM on the image
+#     visualization = show_cam_on_image(rgb_image, grayscale_cam, use_rgb=True)
+
+#     # Display or save the visualization
+#     plt.imshow(visualization)
+#     plt.savefig("grad_cam_baseline.png")
+
+#     exit()

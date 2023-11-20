@@ -36,7 +36,8 @@ def before_train_json(VP):
 
 def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, warp_middle, warp_scale,
                    warp_fovea_center=False, warp_fovea_inst_scale=False, warp_fovea_inst_scale_l2=False,
-                   fusion_method='max', pyramid_layer=2, is_seg=False):
+                   fusion_method='max', pyramid_layer=2, is_seg=False,
+                   bandwidth_scale=64, amplitude_scale=1.0):
     if warp_aug_lzu:
         # NOTE: remove saliency for now, because it has been set by default
         # saliency_file = 'dataset_saliency.pkl'
@@ -47,7 +48,10 @@ def build_grid_net(warp_aug_lzu, warp_fovea, warp_fovea_inst, warp_fovea_mix, wa
         elif warp_fovea_inst:
             return PlainKDEGrid(warp_scale=warp_scale, 
                                 warp_fovea_inst_scale=warp_fovea_inst_scale,
-                                warp_fovea_inst_scale_l2=warp_fovea_inst_scale_l2)
+                                warp_fovea_inst_scale_l2=warp_fovea_inst_scale_l2,
+                                bandwidth_scale=bandwidth_scale,
+                                amplitude_scale=amplitude_scale,
+                                )
         elif warp_fovea_mix:
             return MixKDEGrid(warp_scale=warp_scale, 
                               fusion_method=fusion_method, 
@@ -119,11 +123,11 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None, file_name=None, us
         grid = grid_net(imgs, vanishing_point, bboxes, file_name=file_name, use_flip=use_flip)
     else:
         grid = grid_net(imgs, vanishing_point, bboxes)
-    # print("grid shape", grid.shape); print("grid min", grid.min(), "grid max", grid.max(), "grid mean", grid.mean())
+    # print("grid shape", grid.shape)
 
     warped_imgs = F.grid_sample(imgs, grid, align_corners=True)
 
-    # print("imgs.shape", imgs.shape); exit()
+    # print("imgs.shape", imgs.shape)
 
     return grid, warped_imgs
 
@@ -210,16 +214,97 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     return img, ins, grid
 
 
+# NOTE: for unwarp vis debug only
+def save_grid(input_tensor, save_path):
+    """
+    Convert a PyTorch tensor of shape [1, H, W, 2] to [1, 1, H, W] (grayscale) and save it.
 
-def apply_unwarp(warped_x, grid, keep_size=True):
+    Args:
+        input_tensor (torch.Tensor): Input tensor of shape [1, H, W, 2].
+        save_path (str): File path to save the grayscale tensor.
+    """
+    # check image min and max value
+    # print(f"input_tensor min {input_tensor.min()} max {input_tensor.max()}") # [-1, 1]
+
+    # Transpose the tensor to change its shape from [1, H, W, 2] to [1, 2, H, W]
+    transposed_tensor = input_tensor.permute(0, 3, 1, 2)
+
+    # Extract the first component (grayscale) by selecting the first channel
+    grayscale_tensor = transposed_tensor[:, 0:1, :, :]
+
+    # Save the grayscale tensor using torch.save() or any other desired method
+    vutils.save_image(grayscale_tensor, save_path, normalize=True)
+
+
+def save_feature(image1, image2, save_path):
+    # Calculate the mean along the second dimension for both images
+    averaged_image1 = torch.mean(image1, dim=1, keepdim=True)
+    averaged_image2 = torch.mean(image2, dim=1, keepdim=True)
+
+    # Concatenate the averaged images side by side along the width dimension (dimension 3)
+    concatenated_image = torch.cat((averaged_image1, averaged_image2), dim=3)
+
+    # Save the concatenated image as an image using torchvision's save_image
+    vutils.save_image(concatenated_image, save_path)
+
+# # TODO: This is for vis debug only
+# def apply_unwarp(warped_x, grid, keep_size=True):
+#     if (len(warped_x.shape) == 3) and keep_size:
+#         warped_x = warped_x.unsqueeze(0)
+
+#     # Process for both keep_grid = True and False
+#     for keep_grid in [True, False]:
+#         grid_suffix = "keep_grid" if keep_grid else "no_keep_grid"
+
+#         if keep_grid == True:
+#             # First downsample grid to match warped_x, and directly inverse grid
+#             grid_resized = grid.permute(0, 3, 1, 2)
+#             grid_resized = F.interpolate(grid_resized, size=(warped_x.shape[-2], warped_x.shape[-1]), mode='bilinear', align_corners=True)
+#             grid_resized = grid_resized.permute(0, 2, 3, 1)
+#             inverse_grid = invert_grid(grid_resized, warped_x.shape, separable=True)[0:1]
+#         elif keep_grid == False:
+#             inverse_grid = invert_grid(grid, warped_x.shape, separable=True)[0:1]
+
+#         # Save the inverse grid
+#         save_grid(inverse_grid, f'feat_vis/inverse_grid_{grid_suffix}.png')
+
+#         # Expand inverse_grid to match batch size
+#         B = warped_x.shape[0]
+#         inverse_grid = inverse_grid.expand(B, -1, -1, -1)
+
+#         # Perform unzoom
+#         unwarped_x = F.grid_sample(
+#             warped_x, inverse_grid, mode='bilinear',
+#             align_corners=True, padding_mode='zeros'
+#         )
+
+#         # Save the unwarped features
+#         save_feature(warped_x, unwarped_x, f'feat_vis/warp_unwarp_feat_{grid_suffix}.png')
+    
+#     exit()
+
+#     if (len(unwarped_x.shape) == 4) and keep_size:
+#         unwarped_x = unwarped_x.squeeze(0)
+
+#     return unwarped_x
+
+
+# NOTE: This is the running version
+def apply_unwarp(warped_x, grid, keep_size=True, keep_grid=False):
     if (len(warped_x.shape) == 3) and keep_size:
         warped_x = warped_x.unsqueeze(0)
 
     # print(f'warped_x is {warped_x.shape}; grid is {grid.shape}') # [1, 2048, 38, 67]; [1, 600, 1067, 2]
     # print(f'warped_x is {warped_x.dtype}; grid is {grid.dtype}') # torch.float32, torch.float32
 
-    # Compute inverse_grid
-    inverse_grid = invert_grid(grid, warped_x.shape, separable=True)[0:1]
+    if keep_grid:
+        # First downsample grid to match warped_x, and directly inverse grid
+        grid_resized = grid.permute(0, 3, 1, 2)
+        grid_resized = F.interpolate(grid_resized, size=(warped_x.shape[-2], warped_x.shape[-1]), mode='bilinear', align_corners=True)
+        grid_resized = grid_resized.permute(0, 2, 3, 1)
+        inverse_grid = invert_grid(grid_resized, warped_x.shape, separable=True)[0:1]
+    else:
+        inverse_grid = invert_grid(grid, warped_x.shape, separable=True)[0:1]
 
     # Expand inverse_grid to match batch size
     B = warped_x.shape[0]
@@ -240,7 +325,6 @@ def apply_unwarp(warped_x, grid, keep_size=True):
     # print(f"unwarped_x min {unwarped_x.min()} max {unwarped_x.max()}") # [0, 255]
 
     return unwarped_x
-
 
 
 def extract_ratio_and_flip(transform_list):
@@ -399,7 +483,7 @@ def process_and_update_features(batched_inputs, images, warp_aug_lzu, vp_dict, g
 
 
 def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backbone, 
-                warp_debug=False, warp_image_norm=False, warp_aug=False, seg_to_det=None):
+                warp_debug=False, warp_image_norm=False, warp_aug=False, seg_to_det=None, keep_grid=False):
     '''
     '''
     # print(f"batched_inputs = {batched_inputs}")   # list: [...]
@@ -422,14 +506,6 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     ori_height, ori_width, _ = batched_inputs[0]['ori_shape']
     # print(f"ori_height = {ori_height}, ori_width = {ori_width}") # 1024, 2048
 
-    # vanishing_points = [
-    #     get_vanising_points(
-    #         sample['file_name'], 
-    #         vp_dict, 
-    #         *extract_ratio_and_flip(sample['transform'])
-    #     ) for sample in batched_inputs
-    # ]
-
     vanishing_points = []
     for sample in batched_inputs:
         # Handle the absence of 'transform' key in test case
@@ -442,28 +518,6 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
         vanishing_points.append(sample['vanishing_point'])
 
         # print("vp ==", sample['vanishing_point'])
-
-    # NOTE: skip for for now, since all vps are valid
-    # # Correcting vanishing_points if they are out of bounds
-    # corrected_vanishing_points = []
-    # for vp in vanishing_points:
-    #     if is_out_of_bounds(vp, img_width, img_height):
-    #         vp_x = min(max(1, vp[0]), img_width - 2)
-    #         vp_y = min(max(1, vp[1]), img_height - 2)
-    #         print(f"Vanishing point {vp} was out of bounds and has been clipped to {[vp_x, vp_y]}")
-    #         corrected_vanishing_points.append([vp_x, vp_y])
-    #     else:
-    #         corrected_vanishing_points.append(vp)
-    
-    # vanishing_points = corrected_vanishing_points  # Update the vanishing_points list
-
-    # Apply warping
-    # warped_images, _, grids = zip(*[
-    #     apply_warp_aug(image, None, vp, False, warp_aug_lzu, grid_net) 
-    #     for image, vp in zip(images.tensor, vanishing_points)
-    # ])
-    # NOTE: gt bboxes already updated in apply_warp_aug => no need to return
-    # NOTE: add file_name to avoid dup scaling for the same image
 
     # print("start apply_warp_aug")
     warped_images, _, grids = zip(*[
@@ -480,6 +534,13 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     warped_images = torch.stack(warped_images)
     # print("end apply_warp_aug")
 
+    # NOTE: scale images and ins if necessary
+    images, batched_inputs = scale_images_and_metadata(images, batched_inputs, grid_net.warp_scale)
+
+    # print("batched_inputs[0]['img_shape']", batched_inputs[0]['img_shape'])
+    # print("batched_inputs[0]['pad_shape']", batched_inputs[0]['pad_shape'])
+    # print("batched_inputs[0]['scale_factor']", batched_inputs[0]['scale_factor'])
+
     # print("warped_images shape", warped_images.shape) # [2, 3, 512, 1024]
     if warp_debug:
         first_image = images[0]
@@ -487,39 +548,6 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
         cat_image = torch.cat([first_image, first_warped_image], dim=2)
         vutils.save_image(cat_image, f"visuals/warped_images_{grid_net.__class__.__name__}.png", normalize=True)
         exit()
-
-    # NOTE: scale images and ins if necessary
-    # TODO: debug this with this mmseg function later
-    if grid_net.warp_scale != 1.0:
-        
-        # Import ImageList
-        from detectron2.structures import ImageList
-
-        # Scale images
-        scaled_image_tensor = F.interpolate(images, scale_factor=grid_net.warp_scale, mode='bilinear', align_corners=False)
-        images = ImageList(scaled_image_tensor, images.image_sizes) # TODO: hardcode size for now since images.image_sizes is not used later
-
-        # Scale ins
-        processed_files = set()
-
-        for sample in batched_inputs:
-            ins = sample.get('instances', None)
-
-            file_name = sample.get('file_name')
-            if file_name in processed_files:
-                continue  # Skip this entry if it's been processed already
-            else:
-                processed_files.add(file_name)  # Add the file_name to the set
-
-            # print("before", ins.gt_boxes.tensor)
-            ins.gt_boxes.tensor *= grid_net.warp_scale
-            # print("after", ins.gt_boxes.tensor)
-
-            height, width = ins.image_size
-            # print(f"height = {height}, width = {width}")
-            ins._image_size = (height*grid_net.warp_scale, 
-                            width*grid_net.warp_scale)
-            # new_height, new_width = ins.image_size; print(f"new_height = {new_height}, new_width = {new_width}")
         
     # Normalize warped images
     if warp_image_norm:
@@ -528,32 +556,7 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # debug images
     # print("len batched_inputs", len(batched_inputs)) # BS
     # print("warped_images", warped_images.shape) # [BS, C, H, W]
-    concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
-    
-    # NOTE: use this for debug now
-    # black_list = ['stuttgart_000055_000019_leftImg8bit.png', 
-    #               'stuttgart_000058_000019_leftImg8bit.png',
-    #               'darmstadt_000007_000019_leftImg8bit.png',
-    #               'hamburg_000000_044400_leftImg8bit.png',
-    #               'hamburg_000000_006192_leftImg8bit.png',
-    #               'dusseldorf_000140_000019_leftImg8bit.png',
-    #               'darmstadt_000026_000019_leftImg8bit.png',
-    #               'bremen_000176_000019_leftImg8bit.png',
-    #               'strasbourg_000001_026606_leftImg8bit.png',
-    #               'bremen_000081_000019_leftImg8bit.png',
-    #               'bremen_000078_000019_leftImg8bit.png',
-    #               'cologne_000121_000019_leftImg8bit.png'
-    #               ]
-
-    # for sample in batched_inputs:
-    #     # print("os.path.basename(sample['filename']) is", os.path.basename(sample['filename'])); exit()
-    #     if os.path.basename(sample['filename']) in black_list:
-    #         print("images shape", images.shape)
-    #         print("warped_images shape", warped_images.shape)
-    #         print("grid nan is", torch.isnan(grids).any())
-    #         print("grids is", grids)
-    #         features = backbone(images)
-    #         return features, images
+    # concat_and_save_images(batched_inputs, warped_images, debug=warp_debug)
 
     # Call the backbone
     # print("start backbone")
@@ -573,7 +576,7 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
                 # print(f"feature shape = {feature.shape}") # [64, 128, 256]
                 # print(f"grid shape = {grid.shape}") # [1, 512, 1024, 2]
                 try:
-                    unwarped = apply_unwarp(feature, grid)
+                    unwarped = apply_unwarp(feature, grid, keep_grid=keep_grid)
                     unwarped_list.append(unwarped)
                 except:
                     # Handle the error and process original images
@@ -587,7 +590,35 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
             # print(f"idx = {idx}, features[idx] shape = {features[idx].shape}")
     # print("end unwarp")
 
-    return features, images
+    return features, images, batched_inputs
+
+def scale_images_and_metadata(images, batched_inputs, warp_scale):
+    """
+    Scales images and updates 'img_shape', 'pad_shape', and 'scale_factor' in metadata.
+
+    Args:
+    - images (torch.Tensor): The batch of images to be scaled.
+    - batched_inputs (list[dict]): List of metadata dictionaries for each image.
+    - warp_scale (float): The scaling factor.
+
+    Returns:
+    - torch.Tensor: The scaled images.
+    - list[dict]: The updated metadata dictionaries.
+    """
+    if warp_scale == 1.0:
+        return images, batched_inputs  # No scaling needed if warp_scale is 1.0
+
+    # Scale images using bilinear interpolation
+    scaled_images = F.interpolate(images, scale_factor=warp_scale, mode='bilinear', align_corners=False)
+
+    # Scale image metadata accordingly
+    for meta in batched_inputs:
+        meta['img_shape'] = tuple(int(dim * warp_scale) for dim in meta['img_shape'])
+        meta['pad_shape'] = tuple(int(dim * warp_scale) for dim in meta['pad_shape'])
+        meta['scale_factor'] = meta['scale_factor'] * warp_scale
+
+    return scaled_images, batched_inputs
+
 
 def handle_unwarp_exception(images, backbone):
     # If there's an error during unwarping, use original images to get features

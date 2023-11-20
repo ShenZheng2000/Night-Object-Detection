@@ -1,18 +1,18 @@
-function test_night() {
-    local MODEL_NAME="$1"
-    local CONFIG_SUFFIX="$2"  # Suffix for the configuration file, e.g., "night", "night_05x"
+# function test_night() {
+#     local MODEL_NAME="$1"
+#     local CONFIG_SUFFIX="$2"  # Suffix for the configuration file, e.g., "night", "night_05x"
     
-    # Construct the configuration filename using the constant prefix and the passed suffix.
-    local CONFIG_FILE="configs/bdd100k_test_${CONFIG_SUFFIX}.yaml"
+#     # Construct the configuration filename using the constant prefix and the passed suffix.
+#     local CONFIG_FILE="configs/bdd100k_test_${CONFIG_SUFFIX}.yaml"
     
-    CUDA_VISIBLE_DEVICES=2 \
-    python train_net.py \
-        --num-gpus 1 \
-        --eval-only \
-        --config "${CONFIG_FILE}" \
-        MODEL.WEIGHTS "outputs/${MODEL_NAME}/model_final.pth" \
-        OUTPUT_DIR "outputs/${MODEL_NAME}/${CONFIG_SUFFIX}"
-}
+#     CUDA_VISIBLE_DEVICES=2 \
+#     python train_net.py \
+#         --num-gpus 1 \
+#         --eval-only \
+#         --config "${CONFIG_FILE}" \
+#         MODEL.WEIGHTS "outputs/${MODEL_NAME}/model_final.pth" \
+#         OUTPUT_DIR "outputs/${MODEL_NAME}/${CONFIG_SUFFIX}"
+# }
 
 
 
@@ -44,12 +44,45 @@ function test_night() {
 # TODO: configs/bdd100k_test_warp_night.yaml, where CONFIG_SUFFIX="warp_night"
 # NAME="pretrained"
 # NAME="warp_aug_8_2"
-NAME="warp_aug_9_12"
-# NAME="bdd100k_9_22_v1"
+# NAME="warp_aug_9_12"
+# # NAME="bdd100k_9_22_v1"
 
-python train_net.py \
+# TOD='clear'
+TOD='day'
+
+# List of NAME values
+NAMES=(
+  # "acdc_11_6_baseline"
+  # "acdc_11_6_fovea"
+  # "acdc_11_6_tpp"
+  # "acdc_11_6_bbox"
+  # "pretrained"
+  # "warp_aug_9_12"
+  # "warp_aug_8_2"
+  "bdd100k_9_22_v1"
+  # "bdd100k_10_18_baseline"
+  # "bdd100k_10_18_fovea"
+  # "bdd100k_10_18_tpp"
+  # "bdd100k_10_18_bbox"
+  )
+
+# # Loop over each NAME and run the command
+export CUDA_VISIBLE_DEVICES=2
+for NAME in "${NAMES[@]}"; do
+  python train_net.py \
     --num-gpus 1 \
-      --eval-only \
-      --config configs/${NAME}.yaml \
-      MODEL.WEIGHTS outputs/${NAME}/model_final.pth \
-      OUTPUT_DIR outputs/${NAME}/warp_night
+    --eval-only \
+    --config "configs/bdd100k_test_${TOD}.yaml" \
+    MODEL.WEIGHTS "/longdata/anurag_storage/2PCNet/outputs_11_14_det_ckpts/${NAME}/model_final.pth" \
+    OUTPUT_DIR "outputs/${NAME}/${TOD}"
+done
+
+
+# for NAME in "${NAMES[@]}"; do
+#   python train_net.py \
+#     --num-gpus 1 \
+#     --eval-only \
+#     --config "configs/bdd100k_test_${TOD}.yaml" \
+#     MODEL.WEIGHTS "outputs/${NAME}/model_0059999.pth" \
+#     OUTPUT_DIR "outputs/${NAME}/${TOD}_sup"
+# done

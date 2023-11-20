@@ -250,19 +250,44 @@ register_coco_instances("bdd100k_rainy_val",
 f'{data_path}/bdd100k/coco_labels/val_rainy.json', 
 f'{data_path}/bdd100k/images/100k/val')
 
+# NOTE: 
+register_coco_instances("bdd100k_clear_val",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_clear.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
 
 # NOTE: add acdc here
 register_coco_instances("acdc_train",
 {}, 
 f'{data_path}/acdc/gt_detection/train.json', 
-f'{data_path}/acdc/rgb_anon/train')
+f'{data_path}/acdc/rgb_anon')
 
 register_coco_instances("acdc_val",
 {}, 
 f'{data_path}/acdc/gt_detection/val.json', 
-f'{data_path}/acdc/rgb_anon/val')
+f'{data_path}/acdc/rgb_anon')
 
-# Later: add weather of tod specific here
+# TODO: add weather of tod specific here!!!!!!!!!!
+register_coco_instances("acdc_val_fog",
+{}, 
+f'{data_path}/acdc/gt_detection/val_fog.json', 
+f'{data_path}/acdc/rgb_anon')
+
+register_coco_instances("acdc_val_night",
+{}, 
+f'{data_path}/acdc/gt_detection/val_night.json', 
+f'{data_path}/acdc/rgb_anon')
+
+register_coco_instances("acdc_val_rain",
+{}, 
+f'{data_path}/acdc/gt_detection/val_rain.json', 
+f'{data_path}/acdc/rgb_anon')
+
+register_coco_instances("acdc_val_snow",
+{}, 
+f'{data_path}/acdc/gt_detection/val_snow.json', 
+f'{data_path}/acdc/rgb_anon')
 
 
 register_coco_instances("bdd100k_night_train", 

@@ -9,19 +9,21 @@ DATASETS:
   # TRAIN_UNLABEL: ("bdd100k_rainy_train",) #Clipart1k_train
   # TEST: ("bdd100k_rainy_val",) #Clipart1k_test
   TRAIN_UNLABEL: ("acdc_train",) #Clipart1k_train
+  # TEST: ("acdc_val_fog",) #Clipart1k_test
+  # TEST: ("acdc_val_night",) #Clipart1k_test
+  # TEST: ("acdc_val_rain",) #Clipart1k_test
+  # TEST: ("acdc_val_snow",) #Clipart1k_test
   TEST: ("acdc_val",) #Clipart1k_test
 
 # NOTE: decrease the max_iter and the steps!!!!!!!!!!!!!!!!!!!!!!!!!
 SOLVER:
-  # STEPS: (72000, 96000, 108000, 432000) # TODO: need to adjust this later
-  STEPS: (62000, 64000, 108000, 432000)
-  MAX_ITER: 66000 # TODO: maybe reduce to 65k or 66k, since 70k overfits too much
+  STEPS: (66000, 68000, 108000, 432000)
+  # MAX_ITER: 63000
+  MAX_ITER: 70000
 
 # NOTE: adjust SCALE_STEPS here!!!!!!!!!!!!!!!!!!!
 SEMISUPNET:
-#   SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400)
-    # SCALE_STEPS: (61400, 62800, 64200, 65600, 67000, 68400)
-    SCALE_STEPS: (60840, 61680, 62520, 63360, 64200, 65040)
+  SCALE_STEPS: (61400, 62800, 64200, 65600, 67000, 68400)
 
 VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_clear.json"
 

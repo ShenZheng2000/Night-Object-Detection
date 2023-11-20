@@ -695,6 +695,9 @@ class TwoPCTrainer(DATrainer):
                                                 )
             data_to_use.extend(label_data_aug)
 
+        # NOTE: IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!! => resign label_data
+        label_data = data_to_use
+
         if self.cfg.USE_DEBUG:
             print("saving self.cfg.USE_DEBUG")
             

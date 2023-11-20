@@ -23,12 +23,10 @@ def plot_histogram(data1, data2, label1, label2, num_bins=50, title='', output_p
     bin_edges = np.logspace(np.log10(min_val), np.log10(max_val), num_bins)
 
     # Plot the histograms
-    # plt.hist(data1, bins=bin_edges, label=label1, color="#e41a1c", alpha=0.9)
-    # plt.hist(data2, bins=bin_edges, label=label2, color="#377eb8", alpha=0.9)
-    plt.hist(data1, bins=bin_edges, label=label1, color="#fb8072", alpha=0.95)
-    plt.hist(data2, bins=bin_edges, label=label2, color="#80b1d3", alpha=0.95)
+    plt.hist(data1, bins=bin_edges, label=label1, color="#e41a1c", alpha=0.9)
+    plt.hist(data2, bins=bin_edges, label=label2, color="#377eb8", alpha=0.9)
 
-    # # Add vertical dotted lines at 32^2 and 96^2 for small and medium size thresholds
+    # Add vertical dotted lines at 32^2 and 96^2 for small and medium size thresholds
     plt.axvline(x=32**2, color='#984ea3', linestyle='--', linewidth=4, label='Small/Medium thres')
     plt.axvline(x=96**2, color='#f781bf', linestyle='--', linewidth=4, label='Medium/Large thres')
 
@@ -71,7 +69,7 @@ def main():
     # dataset = 'acdc'
 
     warp_scale = 1.0
-    surfix = 'png' # png or pdf
+    surfix = 'pdf' # png or pdf
 
     hist_data_orig = load_data_from_txt(f"hist_data_{dataset}_orig.txt")
 
