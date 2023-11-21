@@ -537,8 +537,8 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     warped_images = torch.stack(warped_images)
     # print("end apply_warp_aug")
 
-    # NOTE: scale images and ins if necessary
-    images, batched_inputs = scale_images_and_metadata(images, batched_inputs, grid_net.warp_scale)
+    # # NOTE: scale images and ins if necessary => skip for now
+    # images, batched_inputs = scale_images_and_metadata(images, batched_inputs, grid_net.warp_scale)
 
     # print("batched_inputs[0]['img_shape']", batched_inputs[0]['img_shape'])
     # print("batched_inputs[0]['pad_shape']", batched_inputs[0]['pad_shape'])
