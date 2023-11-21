@@ -168,36 +168,22 @@ def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=
     return vanishing_point
 
 # NOTE: for mmseg, we use this function
-def update_vp_ins(sample, vanishing_points, ratio=1.0, img_width=None, 
-                              seg_to_det=None):
-
-    # Get the vanishing point for the current image
-    image_basename = os.path.basename(sample['filename'])
-    vanishing_point = vanishing_points[image_basename]
-
-    # Scale vanishing_point according to the ratio
-    vanishing_point = [n * ratio for n in vanishing_point]
+# NOTE: no longer require vanishing_points
+def update_vp_ins(sample, ratio=1.0, img_width=None, seg_to_det=None):
 
     sample_basename = os.path.basename(sample['filename'])
 
     if seg_to_det is not None and 'ori_filename' in sample and sample_basename in seg_to_det:
-        # get the instances from seg_to_det
+        # Get the instances from seg_to_det
         instances = seg_to_det[sample_basename]
-        # scale instances according to the ratio
+        # Scale instances according to the ratio
         for i in range(len(instances)):
             instances[i] = [n * ratio for n in instances[i]]
         sample['instances'] = instances
 
-    # print("flip_transform is", flip_transform)
-    # print(f"vanishing_point Before {vanishing_point}")
-
     if sample.get('flip', False) and img_width is not None:
-        # Flip x-coordinates of vanishing_point
-        vanishing_point[0] = img_width - vanishing_point[0]
-
         # Flip x-coordinates of instances
         if 'instances' in sample:
-            # print("before, " + str(sample['instances']))
             for instance in sample['instances']:
                 # Store the old x1 and x2
                 old_x1 = instance[0]
@@ -206,10 +192,50 @@ def update_vp_ins(sample, vanishing_points, ratio=1.0, img_width=None,
                 # Update x1 and x2 after flipping
                 instance[0] = img_width - old_x2  # new x1
                 instance[2] = img_width - old_x1  # new x2
-            # print("after, " + str(sample['instances']))
 
-    # Update the sample dictionary with the modified vanishing point
-    sample['vanishing_point'] = vanishing_point
+
+# def update_vp_ins(sample, vanishing_points, ratio=1.0, img_width=None, 
+#                               seg_to_det=None):
+
+#     # Get the vanishing point for the current image
+#     image_basename = os.path.basename(sample['filename'])
+#     vanishing_point = vanishing_points[image_basename]
+
+#     # Scale vanishing_point according to the ratio
+#     vanishing_point = [n * ratio for n in vanishing_point]
+
+#     sample_basename = os.path.basename(sample['filename'])
+
+#     if seg_to_det is not None and 'ori_filename' in sample and sample_basename in seg_to_det:
+#         # get the instances from seg_to_det
+#         instances = seg_to_det[sample_basename]
+#         # scale instances according to the ratio
+#         for i in range(len(instances)):
+#             instances[i] = [n * ratio for n in instances[i]]
+#         sample['instances'] = instances
+
+#     # print("flip_transform is", flip_transform)
+#     # print(f"vanishing_point Before {vanishing_point}")
+
+#     if sample.get('flip', False) and img_width is not None:
+#         # Flip x-coordinates of vanishing_point
+#         vanishing_point[0] = img_width - vanishing_point[0]
+
+#         # Flip x-coordinates of instances
+#         if 'instances' in sample:
+#             # print("before, " + str(sample['instances']))
+#             for instance in sample['instances']:
+#                 # Store the old x1 and x2
+#                 old_x1 = instance[0]
+#                 old_x2 = instance[2]
+                
+#                 # Update x1 and x2 after flipping
+#                 instance[0] = img_width - old_x2  # new x1
+#                 instance[2] = img_width - old_x1  # new x2
+#             # print("after, " + str(sample['instances']))
+
+#     # Update the sample dictionary with the modified vanishing point
+#     sample['vanishing_point'] = vanishing_point
 
 
 def is_out_of_bounds(pt, img_width, img_height):

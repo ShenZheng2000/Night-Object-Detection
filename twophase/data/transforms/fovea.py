@@ -195,7 +195,7 @@ def apply_warp_aug(img, ins, vanishing_point, warp_aug=False,
     img_height, img_width = img.shape[-2:]
     
     # NOTE: this for debug only
-    if is_out_of_bounds(vanishing_point, img_width, img_height):
+    if vanishing_point and is_out_of_bounds(vanishing_point, img_width, img_height):
         print("Warning: both vp coords OOB. !!!!")
         vanishing_point = (img_width // 2, img_height // 2)  # Set vanishing point to image center
         # sys.exit(1)
@@ -513,9 +513,12 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
         # print("ratio is ",  ratio) # 0.5
         # print("flip is", flip) # True/False
 
-        update_vp_ins(sample, vp_dict, ratio, img_width, seg_to_det)
+        # NOTE: disable vp_dict for now since it's not used
+        update_vp_ins(sample, ratio=ratio, img_width=img_width, seg_to_det=seg_to_det)
 
-        vanishing_points.append(sample['vanishing_point'])
+        # vanishing_points.append(sample['vanishing_point'])
+        # NOTE: Assign None to each vanishing point (highlighted change)
+        vanishing_points.append(None)  # <--- This is the new line
 
         # print("vp ==", sample['vanishing_point'])
 
@@ -543,6 +546,7 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
 
     # print("warped_images shape", warped_images.shape) # [2, 3, 512, 1024]
     if warp_debug:
+        print("using warp_debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         first_image = images[0]
         first_warped_image = warped_images[0]
         cat_image = torch.cat([first_image, first_warped_image], dim=2)
