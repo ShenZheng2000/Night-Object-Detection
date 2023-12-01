@@ -5,6 +5,7 @@ import torch
 import time
 import random
 import os
+import copy
 
 def vp_flow_generator(im, v_pts, T_z, zeta):
     '''
@@ -169,6 +170,41 @@ def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=
 
 # NOTE: for mmseg, we use this function
 # NOTE: no longer require vanishing_points
+# NOTE: modify to STOP in-place modification
+def new_update_vp_ins(sample, ratio=1.0, img_width=None, seg_to_det=None):
+    sample_basename = os.path.basename(sample['filename'])
+
+    # Initialize instances to None or existing value in sample
+    instances = sample.get('instances', None)
+
+    if seg_to_det is not None and 'ori_filename' in sample and sample_basename in seg_to_det:
+        # Get a copy of the instances from seg_to_det
+        instances = copy.deepcopy(seg_to_det[sample_basename])
+        # print("Before, instances are", instances)
+        
+        # Scale instances according to the ratio
+        for i in range(len(instances)):
+            instances[i] = [n * ratio for n in instances[i]]
+        # print("After, instances are", instances)
+
+    if sample.get('flip', False) and img_width is not None and instances is not None:
+        # print("Before flipping, instances are", instances)
+
+        # Flip x-coordinates of instances
+        for instance in instances:
+            old_x1 = instance[0]
+            old_x2 = instance[2]
+            
+            # Update x1 and x2 after flipping
+            # print("img_width is", img_width)
+            instance[0] = img_width - old_x2  # new x1
+            instance[2] = img_width - old_x1  # new x2
+
+        # print("After flipping, instances are", instances)
+
+    return instances
+
+
 def update_vp_ins(sample, ratio=1.0, img_width=None, seg_to_det=None):
 
     sample_basename = os.path.basename(sample['filename'])
@@ -177,8 +213,10 @@ def update_vp_ins(sample, ratio=1.0, img_width=None, seg_to_det=None):
         # Get the instances from seg_to_det
         instances = seg_to_det[sample_basename]
         # Scale instances according to the ratio
+        # print("Before, instances are", instances)
         for i in range(len(instances)):
             instances[i] = [n * ratio for n in instances[i]]
+        # print("After, instances are", instances)
         sample['instances'] = instances
 
     if sample.get('flip', False) and img_width is not None:

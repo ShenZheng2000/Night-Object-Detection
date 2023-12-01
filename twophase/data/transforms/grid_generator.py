@@ -375,6 +375,7 @@ class SaliencyMixin:
         # print("before", bboxes)
         bboxes[:, 2:] -= bboxes[:, :2]  
         # print("after", bboxes)
+        # print("image shape", img_shape)
 
         # Calculate the center of each bounding box.
         cxy = bboxes[:, :2] + 0.5 * bboxes[:, 2:]
@@ -612,40 +613,26 @@ class PlainKDEGrid(nn.Module, RecasensSaliencyToGridMixin, SaliencyMixin):
         device = batch_bboxes.device
         # print("device is", device); exit()
 
+        # print("batch_bboxes is", batch_bboxes)
+        # print("img_shape is", img_shape)
+
         saliency = self.bbox2sal(batch_bboxes, img_shape, jitter, v_pts=v_pts)
         # print(f"saliency min {saliency.min()}, max {saliency.max()}, mean {saliency.mean()}")
 
         # # # # ################# TODO: for debug only #################
-        # v_pts = torch.tensor(v_pts, device=device)
-        # v_pts = v_pts.unsqueeze(0)
-
-        # # # Extract the vanishing point and saliency map
-        # v_pts_original = v_pts[0].cpu().numpy()  # Assuming v_pts is like [[x, y]]
+        # # # Extract saliency map
         # # print("saliency shape", saliency.shape) # [1, 1, 31, 51]
         # saliency_np = saliency.squeeze(0).squeeze(0).cpu().detach().numpy()
         # # NOTE: multiply 100 for visualization purposes
         # saliency_np = saliency_np * 100
-        # # print("PlainKDEGrid saliency mean", saliency_np.mean())
-        # # print("PlainKDEGrid saliency max", saliency_np.max())
-        # # print("PlainKDEGrid saliency nonzero", np.count_nonzero(saliency_np > 0))
-        # # print("saliency_np shape", saliency_np.shape) # [31, 51]
 
         # # Convert saliency map to 3 channel image
         # saliency_np_with_vp = cv2.cvtColor(saliency_np, cv2.COLOR_GRAY2BGR)
 
-        # # Draw a circle at the vanishing point on the saliency map
-        # vanishing_point_color = (0, 0, 255)  # BGR color format (red)
-        # cv2.circle(saliency_np_with_vp, 
-        #             (int(v_pts_original[0]), int(v_pts_original[1])), 
-        #             5, 
-        #             vanishing_point_color, 
-        #             -1)  # Draw a filled circle
-
         # # Save the modified saliency map
         # # print("saliency_np_with_vp shape", saliency_np_with_vp.shape) # [31, 51, 3]
         # print("saving saliency_np_with_vp maps!!!!!!!!!!!!!!!!!!!!!!!!")
-        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), \
-        #     f"warped_images_exp/PlainKDEGrid/saliency_PlainKDEGrid_{self.bandwidth_scale}_{self.warp_fovea_inst_scale}.png")
+        # save_image(torch.from_numpy(saliency_np_with_vp).permute(2, 0, 1).unsqueeze(0), f"KDE_v1.png")
         # ################# For debug only #################
 
         grid = self.saliency_to_grid(imgs, saliency, device)

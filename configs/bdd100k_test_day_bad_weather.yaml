@@ -1,0 +1,16 @@
+# NOTE: use another yaml to reduce code
+_BASE_: "./faster_rcnn_R50_bdd100k.yaml"
+
+# WARP_AUG_LZU: True
+# WARP_MIDDLE: True
+
+# PATH_BLUR: True
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+
+# NOTE: add this for testing only
+DATASETS:
+  TEST: ("bdd100k_test_day_bad_weather",) #Clipart1k_test # NOTE: change to day for test only

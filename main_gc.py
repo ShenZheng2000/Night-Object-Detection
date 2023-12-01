@@ -27,7 +27,7 @@ plt.rcParams["figure.figsize"] = (30,10)
 # img_path = "img/input.jpg"
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val/b1c9c847-3bda4659.jpg"
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_debug/0a0c3694-4cc8b0e3.jpg"
-img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_day/0a5b3a25-81c3be4d.jpg" # => This is good, pick it!
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_day/0a5b3a25-81c3be4d.jpg" # => This is good, pick it!
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_day/0a7cbfc6-bfeebf8d.jpg"
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b2bceb54-4d3cc92c.jpg"
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train/31686ca2-c70e8b39.jpg"
@@ -36,6 +36,34 @@ img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_day/
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b5afd0ea-222fae7e.jpg"
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b8f2d63d-6a944fa4.jpg"
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b8c0457f-d7a1d2b7.jpg" # => This is OK
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b20eae11-6817ba7a.jpg"
+
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b38b2b6a-cb374ce8.jpg" => This looks good
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b53cb17b-4df01599.jpg" => skip
+
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b80fb9b6-b12f0c90.jpg" => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b263f57d-1ccf6e51.jpg" => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b275c028-6a0665cb.jpg"  => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b836b14a-fb13c905.jpg"  => skip
+
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b892f130-90ed9d1f.jpg"  => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b953ef60-6c2cb9a1.jpg" => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b4561bec-26a99096.jpg" => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b24380ab-6dbeb908.jpg" => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/b29026f0-d5a5ee8c.jpg" => skip
+
+# img_path = '/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bbc9ec36-8e63f11e.jpg' => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bbfcd002-f8531a65.jpg" => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bc140c47-76775eb4.jpg" => skip
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bcaf73c1-e0c7165a.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bcb441fc-a88da923.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bcf70f06-5bd41cdd.jpg" # => This looks good
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bd3bd3ab-79f6d287.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bd8f4dfa-52cf9375.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bd812175-fc557aa4.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/becccb13-74e09a25.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/befbf2cc-bec128ef.jpg"
+img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bf8ff5f5-877edaa0.jpg"
 
 
 basename = os.path.basename(img_path).replace(".jpg", "")
@@ -58,10 +86,10 @@ def main():
 
     # TODO: try this once we have GPUs
     for model_name in [
-                        # "bdd100k_10_18_baseline", 
+                        "bdd100k_10_18_baseline", 
                     #    "bdd100k_10_18_fovea",
                        "bdd100k_10_18_tpp",
-                    #    "bdd100k_10_18_bbox"
+                       "bdd100k_10_18_bbox"
                        ]:
 
         surfix = 'jpg' # for debug only
@@ -80,7 +108,7 @@ def main():
         cam_extractor = Detectron2GradCAM(config_file, config_list, img_path=img_path)
         grad_cam = GradCamPlusPlus
 
-        for instance in range(0, 10): # range(0, xxx)
+        for instance in range(0, 5): # range(0, xxx)
             image_dict, cam_orig = cam_extractor.get_cam(target_instance=instance, layer_name=layer_name, grad_cam_instance=grad_cam)
             # print("image_dict['output']['instances'] = ", image_dict["output"]["instances"])
 

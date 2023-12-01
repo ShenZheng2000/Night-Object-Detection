@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from .invert_grid import invert_grid
-from .reblur import is_out_of_bounds, get_vanising_points, update_vp_ins
+from .reblur import is_out_of_bounds, get_vanising_points, new_update_vp_ins, update_vp_ins
 from torchvision import utils as vutils
 
 from .grid_generator import CuboidGlobalKDEGrid, FixedKDEGrid, PlainKDEGrid, MixKDEGrid, MidKDEGrid, FixedKDEGrid_New
@@ -10,7 +10,9 @@ import sys
 import os
 import json
 import torch
-
+import numpy as np
+from PIL import Image, ImageDraw
+import cv2
 
 def read_seg_to_det(SEG_TO_DET):
     if SEG_TO_DET is not None:
@@ -158,6 +160,8 @@ def make_warp_aug(img, ins, vanishing_point, grid_net, use_ins=False, file_name=
 
     # print("img.shape", img.shape) # [3, 600, 1067]
     # print("bboxes shape", bboxes.shape) # [N, 4]: x1, y1, x2, y2
+    # print("bboxes = ", bboxes)
+    # print("grid_net.warp_scale", grid_net.warp_scale)
     # print("vanishing_point", vanishing_point)
 
     grid, warped_imgs = simple_test(grid_net, imgs, vanishing_point, bboxes, file_name=file_name, use_flip=use_flip)
@@ -247,7 +251,7 @@ def save_feature(image1, image2, save_path):
     # Save the concatenated image as an image using torchvision's save_image
     vutils.save_image(concatenated_image, save_path)
 
-# # TODO: This is for vis debug only
+# : This is for vis debug only
 # def apply_unwarp(warped_x, grid, keep_size=True):
 #     if (len(warped_x.shape) == 3) and keep_size:
 #         warped_x = warped_x.unsqueeze(0)
@@ -494,6 +498,9 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # print(f"backbone = {backbone}")               # ResNet
     # print(f"warp_debug = {warp_debug}")           # bool: True/False
     # print(f"warp_image_norm = {warp_image_norm}") # bool: True/False
+
+    # NOTE: create a deep copy of batched_inputs
+    # print("start process_mmseg!!!!!!!!!!!")
     
     # Preprocessing
     img_height, img_width = images.shape[-2:]
@@ -513,8 +520,12 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
         # print("ratio is ",  ratio) # 0.5
         # print("flip is", flip) # True/False
 
-        # NOTE: disable vp_dict for now since it's not used
-        update_vp_ins(sample, ratio=ratio, img_width=img_width, seg_to_det=seg_to_det)
+        # NOTE: use this to avoid in-place modification!!!!!!!!!!!!!!!!!!!!!!!!!
+        modified_instances = new_update_vp_ins(sample, ratio=ratio, img_width=img_width, seg_to_det=seg_to_det)
+
+        # Update the sample's instances with the modified instances
+        if modified_instances is not None:
+            sample['instances'] = modified_instances
 
         # vanishing_points.append(sample['vanishing_point'])
         # NOTE: Assign None to each vanishing point (highlighted change)
@@ -543,12 +554,17 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
     # print("batched_inputs[0]['img_shape']", batched_inputs[0]['img_shape'])
     # print("batched_inputs[0]['pad_shape']", batched_inputs[0]['pad_shape'])
     # print("batched_inputs[0]['scale_factor']", batched_inputs[0]['scale_factor'])
+    
+    # # # Use these code to debug bboxes vis, and shape stuffs => looks good for now
+    # print(f"using warp_debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! with ratio = {ratio}")
+    # print("images[0] shape", images[0].shape); print("warped_images[0] shape", warped_images[0].shape)
+    # print("sample['instances'] is", sample['instances'])
+    # draw_and_save_bboxes(images[1], sample['instances'], f'image_with_bboxes_{ratio}.png')
 
     # print("warped_images shape", warped_images.shape) # [2, 3, 512, 1024]
     if warp_debug:
-        print("using warp_debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        first_image = images[0]
-        first_warped_image = warped_images[0]
+        first_image = images[1]
+        first_warped_image = warped_images[1]
         cat_image = torch.cat([first_image, first_warped_image], dim=2)
         vutils.save_image(cat_image, f"visuals/warped_images_{grid_net.__class__.__name__}.png", normalize=True)
         exit()
@@ -669,6 +685,43 @@ def concat_and_save_images(batched_inputs, warped_images, debug=False):
 
         print(f"Saved {cnt} images!")
         sys.exit(1)
+
+
+def draw_and_save_bboxes(image_tensor, bboxes, output_filename):
+    """
+    Draw bounding boxes on an input image tensor and save the modified image.
+
+    Args:
+        image_tensor (torch.Tensor): Input image tensor of shape [3, height, width].
+        bboxes (list): List of bounding boxes in the format [x1, y1, x2, y2].
+        output_filename (str): File path to save the modified image.
+
+    Returns:
+        None
+    """
+    # Normalize the image tensor to the range [0, 1]
+    image_tensor = (image_tensor - image_tensor.min()) / (image_tensor.max() - image_tensor.min())
+
+    # Convert the image tensor to a CPU tensor and create a copy
+    image_cpu = image_tensor.cpu().clone()
+
+    # Convert the tensor to a NumPy array and permute dimensions to [height, width, channels]
+    image_numpy = image_cpu.permute(1, 2, 0).numpy()
+
+    # Create a PIL image from the NumPy array
+    image_pil = Image.fromarray((image_numpy * 255).astype('uint8'))
+
+    # Create a drawing context on the PIL image
+    draw = ImageDraw.Draw(image_pil)
+
+    # Draw bounding boxes on the image
+    for bbox in bboxes:
+        x1, y1, x2, y2 = bbox
+        draw.rectangle([x1, y1, x2, y2], outline='red', width=2)  # You can change the outline color and width
+
+    # Save the modified image
+    image_pil.save(output_filename)
+
 
 
 if __name__ == "__main__":

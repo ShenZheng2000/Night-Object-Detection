@@ -256,6 +256,24 @@ register_coco_instances("bdd100k_clear_val",
 f'{data_path}/bdd100k/coco_labels/val_clear.json', 
 f'{data_path}/bdd100k/images/100k/val')
 
+# NOTE: 
+register_coco_instances("bdd100k_test_day_good_weather",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_day_good_weather.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+# NOTE: 
+register_coco_instances("bdd100k_test_day_bad_weather",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_day_bad_weather.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+register_coco_instances("bdd100k_test_clear_night",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_clear_night.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+
 
 # NOTE: add acdc here
 register_coco_instances("acdc_train",
