@@ -5,7 +5,6 @@
 **/*.png
 **/*.jpg
 /outputs/
-/README.md
 debug.py
 **/torch-batch-svd/
 **/*.txt
