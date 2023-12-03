@@ -1,11 +1,8 @@
 # Environment Setup
 
-```
 Python >= 3.6
 PyTorch >= 1.5
-[[Detectron2](https://detectron2.readthedocs.io/en/latest/tutorials/install.html)]
-RTX 3090/4090 GPU
-```
+[[Detectron2==0.6](https://detectron2.readthedocs.io/en/latest/tutorials/install.html)]
 
 # Dataset Setup
 
@@ -66,13 +63,13 @@ TRAIN_LABEL (unsupervised training images)
 
 TEST (testing images)
 
-NIGHTAUG (turn on night augmentation, only useful for day2night translation)
+NIGHTAUG (night augmentation: only useful for day2night domain adaptation)
 
-MAX_ITER (total training iterations)
+MAX_ITER (training iterations)
 
-IMG_PER_BATCH_LABEL (total batch size for supervised training)
+IMG_PER_BATCH_LABEL (batch size for supervised training)
 
-IMG_PER_BATCH_UNLABEL (total batch size for unsupervised training)
+IMG_PER_BATCH_UNLABEL (batch size for unsupervised training)
 
 ```
 
