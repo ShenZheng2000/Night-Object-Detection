@@ -563,10 +563,10 @@ def process_mmseg(batched_inputs, images, warp_aug_lzu, vp_dict, grid_net, backb
 
     # print("warped_images shape", warped_images.shape) # [2, 3, 512, 1024]
     if warp_debug:
-        first_image = images[1]
-        first_warped_image = warped_images[1]
+        first_image = images[-1]
+        first_warped_image = warped_images[-1]
         cat_image = torch.cat([first_image, first_warped_image], dim=2)
-        vutils.save_image(cat_image, f"visuals/warped_images_{grid_net.__class__.__name__}.png", normalize=True)
+        vutils.save_image(cat_image, f"warped_images_{grid_net.__class__.__name__}.png", normalize=True)
         exit()
         
     # Normalize warped images
