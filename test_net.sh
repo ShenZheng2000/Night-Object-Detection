@@ -50,7 +50,27 @@
 # TOD='clear'
 # TOD='day'
 # TOD='day_bad_weather'
-TOD='clear_night'
+# TOD='clear_night'
+# TOD='bad_night'
+# TOD='SGZ'
+# TOD='clear_SGZ'
+# TOD='bad_SGZ'
+# TOD='dense_foggy'
+# TOD='dense_foggy_dehazeformer'
+# TOD='rainy'
+# TOD='rainy_SAPNet'
+# TOD='rainy_day'
+# TOD='rainy_night'
+# TOD='rainy_day_SAPNet'
+# TOD='rainy_night_SAPNet'
+# TOD='rainy_100'
+# TOD='rainy_100_SAPNet'
+
+# NOTE: this is for video-extracted images
+# TOD='gm_rainy_day'
+# TOD='gm_rainy_night'
+TOD='gm_foggy_day'
+
 
 # List of NAME values
 NAMES=(
@@ -62,10 +82,12 @@ NAMES=(
   # "warp_aug_9_12"
   # "warp_aug_8_2"
   # "bdd100k_9_22_v1"
-  "bdd100k_10_18_baseline"
+  # "bdd100k_10_18_baseline"
   # "bdd100k_10_18_fovea"
   # "bdd100k_10_18_tpp"
-  "bdd100k_10_18_bbox"
+  # "bdd100k_10_18_bbox"
+  # "dense_foggy_12_12_baseline"
+  "dense_foggy_12_12_bbox"
   )
 
 # # Loop over each NAME and run the command
@@ -74,8 +96,11 @@ for NAME in "${NAMES[@]}"; do
   python train_net.py \
     --num-gpus 1 \
     --eval-only \
-    --config "configs/bdd100k_test_${TOD}.yaml" \
-    MODEL.WEIGHTS "/longdata/anurag_storage/2PCNet/outputs_11_14_det_ckpts/${NAME}/model_final.pth" \
+    --config "configs/${TOD}.yaml" \
+    MODEL.WEIGHTS "outputs/${NAME}/model_final.pth" \
     OUTPUT_DIR "outputs/${NAME}/${TOD}"
 done
 
+# NOTE: use this if in longdata
+#  --config "configs/bdd100k_test_${TOD}.yaml" \
+# MODEL.WEIGHTS "/longdata/anurag_storage/2PCNet/2PCNet/outputs_11_14_det_ckpts/${NAME}/model_final.pth" \

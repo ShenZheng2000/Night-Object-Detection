@@ -25,4 +25,3 @@ WARP_AUG_LZU: False
 # TWO_PC_AUG: False
 # AUG_PROB: 1.0
 # WARP_DEBUG: True
-WARP_TEST: True

@@ -771,3 +771,85 @@
 #   --num-gpus 1 \
 #   --config configs/bdd100k_11_7_new_unwarp.yaml \
 #   OUTPUT_DIR outputs/bdd100k_11_7_new_unwarp
+
+
+# train_bdd() {
+#   local name="$1"
+
+#   nohup \
+#     python train_net.py \
+#     --num-gpus 3 \
+#     --config "configs/${name}.yaml" \
+#     OUTPUT_DIR "outputs/${name}" \
+#     > "${name}.out" 2>&1 &
+# }
+
+
+# # train_bdd "bdd100k_10_18_baseline_small"
+
+# train_bdd "bdd100k_10_18_bbox_small"
+
+
+# # bdd100k_10_18_baseline => dense_foggy_12_12_baseline
+# nohup \
+#   python train_net.py \
+#   --resume \
+#   --num-gpus 3 \
+#   --config configs/dense_foggy_12_12_baseline.yaml \
+#   MODEL.WEIGHTS outputs/bdd100k_10_18_baseline/model_0059999.pth \
+#   OUTPUT_DIR outputs/dense_foggy_12_12_baseline \
+#   > dense_foggy_12_12_baseline.out 2>&1 &
+
+
+# bdd100k_10_18_bbox => dense_foggy_12_12_bbox
+# nohup \
+#   python train_net.py \
+#   --resume \
+#   --num-gpus 3 \
+#   --config configs/dense_foggy_12_12_bbox.yaml \
+#   MODEL.WEIGHTS outputs/bdd100k_10_18_bbox/model_0059999.pth \
+#   OUTPUT_DIR outputs/dense_foggy_12_12_bbox \
+#   > dense_foggy_12_12_bbox.out 2>&1 &
+
+# bdd100k_10_18_baseline => dense_snow_12_12_baseline
+# nohup \
+#   python train_net.py \
+#   --resume \
+#   --num-gpus 3 \
+#   --config configs/dense_snow_12_12_baseline.yaml \
+#   MODEL.WEIGHTS outputs/bdd100k_10_18_baseline/model_0059999.pth \
+#   OUTPUT_DIR outputs/dense_snow_12_12_baseline \
+#   > dense_snow_12_12_baseline.out 2>&1 &
+
+# # bdd100k_10_18_bbox => dense_snow_12_12_bbox
+# NOTE: use this because currently no GPU left
+# nohup \
+#   python train_net.py \
+#   --resume \
+#   --num-gpus 2 \
+#   --config configs/dense_snow_12_12_bbox.yaml \
+#   MODEL.WEIGHTS outputs/dense_snow_12_12_bbox/model_0089999.pth \ # use this since train are interruptsed
+#   OUTPUT_DIR outputs/dense_snow_12_12_bbox \
+#   > dense_snow_12_12_bbox_resume_v2.out 2>&1 &
+
+
+run_training() {
+    local src="$1"
+    local tgt="$2"
+    nohup \
+    python train_net.py \
+    --resume \
+    --num-gpus 2 \
+    --config configs/${tgt}.yaml \
+    MODEL.WEIGHTS outputs/${src}/model_0059999.pth \
+    OUTPUT_DIR outputs/${tgt} \
+    > ${tgt}.out 2>&1 &
+}
+
+# NOTE: remove --eval-only and setup --resume for training!!!!
+
+# # bdd100k_10_18_baseline => boreas_snow_12_16_baseline
+# run_training 'bdd100k_10_18_baseline' 'boreas_snow_12_16_baseline'
+
+# bdd100k_10_18_bbox => boreas_snow_12_16_bbox
+# run_training 'bdd100k_10_18_bbox' 'boreas_snow_12_16_bbox'

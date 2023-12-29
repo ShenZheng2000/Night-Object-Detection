@@ -1,0 +1,46 @@
+# NOTE: use another yaml to reduce code
+_BASE_: "./bdd100k_warp_aug_9_11_4090.yaml"
+
+# NOTE: train on clear, adapted to rainy, test on rainy
+
+# NOTE: change the unsup and test data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+DATASETS:
+  TRAIN_LABEL: ("bdd100k_clear_train_valid_vp",)
+  TRAIN_UNLABEL: ("boreas_snowy_train",) #Clipart1k_train
+  TEST: ("boreas_snowy_test",) #Clipart1k_test
+
+# TODO: adjust further? Since we are using 2 GPU instead of 3 GPU for now!!!
+
+# NOTE: decrease the max_iter and the steps!!!!!!!!!!!!!!!!!!!!!!!!!
+SOLVER:
+  # STEPS: (72000, 96000, 108000, 432000)
+  STEPS: (65000, 75000, 108000, 432000)
+  # MAX_ITER: 75000 # => for 3 GPU
+  MAX_ITER: 82500 # => for 2 GPU
+
+# NOTE: use this because currently no GPU left
+SOLVER:
+  IMG_PER_BATCH_LABEL: 10 # 15
+  IMG_PER_BATCH_UNLABEL: 10 # 15
+
+# NOTE: adjust SCALE_STEPS here!!!!!!!!!!!!!!!!!!!
+SEMISUPNET:
+  BURN_UP_STEP: 60000
+    # SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400) # [8400, 16800, 25200, 33600, 42000, 50400]
+    # ACDC has 1.6k images, whereas bdd100k has 100k images. So, we need to scale the steps accordingly.
+    # SCALE_STEPS: (61400, 62800, 64200, 65600, 67000, 68400) # [1400, 2800, 4200, 5600, 7000, 8400]
+  # boreas has 2.4k images, whereas bdd100k has 100k images. So, we need to scale the steps accordingly.
+  # SCALE_STEPS: (62100, 64200, 66300, 68400, 70500, 72600) # [2100, 4200, 6300, 8400, 10500, 12600] # for 3 GPU
+  SCALE_STEPS: (63150, 66300, 69450, 72600, 75750, 78900) # [2100, 4200, 6300, 8400, 10500, 12600] # for 2 GPU
+
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_clear.json"
+
+# PATH_BLUR: True
+WARP_AUG_LZU: False
+
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+NIGHTAUG: False

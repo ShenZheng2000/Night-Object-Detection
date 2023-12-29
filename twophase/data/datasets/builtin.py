@@ -237,6 +237,10 @@ register_coco_instances("bdd100k_clear_train_valid_vp",
 f'{data_path}/bdd100k/coco_labels/train_clear_valid_vp.json', 
 f'{data_path}/bdd100k/images/100k/train')
 
+register_coco_instances("bdd100k_clear_train_small_valid_vp",
+{}, 
+f'{data_path}/bdd100k/coco_labels/train_clear_small_valid_vp.json', 
+f'{data_path}/bdd100k/images/100k/train')
 
 register_coco_instances("bdd100k_rainy_train",
 {}, 
@@ -249,6 +253,42 @@ register_coco_instances("bdd100k_rainy_val",
 {}, 
 f'{data_path}/bdd100k/coco_labels/val_rainy.json', 
 f'{data_path}/bdd100k/images/100k/val')
+
+# NOTE: 
+register_coco_instances("bdd100k_rainy_val_100",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_rainy_100.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+register_coco_instances("bdd100k_rainy_val_day",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_rainy_day.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+register_coco_instances("bdd100k_rainy_val_night",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_rainy_night.json', 
+f'{data_path}/bdd100k/images/100k/val')
+
+register_coco_instances("bdd100k_rainy_val_SAPNet",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_rainy.json', 
+f'{data_path}/bdd100k/images/100k/val_enhance/SAPNet')
+
+register_coco_instances("bdd100k_rainy_val_100_SAPNet",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_rainy_100.json', 
+f'{data_path}/bdd100k/images/100k/val_enhance/SAPNet')
+
+register_coco_instances("bdd100k_rainy_val_day_SAPNet",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_rainy_day.json', 
+f'{data_path}/bdd100k/images/100k/val_enhance/SAPNet')
+
+register_coco_instances("bdd100k_rainy_val_night_SAPNet",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_rainy_night.json', 
+f'{data_path}/bdd100k/images/100k/val_enhance/SAPNet')
 
 # NOTE: 
 register_coco_instances("bdd100k_clear_val",
@@ -273,6 +313,10 @@ register_coco_instances("bdd100k_test_clear_night",
 f'{data_path}/bdd100k/coco_labels/val_clear_night.json', 
 f'{data_path}/bdd100k/images/100k/val')
 
+register_coco_instances("bdd100k_test_bad_night",
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_bad_night.json', 
+f'{data_path}/bdd100k/images/100k/val')
 
 
 # NOTE: add acdc here
@@ -306,6 +350,44 @@ register_coco_instances("acdc_val_snow",
 {}, 
 f'{data_path}/acdc/gt_detection/val_snow.json', 
 f'{data_path}/acdc/rgb_anon')
+
+
+# NOTE: add dense here
+register_coco_instances("dense_foggy_train",
+{},
+f'{data_path}/dense/coco_labels/train_dense_fog.json',
+f'{data_path}/dense/cam_stereo_left_lut')
+
+register_coco_instances("dense_foggy_val",
+{},
+f'{data_path}/dense/coco_labels/val_dense_fog.json',
+f'{data_path}/dense/cam_stereo_left_lut')
+
+register_coco_instances("dense_foggy_val_dehazeformer",
+{},
+f'{data_path}/dense/coco_labels/val_dense_fog.json',
+f'{data_path}/dense/cam_stereo_left_lut_fog_val_dehazeformer')
+
+register_coco_instances("dense_snow_train",
+{},
+f'{data_path}/dense/coco_labels/train_snow.json',
+f'{data_path}/dense/cam_stereo_left_lut')
+
+register_coco_instances("dense_snow_val",
+{},
+f'{data_path}/dense/coco_labels/val_snow.json',
+f'{data_path}/dense/cam_stereo_left_lut')
+
+# NOTE: add boreas snowy here
+register_coco_instances("boreas_snowy_train",
+{},
+f'{data_path}/boreas/coco_labels/train_snowy.json',
+f'{data_path}/boreas/images/train')
+
+register_coco_instances("boreas_snowy_test",
+{},
+f'{data_path}/boreas/coco_labels/test_snowy.json',
+f'{data_path}/boreas/images/test')
 
 
 register_coco_instances("bdd100k_night_train", 
@@ -381,6 +463,16 @@ register_coco_instances("bdd100k_night_val_SGZ",
 f'{data_path}/bdd100k/coco_labels/val_night.json', 
 f'{data_path}/bdd100k/images/100k/val_enhance/SGZ')
 
+register_coco_instances("bdd100k_night_val_clear_SGZ", 
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_clear_night.json', 
+f'{data_path}/bdd100k/images/100k/val_enhance/SGZ')
+
+register_coco_instances("bdd100k_night_val_bad_SGZ", 
+{}, 
+f'{data_path}/bdd100k/coco_labels/val_bad_night.json', 
+f'{data_path}/bdd100k/images/100k/val_enhance/SGZ')
+
 register_coco_instances("bdd100k_night_val_CLAHE", 
 {}, 
 f'{data_path}/bdd100k/coco_labels/val_night.json', 
@@ -428,3 +520,24 @@ register_coco_instances("sim_night_val",
 {}, 
 'datasets/shift/val_night.json', 
 'datasets/shift/val')
+
+
+# NOTE: add gm videos here
+register_coco_instances("gm_rainy_day", 
+{}, 
+f'{data_path}/gm/coco_labels/rainy_day.json', 
+f'{data_path}/gm/rainy/day/images')
+
+
+# NOTE: add gm videos here
+register_coco_instances("gm_rainy_night", 
+{}, 
+f'{data_path}/gm/coco_labels/rainy_night.json', 
+f'{data_path}/gm/rainy/night/images')
+
+
+# NOTE: add gm videos here
+register_coco_instances("gm_foggy_day", 
+{}, 
+f'{data_path}/gm/coco_labels/foggy_day.json', 
+f'{data_path}/gm/foggy/day/images')

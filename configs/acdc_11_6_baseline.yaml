@@ -17,13 +17,16 @@ DATASETS:
 
 # NOTE: decrease the max_iter and the steps!!!!!!!!!!!!!!!!!!!!!!!!!
 SOLVER:
+  # STEPS: (72000, 96000, 108000, 432000)
   STEPS: (66000, 68000, 108000, 432000)
-  # MAX_ITER: 63000
   MAX_ITER: 70000
 
 # NOTE: adjust SCALE_STEPS here!!!!!!!!!!!!!!!!!!!
 SEMISUPNET:
-  SCALE_STEPS: (61400, 62800, 64200, 65600, 67000, 68400)
+  BURN_UP_STEP: 60000
+  # SCALE_STEPS: (68400, 76800, 85200, 93600, 102000, 110400) # [8400, 16800, 25200, 33600, 42000, 50400]
+  # ACDC has 1.6k images, whereas bdd100k has 100k images. So, we need to scale the steps accordingly.
+  SCALE_STEPS: (61400, 62800, 64200, 65600, 67000, 68400) # [1400, 2800, 4200, 5600, 7000, 8400]
 
 VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_clear.json"
 

@@ -1,0 +1,14 @@
+# NOTE: use another yaml to reduce code
+# _BASE_: "./acdc_11_6_baseline.yaml"
+_BASE_: "./dense_foggy_12_12_baseline.yaml"
+
+# PATH_BLUR: True
+WARP_AUG_LZU: True
+WARP_FOVEA_INST: True
+
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+NIGHTAUG: False
