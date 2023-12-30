@@ -1,7 +1,9 @@
 # Environment Setup
 
 Python >= 3.6
+
 PyTorch >= 1.5
+
 [[Detectron2==0.6](https://detectron2.readthedocs.io/en/latest/tutorials/install.html)]
 
 # Dataset Setup
@@ -9,6 +11,10 @@ PyTorch >= 1.5
 Download [[BDD100K](https://bdd-data.berkeley.edu/)]
 
 Download [[ACDC](https://acdc.vision.ee.ethz.ch/)]
+
+Download [[DENSE](https://www.uni-ulm.de/in/iui-drive-u/projekte/dense-datasets/)]
+
+Download [[Boreas](https://www.boreas.utias.utoronto.ca/#/)]
 
 
 # Dataset Structures
@@ -41,6 +47,25 @@ Datasets/
         ├── gt_detection
             ├── train.json
             ├── val.json
+    └── dense/
+        ├── cam_stereo_left_lut
+            ├── ***.png
+            ├── ...
+        ├── coco_labels
+            ├── train_dense_fog.json
+            ├── val_dense_fog.json
+            ├──...
+    └── boreas/
+        ├── images
+            ├── train
+                ├── ***.png
+                ├── ...
+            ├── test
+                ├── ***.png
+                ├── ...
+        ├── coco_labels
+            ├── train_snowy.json
+            ├── test_snowy.json
 ```
 
 # Dataset Path
@@ -147,8 +172,25 @@ python train_net.py \
 | 2PCNet (+Ours) | [acdc_11_6_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_bbox.yaml) | TODO |
 
 
+## BDD100K Clear -> DENSE Foggy
+
+| Experiments | Configs | Checkpoints |
+|----------|----------|----------|
+| 2PCNet | [dense_foggy_12_12_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/dense_foggy_12_12_baseline.yaml) | TODO |
+| 2PCNet (+Ours) | [dense_foggy_12_12_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/dense_foggy_12_12_bbox.yaml) | TODO |
+
+
+## BDD100K Clear -> Boreas Snowy
+
+| Experiments | Configs | Checkpoints |
+|----------|----------|----------|
+| 2PCNet | [boreas_snow_12_16_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/boreas_snow_12_16_baseline.yaml) | TODO |
+| 2PCNet (+Ours) | [boreas_snow_12_16_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/boreas_snow_12_16_bbox.yaml) | TODO |
 
 
 # Acknowledgements
 
-Code is adapted from [[Detectron2](https://github.com/facebookresearch/detectron2)] and [[2PCNet](https://github.com/mecarill/2pcnet)]
+Code is adapted from [[Detectron2](https://github.com/facebookresearch/detectron2)] and [[2PCNet](https://github.com/mecarill/2pcnet)], and is motivated by [[FOVEA](https://github.com/tchittesh/fovea)], [[TPP](https://github.com/geometriczoom/two-plane-prior)], and [[LZU](https://github.com/tchittesh/lzu)].
+
+
+<!-- TODO: upload link for dense and boreas datasets, since we preprocessed some 3D stuffs into 2D labels -->
