@@ -115,6 +115,16 @@ python train_net.py \
       MODEL.WEIGHTS <your weight>.pth
 ```
 
+# Specific Configs
+
+## BDD100K (Day -> Night)
+
+| Experiments | Configs | Checkpoints |
+|----------|----------|----------|
+| 2PCNet | [pretrained.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/pretrained.yaml) | |
+| 2PCNet (+ Sta. Prior) | [warp_aug_9_12.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/warp_aug_9_12.yaml) | |
+| 2PCNet (+ Geo. Prior) | [warp_aug_8_2.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/warp_aug_8_2.yaml) | |
+| 2PCNet (+Ours) | [warp_aug_8_2.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_9_22_v1.yaml) | |
 
 # Acknowledgements
 
