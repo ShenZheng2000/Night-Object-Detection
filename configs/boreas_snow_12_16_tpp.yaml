@@ -1,0 +1,13 @@
+# NOTE: use another yaml to reduce code
+# _BASE_: "./acdc_11_6_baseline.yaml"
+_BASE_: "./boreas_snow_12_16_baseline.yaml"
+
+# PATH_BLUR: True
+WARP_AUG_LZU: True
+
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+NIGHTAUG: False

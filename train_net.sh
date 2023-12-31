@@ -848,8 +848,30 @@ run_training() {
 
 # NOTE: remove --eval-only and setup --resume for training!!!!
 
+########### Boreas Snowy Experiments ############
+
 # # bdd100k_10_18_baseline => boreas_snow_12_16_baseline
 # run_training 'bdd100k_10_18_baseline' 'boreas_snow_12_16_baseline'
 
 # bdd100k_10_18_bbox => boreas_snow_12_16_bbox
 # run_training 'bdd100k_10_18_bbox' 'boreas_snow_12_16_bbox'
+
+# # bdd100k_10_18_fovea => boreas_snow_12_16_fovea
+run_training 'bdd100k_10_18_fovea' 'boreas_snow_12_16_fovea'
+
+# bdd100k_10_18_tpp => boreas_snow_12_16_tpp
+# run_training 'bdd100k_10_18_tpp' 'boreas_snow_12_16_tpp'
+
+############ Dense Foggy Experiments ############
+
+# # bdd100k_10_18_baseline => dense_foggy_12_16_baseline
+# run_training 'bdd100k_10_18_baseline' 'dense_foggy_12_16_baseline'
+
+# bdd100k_10_18_bbox => dense_foggy_12_16_bbox
+# run_training 'bdd100k_10_18_bbox' 'dense_foggy_12_16_bbox'
+
+# # bdd100k_10_18_fovea => dense_foggy_12_16_fovea
+# run_training 'bdd100k_10_18_fovea' 'dense_foggy_12_16_fovea'
+
+# bdd100k_10_18_tpp => dense_foggy_12_16_tpp
+# run_training 'bdd100k_10_18_tpp' 'dense_foggy_12_16_tpp'
