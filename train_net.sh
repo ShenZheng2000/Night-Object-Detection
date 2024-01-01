@@ -857,7 +857,7 @@ run_training() {
 # run_training 'bdd100k_10_18_bbox' 'boreas_snow_12_16_bbox'
 
 # # bdd100k_10_18_fovea => boreas_snow_12_16_fovea
-run_training 'bdd100k_10_18_fovea' 'boreas_snow_12_16_fovea'
+# run_training 'bdd100k_10_18_fovea' 'boreas_snow_12_16_fovea'
 
 # bdd100k_10_18_tpp => boreas_snow_12_16_tpp
 # run_training 'bdd100k_10_18_tpp' 'boreas_snow_12_16_tpp'
@@ -870,8 +870,8 @@ run_training 'bdd100k_10_18_fovea' 'boreas_snow_12_16_fovea'
 # bdd100k_10_18_bbox => dense_foggy_12_16_bbox
 # run_training 'bdd100k_10_18_bbox' 'dense_foggy_12_16_bbox'
 
-# # bdd100k_10_18_fovea => dense_foggy_12_16_fovea
+# # bdd100k_10_18_fovea => dense_foggy_12_16_fovea (TODO, use 2GPU!)
 # run_training 'bdd100k_10_18_fovea' 'dense_foggy_12_16_fovea'
 
-# bdd100k_10_18_tpp => dense_foggy_12_16_tpp
+# bdd100k_10_18_tpp => dense_foggy_12_16_tpp (TODO, use 2GPU!)
 # run_training 'bdd100k_10_18_tpp' 'dense_foggy_12_16_tpp'

@@ -140,52 +140,55 @@ python train_net.py \
       MODEL.WEIGHTS <your weight>.pth
 ```
 
-# Specific Configs and Checkpoints
+# Checkpoints
+Download all checkpoints from [[here](https://drive.google.com/drive/folders/1PfG6vwMMebGB31cGRzt1nDYwvP2FjJ1h?usp=drive_link)]
+
+# Specific Configs
 
 ## BDD100K (Day -> Night)
 
-| Experiments | Configs | Checkpoints |
-|----------|----------|----------|
-| 2PCNet | [pretrained.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/pretrained.yaml) | TODO |
-| 2PCNet + Sta. Prior | [warp_aug_9_12.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/warp_aug_9_12.yaml) | TODO |
-| 2PCNet + Geo. Prior | [warp_aug_8_2.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/warp_aug_8_2.yaml) | TODO |
-| 2PCNet + Ours | [bdd100k_9_22_v1.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_9_22_v1.yaml) | TODO |
+| Experiments | Configs |
+|----------|----------|
+| 2PCNet | [pretrained.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/pretrained.yaml) |
+| 2PCNet + Sta. Prior | [warp_aug_9_12.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/warp_aug_9_12.yaml) | 
+| 2PCNet + Geo. Prior | [warp_aug_8_2.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/warp_aug_8_2.yaml) |
+| 2PCNet + Ours | [bdd100k_9_22_v1.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_9_22_v1.yaml) |
 
 
 ## BDD100K (Clear -> Rainy)
 
-| Experiments | Configs | Checkpoints |
-|----------|----------|----------|
-| 2PCNet | [bdd100k_10_18_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_10_18_baseline.yaml) | TODO |
-| 2PCNet + Sta. Prior | [bdd100k_10_18_fovea.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_10_18_fovea.yaml) | TODO |
-| 2PCNet + Geo. Prior | [bdd100k_10_18_tpp.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_10_18_tpp.yaml) | TODO |
-| 2PCNet + Ours | [bdd100k_10_18_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_10_18_bbox.yaml) | TODO |
+| Experiments | Configs |
+|----------|----------|
+| 2PCNet | [bdd100k_10_18_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_10_18_baseline.yaml) |
+| 2PCNet + Sta. Prior | [bdd100k_10_18_fovea.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_10_18_fovea.yaml) |
+| 2PCNet + Geo. Prior | [bdd100k_10_18_tpp.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_10_18_tpp.yaml) |
+| 2PCNet + Ours | [bdd100k_10_18_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/bdd100k_10_18_bbox.yaml) |
 
 
 ## BDD100K Clear -> ACDC
 
-| Experiments | Configs | Checkpoints |
-|----------|----------|----------|
-| 2PCNet | [acdc_11_6_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_baseline.yaml) | TODO |
-| 2PCNet + Sta. Prior | [acdc_11_6_fovea.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_fovea.yaml) | TODO |
-| 2PCNet + Geo. Prior | [acdc_11_6_tpp.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_tpp.yaml) | TODO |
-| 2PCNet + Ours | [acdc_11_6_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_bbox.yaml) | TODO |
+| Experiments | Configs |
+|----------|----------|
+| 2PCNet | [acdc_11_6_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_baseline.yaml) |
+| 2PCNet + Sta. Prior | [acdc_11_6_fovea.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_fovea.yaml) | 
+| 2PCNet + Geo. Prior | [acdc_11_6_tpp.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_tpp.yaml) |
+| 2PCNet + Ours | [acdc_11_6_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/acdc_11_6_bbox.yaml) |
 
 
 ## BDD100K Clear -> DENSE Foggy
 
-| Experiments | Configs | Checkpoints |
-|----------|----------|----------|
-| 2PCNet | [dense_foggy_12_12_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/dense_foggy_12_12_baseline.yaml) | TODO |
-| 2PCNet + Ours | [dense_foggy_12_12_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/dense_foggy_12_12_bbox.yaml) | TODO |
+| Experiments | Configs |
+|----------|----------|
+| 2PCNet | [dense_foggy_12_12_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/dense_foggy_12_12_baseline.yaml) |
+| 2PCNet + Ours | [dense_foggy_12_12_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/dense_foggy_12_12_bbox.yaml) |
 
 
 ## BDD100K Clear -> Boreas Snowy
 
-| Experiments | Configs | Checkpoints |
-|----------|----------|----------|
-| 2PCNet | [boreas_snow_12_16_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/boreas_snow_12_16_baseline.yaml) | TODO |
-| 2PCNet + Ours | [boreas_snow_12_16_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/boreas_snow_12_16_bbox.yaml) | TODO |
+| Experiments | Configs |
+|----------|----------|
+| 2PCNet | [boreas_snow_12_16_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/boreas_snow_12_16_baseline.yaml) |
+| 2PCNet + Ours | [boreas_snow_12_16_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/boreas_snow_12_16_bbox.yaml) |
 
 
 # Acknowledgements
