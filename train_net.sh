@@ -832,6 +832,7 @@
 #   OUTPUT_DIR outputs/dense_snow_12_12_bbox \
 #   > dense_snow_12_12_bbox_resume_v2.out 2>&1 &
 
+# NOTE: be careful with GPU=3!!!!. Use GPU=2 for training unless emergent cases
 
 run_training() {
     local src="$1"
@@ -839,7 +840,7 @@ run_training() {
     nohup \
     python train_net.py \
     --resume \
-    --num-gpus 2 \
+    --num-gpus 3 \
     --config configs/${tgt}.yaml \
     MODEL.WEIGHTS outputs/${src}/model_0059999.pth \
     OUTPUT_DIR outputs/${tgt} \
@@ -864,14 +865,14 @@ run_training() {
 
 ############ Dense Foggy Experiments ############
 
-# # bdd100k_10_18_baseline => dense_foggy_12_16_baseline
-# run_training 'bdd100k_10_18_baseline' 'dense_foggy_12_16_baseline'
+# # bdd100k_10_18_baseline => dense_foggy_12_12_baseline
+# run_training 'bdd100k_10_18_baseline' 'dense_foggy_12_12_baseline'
 
-# bdd100k_10_18_bbox => dense_foggy_12_16_bbox
-# run_training 'bdd100k_10_18_bbox' 'dense_foggy_12_16_bbox'
+# bdd100k_10_18_bbox => dense_foggy_12_12_bbox
+# run_training 'bdd100k_10_18_bbox' 'dense_foggy_12_12_bbox'
 
-# # bdd100k_10_18_fovea => dense_foggy_12_16_fovea (TODO, use 2GPU!)
-# run_training 'bdd100k_10_18_fovea' 'dense_foggy_12_16_fovea'
+# # bdd100k_10_18_fovea => dense_foggy_12_12_fovea
+# run_training 'bdd100k_10_18_fovea' 'dense_foggy_12_12_fovea'
 
-# bdd100k_10_18_tpp => dense_foggy_12_16_tpp (TODO, use 2GPU!)
-# run_training 'bdd100k_10_18_tpp' 'dense_foggy_12_16_tpp'
+# bdd100k_10_18_tpp => dense_foggy_12_12_tpp
+# run_training 'bdd100k_10_18_tpp' 'dense_foggy_12_12_tpp'

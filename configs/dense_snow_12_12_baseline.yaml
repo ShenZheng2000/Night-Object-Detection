@@ -11,14 +11,16 @@ DATASETS:
 
 # TODO: adjust the stuffs below based on the new dataset
 # NOTE: decrease the max_iter and the steps!!!!!!!!!!!!!!!!!!!!!!!!!
+# NOTE: use this because currently no GPU left
 SOLVER:
   STEPS: (65000, 75000, 80000, 432000)
-  # MAX_ITER: 63000
-  MAX_ITER: 85000
+  IMG_PER_BATCH_LABEL: 10 # 15
+  IMG_PER_BATCH_UNLABEL: 10 # 15
+  MAX_ITER: 97500
 
 # NOTE: adjust SCALE_STEPS here!!!!!!!!!!!!!!!!!!!
 SEMISUPNET:
-  SCALE_STEPS: (63500, 67000, 70500, 74000, 77500, 81000) # [3500, 7000, 10500, 14000, 17500, 21000]
+  SCALE_STEPS: (65250, 70500, 75750, 81000, 86250) # [5250, 10500, 15750, 21000, 26250, 31500]
 
 VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_clear.json"
 
