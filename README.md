@@ -97,21 +97,16 @@ Datasets/
 - <details>
   <summary>Specify the following</summary>
   <pre>
-TRAIN_LABEL (supervised training images)
 
-TRAIN_LABEL (unsupervised training images)
-
-TEST (testing images)
-
-NIGHTAUG (night augmentation: only useful for day2night domain adaptation)
-
-MAX_ITER (training iterations)
-
-IMG_PER_BATCH_LABEL (batch size for supervised training)
-
-IMG_PER_BATCH_UNLABEL (batch size for unsupervised training)
-  </pre>
-</details>
+    TRAIN_LABEL (supervised training images)
+    TRAIN_LABEL (unsupervised training images)
+    TEST (testing images)
+    NIGHTAUG (night augmentation: only useful for day2night domain adaptation)
+    MAX_ITER (training iterations)
+    IMG_PER_BATCH_LABEL (batch size for supervised training)
+    IMG_PER_BATCH_UNLABEL (batch size for unsupervised training)
+    </pre>
+    </details>
 
 
 # Training
@@ -161,9 +156,7 @@ Download all checkpoints from [[here](https://drive.google.com/drive/folders/1Pf
 
 # Specific Configs
 
-TODO: debug this part
-## <details>
-  <summary>BDD100K (Day -> Night)</summary>
+## BDD100K (Day -> Night)
 
 | Experiments | Configs |
 |----------|----------|
