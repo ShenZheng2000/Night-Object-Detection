@@ -109,6 +109,11 @@ Datasets/
     </details>
 
 
+# Checkpoints
+Download all checkpoints from [[here](https://drive.google.com/drive/folders/1PfG6vwMMebGB31cGRzt1nDYwvP2FjJ1h?usp=drive_link)]
+
+
+
 # Training
 
 ```
@@ -150,9 +155,6 @@ python train_net.py \
       --config configs/faster_rcnn_R50_bdd100k.yaml \
       MODEL.WEIGHTS <your weight>.pth
 ```
-
-# Checkpoints
-Download all checkpoints from [[here](https://drive.google.com/drive/folders/1PfG6vwMMebGB31cGRzt1nDYwvP2FjJ1h?usp=drive_link)]
 
 # Specific Configs
 
