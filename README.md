@@ -1,10 +1,15 @@
 # Environment Setup
 
-Create a new conda env and install torch and detectron2
+Create a new conda env
 
 ```shell
 conda create -n 2pcnetnew python=3.8
 conda activate 2pcnetnew
+```
+
+Install torch and detectron2
+
+```shell
 pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 ```
@@ -89,9 +94,9 @@ Datasets/
 
 * Go to `configs/faster_rcnn_R50_bdd100k.yaml` (or your custom yaml file)
 
-* Specify the following
-
-```
+* <details>
+  <summary>Specify the following</summary>
+  <pre>
 TRAIN_LABEL (supervised training images)
 
 TRAIN_LABEL (unsupervised training images)
@@ -105,8 +110,8 @@ MAX_ITER (training iterations)
 IMG_PER_BATCH_LABEL (batch size for supervised training)
 
 IMG_PER_BATCH_UNLABEL (batch size for unsupervised training)
-
-```
+ </pre>
+</details>
 
 # Training
 
@@ -155,7 +160,7 @@ Download all checkpoints from [[here](https://drive.google.com/drive/folders/1Pf
 
 # Specific Configs
 
-## BDD100K (Day -> Night)
+## <details><summary>BDD100K (Day -> Night)</summary>
 
 | Experiments | Configs |
 |----------|----------|
