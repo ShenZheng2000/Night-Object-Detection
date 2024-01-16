@@ -158,6 +158,9 @@ python train_net.py \
 
 # Specific Configs
 
+<details>
+  <summary>Click Here</summary>
+
 ## BDD100K (Day -> Night)
 
 | Experiments | Configs |
@@ -203,6 +206,8 @@ python train_net.py \
 | 2PCNet | [boreas_snow_12_16_baseline.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/boreas_snow_12_16_baseline.yaml) |
 | 2PCNet + Ours | [boreas_snow_12_16_bbox.yaml](https://github.com/ShenZheng2000/Night-Object-Detection/blob/master/configs/boreas_snow_12_16_bbox.yaml) |
 
+
+</details>
 
 # Acknowledgements
 
