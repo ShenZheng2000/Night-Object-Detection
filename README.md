@@ -26,6 +26,8 @@ Download sample COCO format jsons from [[here](https://drive.google.com/drive/fo
 
 # Dataset Structures
 
+<details>
+  <summary>Click Here</summary>
 ```
 Datasets/
     └── bdd100k/
@@ -74,6 +76,7 @@ Datasets/
             ├── train_snowy.json
             ├── test_snowy.json
 ```
+</details>
 
 # Dataset Path
 
