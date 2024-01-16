@@ -834,18 +834,18 @@
 
 # NOTE: be careful with GPU=3!!!!. Use GPU=2 for training unless emergent cases
 
-run_training() {
-    local src="$1"
-    local tgt="$2"
-    nohup \
-    python train_net.py \
-    --resume \
-    --num-gpus 3 \
-    --config configs/${tgt}.yaml \
-    MODEL.WEIGHTS outputs/${src}/model_0059999.pth \
-    OUTPUT_DIR outputs/${tgt} \
-    > ${tgt}.out 2>&1 &
-}
+# run_training() {
+#     local src="$1"
+#     local tgt="$2"
+#     nohup \
+#     python train_net.py \
+#     --resume \
+#     --num-gpus 3 \
+#     --config configs/${tgt}.yaml \
+#     MODEL.WEIGHTS outputs/${src}/model_0059999.pth \
+#     OUTPUT_DIR outputs/${tgt} \
+#     > ${tgt}.out 2>&1 &
+# }
 
 # NOTE: remove --eval-only and setup --resume for training!!!!
 
@@ -876,3 +876,28 @@ run_training() {
 
 # bdd100k_10_18_tpp => dense_foggy_12_12_tpp
 # run_training 'bdd100k_10_18_tpp' 'dense_foggy_12_12_tpp'
+
+
+
+
+# construction zone experiments
+run_training() {
+    local tgt="$1"
+    nohup \
+    python train_net.py \
+    --num-gpus 2 \
+    --config configs/construct/${tgt}.yaml \
+    OUTPUT_DIR outputs/${tgt} \
+    > ${tgt}.out 2>&1 &
+}
+
+# TODO: maybe retrain supevised baseline?
+
+# # DA (baseline)
+# run_training '1_12_v1'
+
+# Upperbound (baseline)
+# run_training '1_13_v1'
+
+# Sup (baseline)
+run_training '1_11_v1'

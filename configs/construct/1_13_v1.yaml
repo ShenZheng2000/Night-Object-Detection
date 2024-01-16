@@ -1,0 +1,8 @@
+_BASE_: "1_12_v1.yaml"
+
+DATASETS:
+  TRAIN_LABEL: ("construct_trainAB",) #voc_2012_train
+
+SEMISUPNET:
+  BURN_UP_STEP: 17999
+

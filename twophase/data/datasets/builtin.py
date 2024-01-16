@@ -541,3 +541,26 @@ register_coco_instances("gm_foggy_day",
 {}, 
 f'{data_path}/gm/coco_labels/foggy_day.json', 
 f'{data_path}/gm/foggy/day/images')
+
+
+
+# NOTE; add construction-zone here
+register_coco_instances("construct_trainA", 
+{}, 
+f'{data_path}/data/annotations/geographic_da/instances_pretrain.json', 
+f'{data_path}/data/images')
+
+register_coco_instances("construct_trainB", 
+{}, 
+f'{data_path}/data/annotations/geographic_da/instances_unsupervised_with_gt.json', 
+f'{data_path}/data/images')
+
+register_coco_instances("construct_testB", 
+{}, 
+f'{data_path}/data/annotations/geographic_da/instances_test.json', 
+f'{data_path}/data/images')
+
+register_coco_instances("construct_trainAB", 
+{}, 
+f'{data_path}/data/annotations/geographic_da/instances_all.json', 
+f'{data_path}/data/images')

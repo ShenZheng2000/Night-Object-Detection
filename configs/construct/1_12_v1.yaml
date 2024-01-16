@@ -1,0 +1,33 @@
+_BASE_: "../faster_rcnn_R50_bdd100k.yaml"
+
+# TODO: first debug train, 
+  # MIN_SIZE_TRAIN, (DONE)
+  # IMG_PER_BATCH_LABEL, IMG_PER_BATCH_UNLABEL (Keep for now)
+  # STEPS, MAX_ITER, BURN_UP_STEP, SCALE_STEPS (/10 for now)
+
+INPUT:
+  MIN_SIZE_TRAIN: (1080,)
+
+MODEL:
+  ROI_HEADS:
+    NUM_CLASSES: 19
+
+DATASETS:
+  TRAIN_LABEL: ("construct_trainA",) #voc_2012_train
+  TRAIN_UNLABEL: ("construct_trainB",)
+  TEST: ("construct_testB",)
+
+SOLVER:
+  STEPS: (10800, 14400, 16200, 64800)
+  MAX_ITER: 18000
+  IMG_PER_BATCH_LABEL: 10
+  IMG_PER_BATCH_UNLABEL: 10
+  BASE_LR: 0.01 # NOTE: use a smaller lr
+
+SEMISUPNET:
+  BURN_UP_STEP: 9000
+  SCALE_STEPS: (5700,6400,7100,7800,8500,9200)
+
+# NOTE: this must be False!!!!!!!!!!
+NIGHTAUG: False
+

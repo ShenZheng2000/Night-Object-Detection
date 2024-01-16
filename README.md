@@ -1,10 +1,13 @@
 # Environment Setup
 
-Python >= 3.6
+Create a new conda env and install torch and detectron2
 
-PyTorch >= 1.5
-
-[[Detectron2==0.6](https://detectron2.readthedocs.io/en/latest/tutorials/install.html)]
+```shell
+conda create -n 2pcnetnew python=3.8
+conda activate 2pcnetnew
+pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
+python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+```
 
 # Dataset Setup
 
