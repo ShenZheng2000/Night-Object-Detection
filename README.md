@@ -95,7 +95,7 @@ Datasets/
 * Go to `configs/faster_rcnn_R50_bdd100k.yaml` (or your custom yaml file)
 
 <details>
-  <summary>* Specify the following</summary>
+  <summary>&bull; Specify the following</summary>
   <pre>
 TRAIN_LABEL (supervised training images)
 
@@ -110,8 +110,9 @@ MAX_ITER (training iterations)
 IMG_PER_BATCH_LABEL (batch size for supervised training)
 
 IMG_PER_BATCH_UNLABEL (batch size for unsupervised training)
- </pre>
+  </pre>
 </details>
+
 
 # Training
 
