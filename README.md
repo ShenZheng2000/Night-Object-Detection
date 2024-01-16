@@ -92,10 +92,10 @@ Datasets/
 
 # Configure Path
 
-* Go to `configs/faster_rcnn_R50_bdd100k.yaml` (or your custom yaml file)
+- Go to `configs/faster_rcnn_R50_bdd100k.yaml` (or your custom yaml file)
 
-<details>
-  <summary>&bull; Specify the following</summary>
+- <details>
+  <summary>Specify the following</summary>
   <pre>
 TRAIN_LABEL (supervised training images)
 
