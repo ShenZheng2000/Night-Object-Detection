@@ -160,7 +160,8 @@ Download all checkpoints from [[here](https://drive.google.com/drive/folders/1Pf
 
 # Specific Configs
 
-## <details><summary>BDD100K (Day -> Night)</summary>
+## <details>
+  <summary>BDD100K (Day -> Night)</summary>
 
 | Experiments | Configs |
 |----------|----------|
