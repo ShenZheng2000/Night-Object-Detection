@@ -94,8 +94,8 @@ Datasets/
 
 * Go to `configs/faster_rcnn_R50_bdd100k.yaml` (or your custom yaml file)
 
-* <details>
-  <summary>Specify the following</summary>
+<details>
+  <summary>* Specify the following</summary>
   <pre>
 TRAIN_LABEL (supervised training images)
 
@@ -160,6 +160,7 @@ Download all checkpoints from [[here](https://drive.google.com/drive/folders/1Pf
 
 # Specific Configs
 
+TODO: debug this part
 ## <details>
   <summary>BDD100K (Day -> Night)</summary>
 
