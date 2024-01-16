@@ -109,6 +109,46 @@ Datasets/
     </details>
 
 
+# Warping-Related Code
+
+<details>
+  <summary>Import Warping Modules</summary>
+  <pre>
+from twophase.data.transforms.fovea import build_grid_net
+from twophase.data.transforms.fovea import process_and_update_features
+  </pre>
+</details>
+
+<details>
+  <summary>Build Warping Grid</summary>
+  <pre>
+# NOTE: define grid_net here (instead of in train.py)
+self.grid_net = build_grid_net(warp_aug_lzu=warp_aug_lzu, 
+                            warp_fovea=warp_fovea, 
+                            warp_fovea_inst=warp_fovea_inst, 
+                            warp_fovea_mix=warp_fovea_mix, 
+                            warp_middle=warp_middle, 
+                            warp_scale=warp_scale,
+                            warp_fovea_inst_scale=warp_fovea_inst_scale,
+                            warp_fovea_inst_scale_l2=warp_fovea_inst_scale_l2,
+                            fusion_method=fusion_method,
+                            pyramid_layer=pyramid_layer,
+                            )
+  </pre>
+</details>
+
+
+<details>
+  <summary>Warp Images and Unwarp Features</summary>
+  <pre>
+if warp_aug_lzu:
+    # print("process_and_update_features")
+    features, images = process_and_update_features(batched_inputs, images, warp_aug_lzu, 
+                                                    vp_dict, self.grid_net, self.backbone, 
+                                                    warp_debug, warp_image_norm, warp_aug=self.warp_aug)
+  </pre>
+</details>
+
 # Checkpoints
 Download all checkpoints from [[here](https://drive.google.com/drive/folders/1PfG6vwMMebGB31cGRzt1nDYwvP2FjJ1h?usp=drive_link)]
 
