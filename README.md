@@ -28,7 +28,7 @@ Download sample COCO format jsons from [[here](https://drive.google.com/drive/fo
 
 <details>
   <summary>Click Here</summary>
-```
+  <pre>
 Datasets/
     └── bdd100k/
         ├── images
@@ -75,7 +75,7 @@ Datasets/
         ├── coco_labels
             ├── train_snowy.json
             ├── test_snowy.json
-```
+  </pre>
 </details>
 
 # Dataset Path
