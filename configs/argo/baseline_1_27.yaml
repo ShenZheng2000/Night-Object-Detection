@@ -1,0 +1,27 @@
+# NOTE: use another yaml to reduce code
+_BASE_: "../bdd100k_warp_aug_9_11_4090.yaml"
+
+# NOTE: train on clear, adapted to rainy, test on rainy
+
+DATASETS:
+  # TRAIN_LABEL: ("bdd100k_clear_train_valid_vp",)
+  TRAIN_UNLABEL: ("argo_train",) #Clipart1k_train
+  TEST: ("argo_val",) #Clipart1k_test
+
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/train_clear.json"
+
+# PATH_BLUR: True
+WARP_AUG_LZU: False
+
+# NOTE: TURN DOWN the nightaug for clear2rainy here
+
+# USE_DEBUG: True
+# TWO_PC_AUG: False
+# AUG_PROB: 1.0
+# WARP_DEBUG: True
+NIGHTAUG: False
+
+# NOTE: use this for debugging
+SOLVER:
+  IMG_PER_BATCH_LABEL: 15 # 15
+  IMG_PER_BATCH_UNLABEL: 15 # 15

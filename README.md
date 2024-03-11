@@ -183,7 +183,7 @@ python train_net.py \
 ```
 
 
-# Testing
+# Testing {#section-anchor}
 
 ```
 bash test_net.sh
@@ -197,6 +197,20 @@ python train_net.py \
       --config configs/faster_rcnn_R50_bdd100k.yaml \
       MODEL.WEIGHTS <your weight>.pth
 ```
+
+# Testing on Videos
+
+Visit Utility Scripts: [here](https://github.com/ShenZheng2000/Instance-Warp-Scripts)
+
+Extract Videos to Images: `video/video2image.py`
+
+Create Pseudo-Json: `jsons/create_empty_json.py`
+
+Specifiy Image and Label Paths: `twophase/data/datasets/builtin.py` (current repo)
+
+Run Inferece: [this](#section-anchor)
+
+Compile Images to Videos: `video/image2video.py`
 
 # Specific Configs
 

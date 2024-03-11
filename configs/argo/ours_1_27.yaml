@@ -1,0 +1,6 @@
+# NOTE: use another yaml to reduce code
+_BASE_: "baseline_1_27.yaml"
+
+# PATH_BLUR: True
+WARP_AUG_LZU: True
+WARP_FOVEA_INST: True

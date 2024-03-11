@@ -878,26 +878,22 @@
 # run_training 'bdd100k_10_18_tpp' 'dense_foggy_12_12_tpp'
 
 
+# # construction zone experiments
+# run_training() {
+#     local tgt="$1"
+#     CUDA_VISIBLE_DEVICES=2 nohup \
+#     python train_net.py \
+#     --num-gpus 1 \
+#     --config configs/construct/${tgt}.yaml \
+#     OUTPUT_DIR outputs/${tgt} \
+#     > ${tgt}.out 2>&1 &
+# }
 
-
-# construction zone experiments
-run_training() {
-    local tgt="$1"
-    nohup \
-    python train_net.py \
-    --num-gpus 2 \
-    --config configs/construct/${tgt}.yaml \
-    OUTPUT_DIR outputs/${tgt} \
-    > ${tgt}.out 2>&1 &
-}
-
-# TODO: maybe retrain supevised baseline?
-
-# # DA (baseline)
+# # # DA (baseline)
 # run_training '1_12_v1'
 
 # Upperbound (baseline)
 # run_training '1_13_v1'
 
 # Sup (baseline)
-run_training '1_11_v1'
+# run_training '1_11_v1'

@@ -69,7 +69,8 @@
 # NOTE: this is for video-extracted images
 # TOD='gm_rainy_day'
 # TOD='gm_rainy_night'
-TOD='gm_foggy_day'
+# TOD='gm_foggy_day'
+TOD='recent_clips'
 
 
 # List of NAME values
@@ -85,13 +86,14 @@ NAMES=(
   # "bdd100k_10_18_baseline"
   # "bdd100k_10_18_fovea"
   # "bdd100k_10_18_tpp"
-  # "bdd100k_10_18_bbox"
+  "bdd100k_10_18_bbox"
   # "dense_foggy_12_12_baseline"
-  "dense_foggy_12_12_bbox"
+  # "dense_foggy_12_12_fovea"
+  # "dense_foggy_12_12_tpp"
+  # "dense_foggy_12_12_bbox"
   )
 
 # # Loop over each NAME and run the command
-export CUDA_VISIBLE_DEVICES=0
 for NAME in "${NAMES[@]}"; do
   python train_net.py \
     --num-gpus 1 \

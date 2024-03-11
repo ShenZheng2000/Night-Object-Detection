@@ -543,24 +543,43 @@ f'{data_path}/gm/coco_labels/foggy_day.json',
 f'{data_path}/gm/foggy/day/images')
 
 
+# NOTE: add recent clips (3/10/2024) here
+register_coco_instances("RecentClips", 
+{}, 
+f'{data_path}/RecentClips/coco_labels/images.json', 
+f'{data_path}/RecentClips/images')
+
+construct_path = '/longdata/anurag_storage/workzone_segm'
 
 # NOTE; add construction-zone here
 register_coco_instances("construct_trainA", 
 {}, 
-f'{data_path}/data/annotations/geographic_da/instances_pretrain.json', 
-f'{data_path}/data/images')
+f'{construct_path}/data_new/annotations/instances_geographic_da_pretrain.json', 
+f'{construct_path}/data_new/images')
 
 register_coco_instances("construct_trainB", 
 {}, 
-f'{data_path}/data/annotations/geographic_da/instances_unsupervised_with_gt.json', 
-f'{data_path}/data/images')
+f'{construct_path}/data_new/annotations/instances_geographic_da_unsupervised_with_gt.json', 
+f'{construct_path}/data_new/images')
 
 register_coco_instances("construct_testB", 
 {}, 
-f'{data_path}/data/annotations/geographic_da/instances_test.json', 
-f'{data_path}/data/images')
+f'{construct_path}/data_new/annotations/instances_geographic_da_test.json', 
+f'{construct_path}/data_new/images')
 
 register_coco_instances("construct_trainAB", 
 {}, 
-f'{data_path}/data/annotations/geographic_da/instances_all.json', 
-f'{data_path}/data/images')
+f'{construct_path}/data_new/annotations/instances_geographic_da_all.json',
+f'{construct_path}/data_new/images')
+
+
+# NOTE: add argo here
+register_coco_instances("argo_train", 
+{},
+f'{data_path}/Argoverse/Argoverse-HD/coco_labels/train.json',
+f'{data_path}/Argoverse/Argoverse-1.1/tracking/train')
+
+register_coco_instances("argo_val",
+{},
+f'{data_path}/Argoverse/Argoverse-HD/coco_labels/val.json',
+f'{data_path}/Argoverse/Argoverse-1.1/tracking/val')
