@@ -89,6 +89,21 @@ Datasets/
 
 * Change `data_path` to the absolute path of your dataset folder.
 
+* Register paths for images and labels, using BDD100K dataset (train and val) as an example. 
+  
+  ```
+  # NOTE: add complete bdd train and test
+  register_coco_instances("bdd100k_train",
+  {}, 
+  f'{data_path}/bdd100k/coco_labels/bdd100k_labels_images_train.json', 
+  f'{data_path}/bdd100k/images/100k/train')
+
+  register_coco_instances("bdd100k_val",
+  {}, 
+  f'{data_path}/bdd100k/coco_labels/bdd100k_labels_images_val.json', 
+  f'{data_path}/bdd100k/images/100k/val')
+  ```
+
 
 # Configure Path
 
@@ -97,16 +112,18 @@ Datasets/
 - <details>
   <summary>Specify the following</summary>
   <pre>
-
+    _BASE_: base config yaml
     TRAIN_LABEL (supervised training images)
-    TRAIN_LABEL (unsupervised training images)
+    TRAIN_UNLABEL (unsupervised training images)
     TEST (testing images)
-    NIGHTAUG (night augmentation: only useful for day2night domain adaptation)
+    NIGHTAUG (night augmentation: set it True for day2night domain adaptation)
     MAX_ITER (training iterations)
     IMG_PER_BATCH_LABEL (batch size for supervised training)
     IMG_PER_BATCH_UNLABEL (batch size for unsupervised training)
     </pre>
     </details>
+
+- See `configs/pretrained.yaml` for example of how to specify the parameters. 
 
 
 # Warping-Related Code
@@ -167,7 +184,7 @@ or
 ```
 python train_net.py \
         --num-gpus 3 \
-        --config configs/faster_rcnn_R50_bdd100k.yaml \
+        --config configs/faster_rcnn_R50_bdd100k.yaml \ # or your custom .yaml file
         OUTPUT_DIR output/bdd100k \
 ```
 
@@ -177,7 +194,7 @@ python train_net.py \
 python train_net.py \
         --resume \
         --num-gpus 3 \
-        --config configs/faster_rcnn_R50_bdd100k.yaml \
+        --config configs/faster_rcnn_R50_bdd100k.yaml \ # or your custom .yaml file
         MODEL.WEIGHTS <your weight>.pth  \
         OUTPUT_DIR output/bdd100k \
 ```
@@ -194,23 +211,23 @@ or
 ```
 python train_net.py \
       --eval-only \
-      --config configs/faster_rcnn_R50_bdd100k.yaml \
+      --config configs/faster_rcnn_R50_bdd100k.yaml \ # or your custom .yaml file
       MODEL.WEIGHTS <your weight>.pth
 ```
 
 # Testing on Videos
 
-Visit Utility Scripts: [here](https://github.com/ShenZheng2000/Instance-Warp-Scripts)
+- Visit Utility Scripts: [here](https://github.com/ShenZheng2000/Instance-Warp-Scripts)
 
-Extract Videos to Images: `video/video2image.py`
+- Extract Videos to Images: `video/video2image.py`
 
-Create Pseudo-Json: `jsons/create_empty_json.py`
+- Create Pseudo-Json: `jsons/create_empty_json.py`
 
-Specifiy Image and Label Paths: `twophase/data/datasets/builtin.py` (current repo)
+- Specifiy Image and Label Paths: `twophase/data/datasets/builtin.py` (current repo)
 
-Run Inferece: [this](#section-anchor)
+- Run Inferece: [this](#section-anchor)
 
-Compile Images to Videos: `video/image2video.py`
+- Compile Images to Videos: `video/image2video.py`
 
 # Specific Configs
 

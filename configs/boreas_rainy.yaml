@@ -1,0 +1,6 @@
+# NOTE: use another yaml to reduce code
+_BASE_: "./faster_rcnn_R50_bdd100k.yaml"
+
+# NOTE: add this for testing only
+DATASETS:
+  TEST: ("boreas_rainy",) #Clipart1k_test # NOTE: change to day for test only

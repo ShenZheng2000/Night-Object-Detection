@@ -549,6 +549,22 @@ register_coco_instances("RecentClips",
 f'{data_path}/RecentClips/coco_labels/images.json', 
 f'{data_path}/RecentClips/images')
 
+
+# NOTE: add boreas rainy here
+register_coco_instances("boreas_rainy", 
+{}, 
+f'/longdata/anurag_storage/boreas/rain/coco_labels/filtered.json', 
+f'/longdata/anurag_storage/boreas/rain/filtered')
+
+
+# NOTE: add boreas rainy here
+register_coco_instances("boreas_night", 
+{}, 
+f'/longdata/anurag_storage/boreas/night/coco_labels/filtered.json', 
+f'/longdata/anurag_storage/boreas/night/filtered')
+
+
+
 construct_path = '/longdata/anurag_storage/workzone_segm'
 
 # NOTE; add construction-zone here

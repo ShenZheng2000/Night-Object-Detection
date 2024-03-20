@@ -64,13 +64,15 @@
 # TOD='rainy_day_SAPNet'
 # TOD='rainy_night_SAPNet'
 # TOD='rainy_100'
-# TOD='rainy_100_SAPNet'
+# TOD='rainy_100_SAPNet''
 
 # NOTE: this is for video-extracted images
 # TOD='gm_rainy_day'
 # TOD='gm_rainy_night'
 # TOD='gm_foggy_day'
-TOD='recent_clips'
+# TOD='recent_clips'
+# TOD='boreas_night'
+TOD='boreas_rainy'
 
 
 # List of NAME values
@@ -82,11 +84,11 @@ NAMES=(
   # "pretrained"
   # "warp_aug_9_12"
   # "warp_aug_8_2"
-  # "bdd100k_9_22_v1"
+  # "bdd100k_9_22_v1" # night, ours
   # "bdd100k_10_18_baseline"
   # "bdd100k_10_18_fovea"
   # "bdd100k_10_18_tpp"
-  "bdd100k_10_18_bbox"
+  "bdd100k_10_18_bbox" # rainy, ours
   # "dense_foggy_12_12_baseline"
   # "dense_foggy_12_12_fovea"
   # "dense_foggy_12_12_tpp"
