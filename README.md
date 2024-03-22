@@ -200,7 +200,7 @@ python train_net.py \
 ```
 
 
-# Testing {#section-anchor}
+# Testing
 
 ```
 bash test_net.sh
@@ -229,10 +229,18 @@ python train_net.py \
 
 - Compile Images to Videos: `video/image2video.py`
 
+
+# Checkpoints Interpretation
+
+In the output folder, `0059999.pth` is the model after supervised pretraining, and `model_final.pth` is the model after domain adaptation. 
+
+
 # Specific Configs
 
 <details>
   <summary>Click Here</summary>
+
+
 
 ## BDD100K (Day -> Night)
 
