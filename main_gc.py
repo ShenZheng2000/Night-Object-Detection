@@ -66,7 +66,7 @@ plt.rcParams["figure.figsize"] = (30,10)
 img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bf8ff5f5-877edaa0.jpg"
 
 
-basename = os.path.basename(img_path).replace(".jpg", "")
+basename = os.path.basename(img_path).replace(".jpg", "").replace(".png", "")
 
 # # NOTE: this is for the warped image
 # config_file = "/home/aghosh/Projects/2PCNet/Methods/Night-Object-Detection/configs/bdd100k_10_18_bbox.yaml"

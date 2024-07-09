@@ -223,11 +223,18 @@ python train_net.py \
 
 - Create Pseudo-Json: `jsons/create_empty_json.py`
 
-- Specifiy Image and Label Paths: `twophase/data/datasets/builtin.py` (current repo)
+- Specify Image and Label Paths: `twophase/data/datasets/builtin.py` (current repo)
 
-- Run Inferece: [this](#section-anchor)
+- Run Inference: [See this](#testing)
 
 - Compile Images to Videos: `video/image2video.py`
+
+
+# Grad-CAM Feature Visualization
+
+- Open `main_gc.py`
+- Specify `img_path`, `config_file` and `model_file`.
+- The output images will be saved in:`f"gradcam_output/{model_name}/{basename}"`
 
 
 # Checkpoints Interpretation

@@ -886,7 +886,7 @@ run_training() {
     --num-gpus 1 \
     --config configs/construct/${tgt}.yaml \
     OUTPUT_DIR outputs/${tgt} \
-    > ${tgt}.out 2>&1 &
+    > outs/${tgt}.out 2>&1 &
 }
 
 # # # DA (baseline)
