@@ -152,6 +152,8 @@ def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=
 
     # Get the vanishing point for the current image
     image_basename = os.path.basename(image_path)
+
+    # print all keys of vanishing_points
     vanishing_point = vanishing_points[image_basename]
 
     # Scale vanishing_point according to the ratio
@@ -170,7 +172,6 @@ def get_vanising_points(image_path, vanishing_points, ratio=1.0, flip_transform=
 
 # NOTE: for mmseg, we use this function
 # NOTE: no longer require vanishing_points
-# NOTE: modify to STOP in-place modification
 def new_update_vp_ins(sample, ratio=1.0, img_width=None, seg_to_det=None):
     sample_basename = os.path.basename(sample['filename'])
 

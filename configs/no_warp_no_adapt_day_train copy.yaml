@@ -1,0 +1,6 @@
+_BASE_: "./faster_rcnn_R50_bdd100k.yaml"
+DATASETS:
+  TRAIN: ("bdd100k_day_train",)
+  TRAIN_LABEL: ("bdd100k_day_train",)
+  TRAIN_UNLABEL: ("bdd100k_day_train",)
+  TEST: ("bdd100k_night_val",)

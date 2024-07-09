@@ -1,0 +1,6 @@
+_BASE_: "1_12_v1.yaml"
+
+WARP_AUG_LZU: True
+WARP_FOVEA_INST: True
+
+VANISHING_POINT: "/home/aghosh/Projects/2PCNet/Datasets/VP/workzone_train_dummy.json"

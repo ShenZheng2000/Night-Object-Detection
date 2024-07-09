@@ -599,3 +599,10 @@ register_coco_instances("argo_val",
 {},
 f'{data_path}/Argoverse/Argoverse-HD/coco_labels/val.json',
 f'{data_path}/Argoverse/Argoverse-1.1/tracking/val')
+
+
+register_coco_instances("tesla_images", 
+{}, 
+f'{data_path}/tesla/annotations/tesla_data.json', 
+f'{data_path}/tesla/images')
+

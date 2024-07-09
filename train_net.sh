@@ -879,15 +879,15 @@
 
 
 # # construction zone experiments
-# run_training() {
-#     local tgt="$1"
-#     CUDA_VISIBLE_DEVICES=2 nohup \
-#     python train_net.py \
-#     --num-gpus 1 \
-#     --config configs/construct/${tgt}.yaml \
-#     OUTPUT_DIR outputs/${tgt} \
-#     > ${tgt}.out 2>&1 &
-# }
+run_training() {
+    local tgt="$1"
+    CUDA_VISIBLE_DEVICES=3 nohup \
+    python train_net.py \
+    --num-gpus 1 \
+    --config configs/construct/${tgt}.yaml \
+    OUTPUT_DIR outputs/${tgt} \
+    > ${tgt}.out 2>&1 &
+}
 
 # # # DA (baseline)
 # run_training '1_12_v1'
@@ -897,3 +897,6 @@
 
 # Sup (baseline)
 # run_training '1_11_v1'
+
+# DA (baseline + Instance Warp) => TODO: train this after sem seg are done
+run_training '1_14_v1'

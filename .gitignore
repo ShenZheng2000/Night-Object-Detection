@@ -9,3 +9,12 @@ debug.py
 **/torch-batch-svd/
 **/*.txt
 **/*.pdf
+**/*.pkl
+det2_mach_configs/
+
+# Ignore Python bytecode files
+**/__pycache__/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd

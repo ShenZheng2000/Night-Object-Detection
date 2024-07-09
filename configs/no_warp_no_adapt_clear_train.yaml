@@ -1,0 +1,6 @@
+_BASE_: "./faster_rcnn_R50_bdd100k.yaml"
+DATASETS:
+  TRAIN: ("bdd100k_clear_train_valid_vp",)
+  TRAIN_LABEL: ("bdd100k_clear_train_valid_vp",)
+  TRAIN_UNLABEL: ("bdd100k_clear_train_valid_vp",)
+  TEST: ("bdd100k_rainy_val",) #Clipart1k_testi
