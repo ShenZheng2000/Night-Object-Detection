@@ -1,0 +1,14 @@
+## Usage: Test a trained BDD clear model on Tesla annotated test set only
+## No training involved.
+
+# NOTE: use another yaml to reduce code
+_BASE_: "./bdd100k_10_18_baseline.yaml"
+
+DATASETS:
+  TRAIN_LABEL: ("bdd100k_clear_train_valid_vp_vehicles_merged",) 
+  TRAIN_UNLABEL: ("tesla_annotated_train_vehicles_merged",) # => No use for this experiment
+  TEST: ("tesla_annotatedv2_test_night",) 
+
+# NOTE: set MAX_ITER to BURN_UP_STEP+1, so we can end the training right after the burn up step
+SOLVER:
+  MAX_ITER: 60001

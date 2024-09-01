@@ -63,8 +63,15 @@ plt.rcParams["figure.figsize"] = (30,10)
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bd812175-fc557aa4.jpg"
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/becccb13-74e09a25.jpg"
 # img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/befbf2cc-bec128ef.jpg"
-img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bf8ff5f5-877edaa0.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_rainy/bf8ff5f5-877edaa0.jpg"
 
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_day/b1cebfb7-284f5117.jpg"
+
+# Find images that both satisfy warping and grad-cam requirements => single small object with good visualizations
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_debug/0a0c3694-9572f64f.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train_debug/0a0ceca1-4148e482.jpg"
+# img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_day/b1c66a42-6f7d68ca.jpg"
+img_path = "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val_day/b1d7b3ac-5744370e.jpg"
 
 basename = os.path.basename(img_path).replace(".jpg", "").replace(".png", "")
 
@@ -86,18 +93,18 @@ def main():
 
     # TODO: try this once we have GPUs
     for model_name in [
-                        "bdd100k_10_18_baseline", 
-                    #    "bdd100k_10_18_fovea",
+                        # "bdd100k_10_18_baseline", 
+                       "bdd100k_10_18_fovea",
                        "bdd100k_10_18_tpp",
-                       "bdd100k_10_18_bbox"
+                    #    "bdd100k_10_18_bbox"
                        ]:
 
         surfix = 'jpg' # for debug only
         # surfix = 'pdf'
 
         # NOTE: this is for the baseline
-        config_file = f"/home/aghosh/Projects/2PCNet/Methods/Night-Object-Detection/configs/{model_name}.yaml"
-        model_file = f"/longdata/anurag_storage/2PCNet/outputs_11_14_det_ckpts/{model_name}/model_final.pth"
+        config_file = f"/home/aghosh/Projects/2PCNet/Methods/Instance-Warp/Night-Object-Detection/configs/{model_name}.yaml"
+        model_file = f"/longdata/anurag_storage/2PCNet/2PCNet/outputs/{model_name}/model_final.pth"
 
         config_list = [
         "MODEL.ROI_HEADS.SCORE_THRESH_TEST", "0.5",

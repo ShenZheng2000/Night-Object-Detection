@@ -1,0 +1,13 @@
+## Usage: Adapt from BDD100 Clear --> Tesla Annotated
+## Test also on Tesla Annotated
+## This is using the baseline 2PCNet Method
+
+# NOTE: use another yaml to reduce code
+_BASE_: "./bdd100k_10_18_baseline.yaml"
+
+# NOTE: train on clear, adapted to rainy, test on rainy
+
+# NOTE: first debug this, then change to this
+DATASETS:
+  TRAIN_UNLABEL: ("tesla_annotated_train_vehicles_merged",) #Clipart1k_train
+  TEST: ("tesla_annotated_test_vehicles_merged",) #Clipart1k_test

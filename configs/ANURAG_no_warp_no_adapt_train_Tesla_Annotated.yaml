@@ -1,0 +1,12 @@
+## Usage: Train on BDD100 Clear and Tesla Annotated, Test on Tesla Annotated
+## No adaptation involved.
+
+_BASE_: "./bdd100k_10_18_baseline.yaml"
+DATASETS:
+  TRAIN_LABEL: ("tesla_annotated_train_vehicles_merged",) #("bdd100k_clear_train_valid_vp",)
+  TRAIN_UNLABEL: ("tesla_annotated_train_vehicles_merged",) # => No use for this experiment
+  TEST: ("tesla_annotated_test_vehicles_merged",) #("bdd100k_rainy_val",) #Clipart1k_testi
+
+# NOTE: set MAX_ITER to BURN_UP_STEP+1, so we can end the training right after the burn up step
+SOLVER:
+  MAX_ITER: 60001

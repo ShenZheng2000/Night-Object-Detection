@@ -1,0 +1,10 @@
+## Usage: Adapt from BDD100 Clear --> Tesla Annotated
+## Test also on Tesla Annotated
+## This uses the Instance Warp Method Additionally.
+
+# NOTE: use another yaml to reduce code
+_BASE_: "./ANURAG_bdd100k_10_18_baseline_Tesla_Annotated.yaml"
+
+WARP_AUG_LZU: True
+WARP_FOVEA_INST: True
+# WARP_DEBUG: True

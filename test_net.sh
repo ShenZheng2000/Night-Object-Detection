@@ -72,11 +72,11 @@
 # TOD='gm_foggy_day'
 # TOD='recent_clips'
 # TOD='boreas_night'
-TOD='boreas_rainy'
+# TOD='boreas_rainy'
 
 
 # List of NAME values
-NAMES=(
+# NAMES=(
   # "acdc_11_6_baseline"
   # "acdc_11_6_fovea"
   # "acdc_11_6_tpp"
@@ -88,22 +88,22 @@ NAMES=(
   # "bdd100k_10_18_baseline"
   # "bdd100k_10_18_fovea"
   # "bdd100k_10_18_tpp"
-  "bdd100k_10_18_bbox" # rainy, ours
-  # "dense_foggy_12_12_baseline"
-  # "dense_foggy_12_12_fovea"
-  # "dense_foggy_12_12_tpp"
-  # "dense_foggy_12_12_bbox"
-  )
+  # "bdd100k_10_18_bbox" # rainy, ours
+  # # "dense_foggy_12_12_baseline"
+  # # "dense_foggy_12_12_fovea"
+  # # "dense_foggy_12_12_tpp"
+  # # "dense_foggy_12_12_bbox"
+  # )
 
-# # Loop over each NAME and run the command
-for NAME in "${NAMES[@]}"; do
-  python train_net.py \
-    --num-gpus 1 \
-    --eval-only \
-    --config "configs/${TOD}.yaml" \
-    MODEL.WEIGHTS "outputs/${NAME}/model_final.pth" \
-    OUTPUT_DIR "outputs/${NAME}/${TOD}"
-done
+# # # Loop over each NAME and run the command
+# for NAME in "${NAMES[@]}"; do
+#   python train_net.py \
+#     --num-gpus 1 \
+#     --eval-only \
+#     --config "configs/${TOD}.yaml" \
+#     MODEL.WEIGHTS "outputs/${NAME}/model_final.pth" \
+#     OUTPUT_DIR "outputs/${NAME}/${TOD}"
+# done
 
 # NOTE: use this if in longdata
 #  --config "configs/bdd100k_test_${TOD}.yaml" \
