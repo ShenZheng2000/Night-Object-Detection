@@ -13,6 +13,7 @@ import torch
 import numpy as np
 from PIL import Image, ImageDraw
 import cv2
+import time
 
 def read_seg_to_det(SEG_TO_DET):
     if SEG_TO_DET is not None:
@@ -113,11 +114,13 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None, file_name=None, us
             The outer list corresponds to each image. The inner list
             corresponds to each class.
     """
+    # start_time = time.time()
+
     if len(imgs.shape) == 3:
         imgs = imgs.unsqueeze(0)
 
     imgs = torch.stack(tuple(imgs), dim=0)
-
+    
     # print("imgs.shape is", imgs.shape)
     # print("vanishing_point is", vanishing_point)
     # print("bboxes is", bboxes)
@@ -130,6 +133,9 @@ def simple_test(grid_net, imgs, vanishing_point, bboxes=None, file_name=None, us
     warped_imgs = F.grid_sample(imgs, grid, align_corners=True)
 
     # print("imgs.shape", imgs.shape)
+
+    # print(f"Time taken for warping: {time.time() - start_time:.2f} seconds")
+    # exit()
 
     return grid, warped_imgs
 
@@ -295,6 +301,9 @@ def save_feature(image1, image2, save_path):
 
 # NOTE: This is the running version
 def apply_unwarp(warped_x, grid, keep_size=True, keep_grid=False):
+
+    # start_time = time.time()
+
     if (len(warped_x.shape) == 3) and keep_size:
         warped_x = warped_x.unsqueeze(0)
 
@@ -327,6 +336,9 @@ def apply_unwarp(warped_x, grid, keep_size=True, keep_grid=False):
     # print("unwarped_x shape", unwarped_x.shape) # [3, 600, 1067]
 
     # print(f"unwarped_x min {unwarped_x.min()} max {unwarped_x.max()}") # [0, 255]
+
+    # print(f"Time taken for unwarping: {time.time() - start_time:.2f} seconds")
+    # exit()
 
     return unwarped_x
 

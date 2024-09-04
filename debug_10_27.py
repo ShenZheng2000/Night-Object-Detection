@@ -13,6 +13,7 @@ import glob
 from torchvision.transforms.functional import to_pil_image, to_tensor
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 from vis_utils import *
 
@@ -29,8 +30,10 @@ def process_images(img_paths, v_pts_list, gt_bboxes_list, grid_net, config):
 
         if index % 100 == 0:
             print(f"Processed {index} images")
+    # NOTE: comment this noew to save time. 
+    # save_hist_data(hist_data_orig, hist_data_warped, grid_net, config) 
 
-    save_hist_data(hist_data_orig, hist_data_warped, grid_net, config)
+import matplotlib.pyplot as plt
 
 def warp_image_exp(img_path, v_pts, gt_bboxes, grid_net, hist_data_orig, hist_data_warped, config):
     main_output_dir = config['main_output_dir']
@@ -44,7 +47,14 @@ def warp_image_exp(img_path, v_pts, gt_bboxes, grid_net, hist_data_orig, hist_da
     base_path = os.path.splitext(os.path.basename(img_path))[0]
     img_tensor = load_image_tensor(img_path)
     
-    output_dir = os.path.join(main_output_dir, grid_net if grid_net == 'NO' else grid_net.__class__.__name__)
+    # output_dir = os.path.join(main_output_dir, grid_net if grid_net == 'NO' else grid_net.__class__.__name__)
+
+    # Modify this line to include bandwidth in the output directory name
+    if grid_net == 'NO':
+        output_dir = os.path.join(main_output_dir, grid_net)
+    else:
+        output_dir = os.path.join(main_output_dir, f"{grid_net.__class__.__name__}_bs_{config['bandwidth']}")
+
     os.makedirs(output_dir, exist_ok=True)
 
     if grid_net == 'NO':
@@ -52,6 +62,49 @@ def warp_image_exp(img_path, v_pts, gt_bboxes, grid_net, hist_data_orig, hist_da
     else:
         warped_img, ins, grid = make_warp_aug(img_tensor, converted_bboxes, v_pts, grid_net, use_ins=config['use_ins'], file_name=base_path)
         ins = clip_bounding_boxes(ins, config['img_width'], config['img_height'])
+
+        # TODO: save the original image
+        ori_img_name = os.path.join(output_dir, f"{base_path}_ori.jpg")
+        save_image(img_tensor, ori_img_name)
+
+        # TODO: do unwarp, and save the images!
+        unwarp_img = apply_unwarp(warped_img, grid)
+        # print("unwarp_img.shape", unwarp_img.shape) # [3, 720, 1280]
+        unwarp_img_name = os.path.join(output_dir, f"{base_path}_unwarp.jpg")
+        save_image(unwarp_img, unwarp_img_name)
+
+        # TODO: save (ori - unwarp) image => Maybe using a binary mask?
+        ori_img = img_tensor.squeeze(0)
+        # print("ori_img shape", ori_img.shape)  [1, 3, 720, 1280]
+        diff_img = ori_img - unwarp_img
+        diff_img = torch.sqrt(torch.sum(diff_img ** 2, dim=0, keepdim=True))
+        
+        # diff_img = diff_img * 255
+
+        diff_img_numpy = diff_img.permute(1, 2, 0).cpu().numpy()
+
+
+        ## log error
+        # diff_img_numpy = np.log2(diff_img_numpy + 1) #/ np.log2(1.2)
+
+        fig, ax = plt.subplots(figsize=(16, 12), dpi=300)
+
+        # Display the image with the reversed colormap
+        im = ax.imshow(diff_img_numpy, cmap='jet', vmin=0, vmax=1)
+
+        # Remove axis labels
+        ax.axis('off')
+
+        # Add a colorbar with a size that matches the image height
+        cbar = fig.colorbar(im, ax=ax, fraction=0.024, pad=0.01)
+        cbar.ax.tick_params(labelsize=16)
+
+        # Save the plot with a high resolution
+        plt.savefig(os.path.join(output_dir, f"{base_path}_diff.jpg"), bbox_inches='tight', pad_inches=0.05)
+        plt.close()
+
+        # diff_img_name = os.path.join(output_dir, f"{base_path}_diff.jpg")
+        # save_image(diff_img, diff_img_name)
 
     if config['save_flag']:
         save_warped_image(warped_img, ins, base_path, output_dir, config)
@@ -64,7 +117,7 @@ def load_image_tensor(img_path):
     return transform(img).cuda().unsqueeze(0)
 
 def save_warped_image(warped_img, ins, base_path, output_dir, config):
-    warped_img_name = os.path.join(output_dir, f"{base_path}.jpg")
+    warped_img_name = os.path.join(output_dir, f"{base_path}_warped.jpg")
     if config['draw_bboxes']:
         image_with_bboxes = draw_bboxes_on_image(warped_img[0], ins)
         image_with_bboxes.save(warped_img_name)
@@ -113,6 +166,21 @@ def get_gt_bboxes_for_images(img_paths, data_source, root_path, config):
     else:
         return [torch.tensor(get_ground_truth_bboxes_simple(img_path, data_source, root_path)).cuda() for img_path in img_paths]
 
+def instantiate_grid_net(grid_net_name, config):
+    if grid_net_name == 'PlainKDEGrid':
+        return PlainKDEGrid(bandwidth_scale=config['bandwidth'], amplitude_scale=config['amplitude']).cuda()
+    elif grid_net_name == 'NO':
+        return 'NO'
+    else:
+        grid_net_class = globals()[grid_net_name]
+        return grid_net_class().cuda()
+
+
+# NOTE: saliency scale (s) = bandwidth / 4
+    # bandwidth = 4, then s = 1.
+    # bandwidth = 64, then s = 16.
+    # bandwidth = 1024, then s = 256.
+
 def main():
     config = {
         "is_coco_style": True,
@@ -121,21 +189,32 @@ def main():
         "use_ins": True,
         "use_hw": False,
         "category": None,
-        "bandwidth": 64,
+        "bandwidths": [
+                        4, 
+                       64, 
+                       1024
+                       ],
         "amplitude": 1.0,
         "dataset": "bdd100k",
         "split": "train",
         "img_width": 1280,
         "img_height": 720,
-        "root_path": "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/train",
-        "coco_base": "/home/aghosh/Projects/2PCNet/Datasets/bdd100k_ori/labels/det_20/det_train_coco.json",
+        "root_path": "/home/aghosh/Projects/2PCNet/Datasets/bdd100k/images/100k/val",
+        "coco_base": "/home/aghosh/Projects/2PCNet/Datasets/bdd100k_ori/labels/det_20/det_val_coco.json",
         "vp_base": "/home/aghosh/Projects/2PCNet/Datasets/VP/bdd100k_all_vp.json",
         "main_output_dir": "warped_images_exp",
         "grid_net_names": ["PlainKDEGrid", "NO"],
-        "hardcoded_basename": "0a5b3a25-81c3be4d.jpg" # NOTE: hardcode for now
+        "hardcoded_basename": "b1ceb32e-51852abe.jpg"
+        # "hardcoded_basename": "b38b2b6a-cb374ce8.jpg"
+        # "hardcoded_basename": None  # Set to None to process all images in the folder
     }
+
+    if config["hardcoded_basename"]:
+        img_paths = [os.path.join(config["root_path"], config["hardcoded_basename"])]
+    else:
+        img_paths = [os.path.join(config["root_path"], img) for img in os.listdir(config["root_path"]) if img.endswith(".jpg")]
     
-    img_paths = [os.path.join(config["root_path"], config["hardcoded_basename"])]
+    # img_paths = [os.path.join(config["root_path"], config["hardcoded_basename"])]
     vp_dict = load_vp_data(config['vp_base'])
     v_pts_list = get_v_pts_for_images(img_paths, vp_dict)
 
@@ -149,18 +228,14 @@ def main():
         gt_bboxes_list = get_gt_bboxes_for_images(img_paths, bbox_dict, config['root_path'], config)
 
     grid_net_names = config['grid_net_names']
-    for grid_net_name in grid_net_names:
-        grid_net = instantiate_grid_net(grid_net_name, config)
-        process_images(img_paths, v_pts_list, gt_bboxes_list, grid_net, config)
+    
+    for bandwidth in config['bandwidths']:
+        config['bandwidth'] = bandwidth  # Set the current bandwidth in the config
 
-def instantiate_grid_net(grid_net_name, config):
-    if grid_net_name == 'PlainKDEGrid':
-        return PlainKDEGrid(bandwidth=config['bandwidth'], amplitude_scale=config['amplitude']).cuda()
-    elif grid_net_name == 'NO':
-        return 'NO'
-    else:
-        grid_net_class = globals()[grid_net_name]
-        return grid_net_class().cuda()
+        for grid_net_name in grid_net_names:
+            grid_net = instantiate_grid_net(grid_net_name, config)
+            process_images(img_paths, v_pts_list, gt_bboxes_list, grid_net, config)
+
 
 if __name__ == "__main__":
     main()

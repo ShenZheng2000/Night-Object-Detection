@@ -721,7 +721,6 @@
 #   OUTPUT_DIR outputs/warp_aug_9_12_debug
 
 
-
 # BDD to ACDC (resume from BDD supervised stage ends, and train ACDC unsupervised)
 # NOTE: use smaller iteration (e.g. 10% of origin) for ACDC, maybe, to see if it converges
 
@@ -835,12 +834,13 @@
 # NOTE: be careful with GPU=3!!!!. Use GPU=2 for training unless emergent cases
 
 # run_training() {
+#   echo "Training $1 to $2"
 #     local src="$1"
 #     local tgt="$2"
 #     nohup \
 #     python train_net.py \
 #     --resume \
-#     --num-gpus 3 \
+#     --num-gpus 2 \
 #     --config configs/${tgt}.yaml \
 #     MODEL.WEIGHTS outputs/${src}/model_0059999.pth \
 #     OUTPUT_DIR outputs/${tgt} \
@@ -878,16 +878,16 @@
 # run_training 'bdd100k_10_18_tpp' 'dense_foggy_12_12_tpp'
 
 
-# # construction zone experiments
-run_training() {
-    local tgt="$1"
-    CUDA_VISIBLE_DEVICES=3 nohup \
-    python train_net.py \
-    --num-gpus 1 \
-    --config configs/construct/${tgt}.yaml \
-    OUTPUT_DIR outputs/${tgt} \
-    > outs/${tgt}.out 2>&1 &
-}
+# # # construction zone experiments
+# run_training() {
+#     local tgt="$1"
+#     CUDA_VISIBLE_DEVICES=3 nohup \
+#     python train_net.py \
+#     --num-gpus 1 \
+#     --config configs/construct/${tgt}.yaml \
+#     OUTPUT_DIR outputs/${tgt} \
+#     > outs/${tgt}_v1.out 2>&1 &
+# }
 
 # # # DA (baseline)
 # run_training '1_12_v1'
