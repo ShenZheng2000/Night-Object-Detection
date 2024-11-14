@@ -1,0 +1,32 @@
+## Usage: Train on BDD100 Clear and Tesla Annotated, Test on Tesla Annotated
+## No adaptation involved.
+
+_BASE_: "./bdd100k_10_18_baseline.yaml"
+DATASETS:
+  TRAIN_LABEL: ("bdd100k_clear_train_valid_vp_vehicles_merged", "tesla_annotated_final_train")
+  TEST: ("tesla_annotated_final_test",) 
+
+# NOTE: stop training once supervised stage ends
+SOLVER:
+  STEPS: (144000, 192000, 216000, 864000)  # ensure supervised stage does not use these
+  MAX_ITER: 120001  # TODO: reduce this iterations, if training very slow
+  IMG_PER_BATCH_LABEL: 10 
+  IMG_PER_BATCH_UNLABEL: 10
+
+SEMISUPNET:
+  BURN_UP_STEP: 120000  # Double the original value
+  SCALE_STEPS: (128400, 136800, 145200, 153600, 162000, 170400) # ensure supervised stage does not use these
+
+# NOTE: reduce eval_period
+TEST:
+  EVAL_PERIOD: 24000
+
+# NOTE: change train/test size to Tesla scale
+# INPUT:
+#   MIN_SIZE_TRAIN: (1876,)
+#   MIN_SIZE_TEST: 1876
+
+# NOTE: change train/test size to BDD scale
+INPUT:
+  MIN_SIZE_TRAIN: (720,)
+  MIN_SIZE_TEST: 720

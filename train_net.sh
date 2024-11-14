@@ -900,3 +900,20 @@
 
 # DA (baseline + Instance Warp) => TODO: train this after sem seg are done
 # run_training '1_14_v1'
+
+# CUDA_VISIBLE_DEVICES=0,1 \
+#   nohup \
+#   python train_net.py \
+#   --num-gpus 2 \
+#   --config configs/ANURAG_no_warp_no_adapt_bdd_tesla_FINAL.yaml \
+#   OUTPUT_DIR outputs/ANURAG_no_warp_no_adapt_bdd_tesla_FINAL \
+#   > ANURAG_no_warp_no_adapt_bdd_tesla_FINAL.out 2>&1 &
+
+# CUDA_VISIBLE_DEVICES=2,3 \
+#   nohup \
+#   python train_net.py \
+#   --num-gpus 2 \
+#   --config configs/ANURAG_no_warp_no_adapt_bdd_FINAL.yaml \
+#   --dist-url tcp://0.0.0.0:12345 \
+#   OUTPUT_DIR outputs/ANURAG_no_warp_no_adapt_bdd_FINAL \
+#   > ANURAG_no_warp_no_adapt_bdd_FINAL.out 2>&1 &

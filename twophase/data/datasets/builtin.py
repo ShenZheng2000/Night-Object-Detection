@@ -231,7 +231,6 @@ f'{data_path}/bdd100k/images/100k/train')
 
 
 
-# NOTE: 
 register_coco_instances("bdd100k_clear_train_valid_vp",
 {}, 
 f'{data_path}/bdd100k/coco_labels/train_clear_valid_vp.json', 
@@ -651,3 +650,32 @@ register_coco_instances("tesla_annotatedv2_test_night",
 {},
 f'{data_path}/TeslaAnnotatedV2/annotations/test_data_vehicles_merged_with_scene_labels_subset_Night.json',
 f'{data_path}/TeslaAnnotatedV2/images')
+
+
+
+
+
+register_coco_instances("tesla_annotated_final_train",
+{}, 
+f'/longdata/anurag_storage/Tesla/final_dataset/annotations/train_data_vehicles_merged_with_scene_labels.json', 
+f'/longdata/anurag_storage/Tesla/final_dataset/images')
+
+register_coco_instances("tesla_annotated_final_test",
+{}, 
+f'/longdata/anurag_storage/Tesla/final_dataset/annotations/test_data_vehicles_merged_with_scene_labels.json', 
+f'/longdata/anurag_storage/Tesla/final_dataset/images')
+
+register_coco_instances("tesla_annotated_final_test_snow",
+{}, 
+f'/longdata/anurag_storage/Tesla/final_dataset/annotations/test_data_vehicles_merged_with_scene_labels_subset_Snow.json', 
+f'/longdata/anurag_storage/Tesla/final_dataset/images')
+
+register_coco_instances("tesla_annotated_final_test_rain",
+{}, 
+f'/longdata/anurag_storage/Tesla/final_dataset/annotations/test_data_vehicles_merged_with_scene_labels_subset_Rain.json', 
+f'/longdata/anurag_storage/Tesla/final_dataset/images')
+
+register_coco_instances("tesla_annotated_final_test_night",
+{}, 
+f'/longdata/anurag_storage/Tesla/final_dataset/annotations/test_data_vehicles_merged_with_scene_labels_subset_Night.json', 
+f'/longdata/anurag_storage/Tesla/final_dataset/images')
