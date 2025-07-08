@@ -28,6 +28,9 @@ Download [[Boreas](https://www.boreas.utias.utoronto.ca/#/)]
 
 Download sample COCO format jsons from [[here](https://drive.google.com/drive/folders/1KV3NqNbRqzBrQ_ZN2rI0jsurPUUgRkKX?usp=drive_link)] or generate COCO format jsons using the scripts available [[here](https://github.com/ShenZheng2000/Instance-Warp-Scripts)]
 
+# Vanishing Point Preparation
+
+Instance-Warp does not require vanishing points for training or testing. However, methods like Geometric Prior do. Therefore, please download the vanishing point JSONs from [here](https://drive.google.com/file/d/1Pcf-hxAmgiGm03HACsorm_q9eR6L8k3N/view?usp=sharing), unzip it, and set the `VANISHING_POINT` in your config.
 
 # Dataset Structures
 
@@ -35,6 +38,8 @@ Download sample COCO format jsons from [[here](https://drive.google.com/drive/fo
   <summary>Click Here</summary>
   <pre>
 Datasets/
+    └── vp/
+        **_vp.json
     └── bdd100k/
         ├── images
             ├── 100k
